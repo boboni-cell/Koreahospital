@@ -45,3 +45,23 @@ export async function GET() {
     periodStart: first.d,
   });
 }
+
+export async function POST(req: NextRequest) {
+  const b = await req.json();
+  const info = db
+    .prepare(
+      `INSERT INTO metrics (account_id, date, followers, likes, saves, comments, shares, views)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    )
+    .run(
+      b.account_id ?? null,
+      b.date ?? new Date().toISOString().slice(0, 10),
+      b.followers ?? 0,
+      b.likes ?? 0,
+      b.saves ?? 0,
+      b.comments ?? 0,
+      b.shares ?? 0,
+      b.views ?? 0
+    );
+  return NextResponse.json({ id: info.lastInsertRowid });
+}

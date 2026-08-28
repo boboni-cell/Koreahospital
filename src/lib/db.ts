@@ -104,6 +104,15 @@ CREATE TABLE IF NOT EXISTS sop_docs (
   version INTEGER DEFAULT 1,
   updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS notes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  patient_name TEXT,
+  channel TEXT DEFAULT '微信',
+  content TEXT NOT NULL,
+  summary TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
 `);
 
 // 首次启动种子
@@ -275,6 +284,42 @@ if (count.n === 0) {
     for (const r of rows) insertSop.run(r);
   });
   insertSops(sops);
+
+  // 演示数据：近 14 天各账号指标
+  const insMetric = db.prepare(
+    `INSERT INTO metrics (account_id, date, followers, likes, saves, comments, shares, views)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+  );
+  const seedMetrics = db.transaction(() => {
+    const today = new Date();
+    for (let d = 13; d >= 0; d--) {
+      const dt = new Date(today);
+      dt.setDate(dt.getDate() - d);
+      const date = dt.toISOString().slice(0, 10);
+      for (let acc = 1; acc <= 10; acc++) {
+        const base = acc * 1200 + (13 - d) * 40;
+        insMetric.run(
+          acc,
+          date,
+          base,
+          Math.round(base * 0.06 + Math.random() * 20),
+          Math.round(base * 0.03 + Math.random() * 10),
+          Math.round(base * 0.01 + Math.random() * 5),
+          Math.round(base * 0.008 + Math.random() * 4),
+          Math.round(base * 1.4 + Math.random() * 200)
+        );
+      }
+    }
+  });
+  seedMetrics();
+
+  // 演示日程与沟通记录
+  db.prepare(
+    "INSERT INTO schedules (account_id, slot_time, content_id) VALUES (1, ?, NULL)"
+  ).run(new Date(Date.now() + 86400000).toISOString().slice(0, 16).replace("T", " ") + ":00");
+  db.prepare(
+    "INSERT INTO notes (patient_name, channel, content, summary) VALUES (?, ?, ?, ?)"
+  ).run("李女士", "微信", "咨询发际线种植费用，预算 2 万内，想了解 FUE 和微针区别。", "已发送报价单与对比资料");
 }
 
 export default db;
