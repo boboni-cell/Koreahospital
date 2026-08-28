@@ -1,0 +1,76 @@
+"use client";
+
+import * as React from "react";
+import { Select } from "@base-ui-components/react/select";
+import { cn } from "@/lib/utils";
+
+const SelectRoot = Select.Root;
+
+const SelectTrigger = React.forwardRef<
+  HTMLButtonElement,
+  React.ComponentPropsWithoutRef<typeof Select.Trigger>
+>(({ className, children, ...props }, ref) => (
+  <Select.Trigger
+    ref={ref}
+    className={cn(
+      "flex h-9 w-full items-center justify-between gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-1 text-sm text-zinc-800 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400",
+      className
+    )}
+    {...props}
+  >
+    {children}
+  </Select.Trigger>
+));
+SelectTrigger.displayName = "SelectTrigger";
+
+const SelectValue = React.forwardRef<
+  HTMLSpanElement,
+  React.ComponentPropsWithoutRef<typeof Select.Value>
+>(({ className, ...props }, ref) => (
+  <Select.Value ref={ref} className={cn("truncate", className)} {...props} />
+));
+SelectValue.displayName = "SelectValue";
+
+const SelectContent = React.forwardRef<
+  HTMLDivElement,
+  React.ComponentPropsWithoutRef<typeof Select.Popup>
+>(({ className, children, ...props }, ref) => (
+  <Select.Portal>
+    <Select.Popup
+      ref={ref}
+      className={cn(
+        "z-50 min-w-[8rem] overflow-hidden rounded-lg border border-zinc-200 bg-white p-1 text-sm shadow-lg",
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </Select.Popup>
+  </Select.Portal>
+));
+SelectContent.displayName = "SelectContent";
+
+const SelectItem = React.forwardRef<
+  HTMLDivElement,
+  React.ComponentPropsWithoutRef<typeof Select.Item>
+>(({ className, children, ...props }, ref) => (
+  <Select.Item
+    ref={ref}
+    className={cn(
+      "relative flex cursor-pointer select-none items-center rounded-md px-2 py-1.5 outline-none data-[highlighted]:bg-zinc-100",
+      className
+    )}
+    {...props}
+  >
+    <Select.ItemText>{children}</Select.ItemText>
+  </Select.Item>
+));
+SelectItem.displayName = "SelectItem";
+
+export {
+  SelectRoot as Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+};

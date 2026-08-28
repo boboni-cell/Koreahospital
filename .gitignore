@@ -1,0 +1,7 @@
+node_modules
+.next
+data/clinic.db
+data/clinic.db-*
+data/ai-config.json
+*.log
+.DS_Store
