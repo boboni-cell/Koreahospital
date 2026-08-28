@@ -28,38 +28,39 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, "PingFang SC", "Hiragino Sans GB", sans-serif;
 }
 
 :root {
-  --radius: 0.625rem;
+  --radius: 1rem;
 
-  --background: #f4f4f5;
-  --foreground: #18181b;
+  /* 暖色系（奶油粉 / 蜜桃 / 薰衣草），参考设计稿 */
+  --background: #efe8e6;
+  --foreground: #44403c;
 
   --card: rgba(255, 255, 255, 0.7);
-  --card-foreground: #18181b;
+  --card-foreground: #44403c;
 
-  --popover: #ffffff;
-  --popover-foreground: #18181b;
+  --popover: rgba(255, 255, 255, 0.92);
+  --popover-foreground: #44403c;
 
-  --primary: #18181b;
-  --primary-foreground: #fafafa;
+  --primary: #fb7185; /* rose-400 */
+  --primary-foreground: #ffffff;
 
-  --secondary: #f4f4f5;
-  --secondary-foreground: #18181b;
+  --secondary: #f5f1ef;
+  --secondary-foreground: #44403c;
 
-  --muted: #f4f4f5;
-  --muted-foreground: #71717a;
+  --muted: #f5f1ef;
+  --muted-foreground: #a8a29e;
 
-  --accent: #f4f4f5;
-  --accent-foreground: #18181b;
+  --accent: #fdece9;
+  --accent-foreground: #44403c;
 
   --destructive: #ef4444;
 
-  --border: rgba(24, 24, 27, 0.08);
-  --input: rgba(24, 24, 27, 0.12);
-  --ring: #18181b;
+  --border: rgba(255, 255, 255, 0.6);
+  --input: rgba(68, 64, 60, 0.12);
+  --ring: #fb7185;
 }
 
 * {
@@ -67,42 +68,70 @@
 }
 
 body {
-  background: var(--background);
+  background:
+    radial-gradient(circle at 100% 0%, #fdece9 0%, #f5f1ef 38%, #ede8e6 100%) fixed;
   color: var(--foreground);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
 }
 
-/* 磨砂玻璃卡片（Vercel 阴影栈：border + elevation + ambient + 内层高光） */
+/* 玻璃卡片（暖色微调） */
 .surface {
-  background: #ffffff;
-  border-radius: 0.875rem;
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 1.25rem;
   box-shadow:
-    0 0 0 1px rgba(24, 24, 27, 0.06),
-    0 1px 2px rgba(24, 24, 27, 0.04),
-    0 8px 24px -12px rgba(24, 24, 27, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    0 1px 2px rgba(68, 64, 60, 0.04),
+    0 12px 30px -18px rgba(68, 64, 60, 0.18);
 }
 
 .glass {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(16px) saturate(180%);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+/* 设计稿玻璃卡片（sidebar / 概览容器） */
+.glass-card {
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.8);
 }
 
 .lift {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 .lift:hover {
-  transform: translateY(-2px);
-  box-shadow:
-    0 0 0 1px rgba(24, 24, 27, 0.08),
-    0 2px 4px rgba(24, 24, 27, 0.06),
-    0 16px 32px -12px rgba(24, 24, 27, 0.18);
+  transform: translateY(-3px);
 }
 
-/* 胶囊标签（只给 badge / 标签用） */
+/* 5 色模块卡（首页入口） */
+.card-pink {
+  background: linear-gradient(145deg, rgba(255, 240, 240, 0.9) 0%, rgba(255, 225, 230, 0.55) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+}
+.card-orange {
+  background: linear-gradient(145deg, rgba(255, 246, 235, 0.9) 0%, rgba(255, 235, 220, 0.55) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+}
+.card-purple {
+  background: linear-gradient(145deg, rgba(245, 240, 255, 0.9) 0%, rgba(235, 225, 255, 0.55) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+}
+.card-yellow {
+  background: linear-gradient(145deg, rgba(255, 250, 235, 0.9) 0%, rgba(255, 240, 210, 0.55) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+}
+.card-blue {
+  background: linear-gradient(145deg, rgba(240, 245, 255, 0.9) 0%, rgba(220, 235, 255, 0.55) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+}
+
 .pill {
   display: inline-flex;
   align-items: center;
@@ -113,7 +142,6 @@ body {
   font-weight: 500;
 }
 
-/* 负字距标题 */
 .tracking-tight {
   letter-spacing: -0.02em;
 }

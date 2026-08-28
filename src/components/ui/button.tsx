@@ -9,9 +9,9 @@ const Button = React.forwardRef<
   }
 >(({ className, variant = "default", size = "default", ...props }, ref) => {
   const variants: Record<string, string> = {
-    default: "bg-zinc-900 text-white hover:bg-zinc-700",
-    outline: "border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700",
-    ghost: "hover:bg-zinc-100 text-zinc-700",
+    default: "bg-rose-400 text-white hover:bg-rose-500",
+    outline: "border border-stone-200 bg-white hover:bg-stone-50 text-stone-700",
+    ghost: "hover:bg-stone-100 text-stone-700",
     destructive: "bg-red-600 text-white hover:bg-red-500",
   };
   const sizes: Record<string, string> = {

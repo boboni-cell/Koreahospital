@@ -20,7 +20,7 @@ export function Sidebar() {
       )}
     >
       <div className="mb-4 flex items-center gap-2 px-3">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-zinc-900 text-sm font-bold text-white">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-rose-400 text-sm font-bold text-white">
           H
         </div>
         {hover && (
@@ -58,7 +58,7 @@ export function Sidebar() {
                     )}
                   >
                     {active && (
-                      <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r bg-zinc-900" />
+                      <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r bg-rose-400" />
                     )}
                     <Icon className="h-5 w-5 shrink-0" />
                     {hover && <span className="truncate">{item.label}</span>}
