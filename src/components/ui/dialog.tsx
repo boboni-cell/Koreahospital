@@ -14,7 +14,7 @@ function DialogContent({
       <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm" />
       <Dialog.Popup
         className={cn(
-          "fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-0 shadow-xl focus:outline-none",
+          "fixed left-1/2 top-1/2 z-50 w-full max-w-3xl -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-0 shadow-xl focus:outline-none",
           className
         )}
         {...props}
@@ -25,8 +25,6 @@ function DialogContent({
   );
 }
 
-export { Dialog, DialogContent };
-export const DialogTrigger = Dialog.Trigger;
-export const DialogTitle = Dialog.Title;
-export const DialogDescription = Dialog.Description;
+export const DialogRoot = Dialog.Root;
+export const DialogContentComp = DialogContent;
 export const DialogClose = Dialog.Close;
