@@ -115,9 +115,11 @@ CREATE TABLE IF NOT EXISTS notes (
 );
 `);
 
-// 首次启动种子
-const count = db.prepare("SELECT COUNT(*) AS n FROM users").get() as { n: number };
-if (count.n === 0) {
+// 首次启动种子（用文件锁避免构建期多 worker 并发重复播种）
+const SEED_LOCK = path.join(dataDir, ".seed.lock");
+if (!fs.existsSync(SEED_LOCK)) {
+  const count = db.prepare("SELECT COUNT(*) AS n FROM users").get() as { n: number };
+  if (count.n === 0) {
   db.prepare("INSERT INTO users (name, email, role) VALUES (?, ?, ?)").run(
     "管理员",
     "admin@clinic.com",
@@ -320,6 +322,22 @@ if (count.n === 0) {
   db.prepare(
     "INSERT INTO notes (patient_name, channel, content, summary) VALUES (?, ?, ?, ?)"
   ).run("李女士", "微信", "咨询发际线种植费用，预算 2 万内，想了解 FUE 和微针区别。", "已发送报价单与对比资料");
+
+  // 演示素材
+  const insAsset = db.prepare(
+    "INSERT INTO assets (filename, file_type, surgery_type, patient_code, license, usage_count) VALUES (?, ?, ?, ?, ?, ?)"
+  );
+  const demoAssets: [string, string, string | null, string | null, string, number][] = [
+    ["案例-术前对比-001.jpg", "image", "FUE", "P-2026-001", "authorized", 12],
+    ["案例-术后180天-001.jpg", "image", "FUE", "P-2026-001", "authorized", 9],
+    ["发际线设计示意图.png", "image", "微针", "P-2026-002", "authorized", 21],
+    ["手术环境-无菌层流.jpg", "image", "FUT", null, "authorized", 5],
+    ["患者授权书模板.pdf", "doc", null, null, "pending", 3],
+    ["术后护理清单.pdf", "doc", null, null, "authorized", 15],
+  ];
+  for (const a of demoAssets) insAsset.run(...a);
+  fs.writeFileSync(SEED_LOCK, "");
+  }
 }
 
 export default db;

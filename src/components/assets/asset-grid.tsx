@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { Download, FileText } from "lucide-react";
+import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Download, FileText, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   DialogRoot,
   DialogContentComp,
@@ -23,15 +23,35 @@ export interface Asset {
 }
 
 export function AssetGrid({ assets }: { assets: Asset[] }) {
-  const [open, setOpen] = useState<Asset | null>(null);
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const current = openIndex != null ? assets[openIndex] : null;
+
+  function go(delta: number) {
+    setOpenIndex((i) => {
+      if (i == null) return i;
+      const n = assets.length;
+      return (i + delta + n) % n;
+    });
+  }
+
+  useEffect(() => {
+    if (openIndex == null) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "ArrowLeft") go(-1);
+      if (e.key === "ArrowRight") go(1);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openIndex, assets.length]);
 
   return (
     <>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-        {assets.map((a) => (
+        {assets.map((a, i) => (
           <button
             key={a.id}
-            onClick={() => setOpen(a)}
+            onClick={() => setOpenIndex(i)}
             className="lift surface overflow-hidden rounded-2xl text-left"
           >
             <div className="flex h-32 items-center justify-center bg-gradient-to-br from-zinc-800 to-zinc-900 text-white">
@@ -52,44 +72,68 @@ export function AssetGrid({ assets }: { assets: Asset[] }) {
         ))}
       </div>
 
-      {open && (
-        <DialogRoot open onOpenChange={(o) => !o && setOpen(null)}>
+      {current && (
+        <DialogRoot open onOpenChange={(o) => !o && setOpenIndex(null)}>
           <DialogContentComp className="max-w-3xl overflow-hidden p-0">
             <div className="relative flex flex-col">
-              <div className="flex h-[42vh] items-center justify-center bg-gradient-to-br from-zinc-900 to-zinc-800 p-6">
-                {open.file_type === "image" ? (
+              <div className="relative flex h-[42vh] items-center justify-center bg-gradient-to-br from-zinc-900 to-zinc-800 p-6">
+                <AnimatePresence mode="wait">
                   <motion.div
-                    initial={{ scale: 0.9, opacity: 0 }}
+                    key={openIndex}
+                    initial={{ scale: 0.92, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    className="flex h-full items-center justify-center text-7xl"
+                    exit={{ scale: 0.96, opacity: 0 }}
+                    transition={{ duration: 0.18 }}
+                    className="flex h-full items-center justify-center"
                   >
-                    🖼️
+                    {current.file_type === "image" ? (
+                      <span className="text-7xl">🖼️</span>
+                    ) : (
+                      <FileText className="h-20 w-20 text-white" />
+                    )}
                   </motion.div>
-                ) : (
-                  <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
-                    <FileText className="h-20 w-20 text-white" />
-                  </motion.div>
-                )}
+                </AnimatePresence>
+
+                {/* 左右翻页 */}
+                <button
+                  onClick={() => go(-1)}
+                  className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur transition hover:bg-white/40"
+                  aria-label="上一个"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={() => go(1)}
+                  className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur transition hover:bg-white/40"
+                  aria-label="下一个"
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </button>
+
                 <DialogClose>
                   <button className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur transition hover:bg-white/40">
                     ✕
                   </button>
                 </DialogClose>
+
+                <span className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-black/40 px-3 py-1 text-xs text-white backdrop-blur">
+                  {(openIndex ?? 0) + 1} / {assets.length}
+                </span>
               </div>
 
               <div className="space-y-4 p-5">
                 <div className="glass flex flex-wrap items-center gap-2 rounded-xl px-3 py-2">
-                  <span className="text-sm font-medium text-zinc-800">{open.filename}</span>
-                  <Badge>{open.license}</Badge>
-                  <span className="text-xs text-zinc-400">使用 {open.usage_count} 次</span>
+                  <span className="text-sm font-medium text-zinc-800">{current.filename}</span>
+                  <Badge>{current.license}</Badge>
+                  <span className="text-xs text-zinc-400">使用 {current.usage_count} 次</span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
-                  <Field label="类型" value={open.file_type} />
-                  <Field label="手术类型" value={open.surgery_type} />
-                  <Field label="患者编号" value={open.patient_code} />
-                  <Field label="授权" value={open.license} />
-                  <Field label="使用次数" value={String(open.usage_count)} />
+                  <Field label="类型" value={current.file_type} />
+                  <Field label="手术类型" value={current.surgery_type} />
+                  <Field label="患者编号" value={current.patient_code} />
+                  <Field label="授权" value={current.license} />
+                  <Field label="使用次数" value={String(current.usage_count)} />
                 </div>
 
                 <Button className="w-full bg-zinc-900 hover:bg-zinc-700">

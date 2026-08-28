@@ -3,5 +3,6 @@ node_modules
 data/clinic.db
 data/clinic.db-*
 data/ai-config.json
+data/.seed.lock
 *.log
 .DS_Store
