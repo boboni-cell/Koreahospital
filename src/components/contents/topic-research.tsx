@@ -32,8 +32,23 @@ export function TopicResearch() {
   const [note, setNote] = useState("");
   const [modelPowered, setModelPowered] = useState(true);
 
-  async function run() {
-    setLoading(true);
+  async function adopt(t: Topic) {
+   fetch("/api/topics", {
+     method: "POST",
+     headers: { "Content-Type": "application/json" },
+     body: JSON.stringify({
+       title: t.title,
+       description: `${t.angle}｜${t.why}`,
+       source: "adopted",
+       heat_score: t.heat,
+     }),
+   })
+     .then(() => toast.success("已采纳到选题池"))
+     .catch(() => toast.error("采纳失败"));
+ }
+
+ async function run() {
+   setLoading(true);
     try {
       const r = await fetch("/api/ai/research", {
         method: "POST",
@@ -55,9 +70,9 @@ export function TopicResearch() {
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-2">
-        <Lightbulb className="h-5 w-5 text-zinc-700" />
-        <h2 className="text-xl font-semibold tracking-tight text-zinc-900">选题研究</h2>
-        {!modelPowered && <span className="pill bg-zinc-100 text-zinc-500">模板模式</span>}
+        <Lightbulb className="h-5 w-5 text-rose-400" />
+        <h2 className="text-xl font-semibold tracking-tight text-stone-900">选题研究</h2>
+        {!modelPowered && <span className="pill bg-stone-100 text-stone-500">模板模式</span>}
       </div>
 
       <Card>
@@ -101,17 +116,22 @@ export function TopicResearch() {
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <span>{t.title}</span>
-                  <span className="pill bg-zinc-900 text-white">热度 {t.heat}</span>
+                  <span className="pill bg-rose-400 text-white">热度 {t.heat}</span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
                 <div>
-                  <span className="text-zinc-400">切入点：</span>
+                  <span className="text-stone-400">切入点：</span>
                   {t.angle}
                 </div>
                 <div>
-                  <span className="text-zinc-400">推荐理由：</span>
+                  <span className="text-stone-400">推荐理由：</span>
                   {t.why}
+                </div>
+                <div className="pt-1">
+                  <Button size="sm" variant="outline" onClick={() => adopt(t)}>
+                    采纳选题
+                  </Button>
                 </div>
               </CardContent>
             </Card>

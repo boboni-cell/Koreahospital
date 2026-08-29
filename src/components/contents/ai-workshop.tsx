@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { Sparkles, Loader2, Copy, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,7 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 export function AiWorkshop() {
+  const searchParams = useSearchParams();
   const [patientId, setPatientId] = useState("");
   const [surgery, setSurgery] = useState("FUE");
   const [norwood, setNorwood] = useState("III");
@@ -44,6 +46,19 @@ export function AiWorkshop() {
   const [loading, setLoading] = useState(false);
   const [variants, setVariants] = useState<Variant[]>([]);
   const [modelPowered, setModelPowered] = useState(true);
+
+  // 从选题池带入：把选题标题/描述预填为关键亮点
+  useEffect(() => {
+    const tid = searchParams.get("topic");
+    if (!tid) return;
+    fetch(`/api/topics`)
+      .then((r) => r.json())
+      .then((list: { id: number; title: string; description: string | null }[]) => {
+        const t = list.find((x) => String(x.id) === tid);
+        if (t) setHighlight(`${t.title}｜${t.description ?? ""}`.replace(/｜$/u, ""));
+      })
+      .catch(() => {});
+  }, [searchParams]);
 
   async function generate() {
     setLoading(true);
