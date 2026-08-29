@@ -11,6 +11,7 @@ const g = globalThis as unknown as { __clinicDb?: Database.Database };
 const db = g.__clinicDb ?? new Database(dbPath);
 if (!g.__clinicDb) {
   db.pragma("journal_mode = WAL");
+  db.pragma("busy_timeout = 8000");
   g.__clinicDb = db;
 }
 
@@ -120,7 +121,7 @@ const SEED_LOCK = path.join(dataDir, ".seed.lock");
 if (!fs.existsSync(SEED_LOCK)) {
   const count = db.prepare("SELECT COUNT(*) AS n FROM users").get() as { n: number };
   if (count.n === 0) {
-  db.prepare("INSERT INTO users (name, email, role) VALUES (?, ?, ?)").run(
+  db.prepare("INSERT OR IGNORE INTO users (name, email, role) VALUES (?, ?, ?)").run(
     "管理员",
     "admin@clinic.com",
     "admin"
@@ -138,8 +139,7 @@ if (!fs.existsSync(SEED_LOCK)) {
     ["douyin", "案例号", "case_study"],
     ["douyin", "引流号", "viral"],
   ] as const;
-  const insAcc = db.prepare(
-    "INSERT INTO accounts (platform, handle, role) VALUES (?, ?, ?)"
+  const insAcc = db.prepare("INSERT OR IGNORE INTO accounts (platform, handle, role) VALUES (?, ?, ?)"
   );
   for (const a of accounts) insAcc.run(...a);
 
@@ -149,8 +149,7 @@ if (!fs.existsSync(SEED_LOCK)) {
     { title: "韩国 vs 国内植发怎么选", description: "中韩对比，合规表述", source: "manual", heat_score: 6, target_accounts: "[3,8]" },
     { title: "FUE 取发到底疼不疼", description: "院长出镜解答高频疑问", source: "manual", heat_score: 9, target_accounts: "[1,6]" },
   ] as const;
-  const insTopic = db.prepare(
-    "INSERT INTO topics (title, description, source, heat_score, target_accounts) VALUES (@title, @description, @source, @heat_score, @target_accounts)"
+  const insTopic = db.prepare("INSERT OR IGNORE INTO topics (title, description, source, heat_score, target_accounts) VALUES (@title, @description, @source, @heat_score, @target_accounts)"
   );
   for (const t of topics) insTopic.run(t);
 
@@ -286,6 +285,7 @@ if (!fs.existsSync(SEED_LOCK)) {
     for (const r of rows) insertSop.run(r);
   });
   insertSops(sops);
+  }
 
   // 演示数据：近 14 天各账号指标
   const insMetric = db.prepare(
@@ -316,16 +316,13 @@ if (!fs.existsSync(SEED_LOCK)) {
   seedMetrics();
 
   // 演示日程与沟通记录
-  db.prepare(
-    "INSERT INTO schedules (account_id, slot_time, content_id) VALUES (1, ?, NULL)"
+  db.prepare("INSERT OR IGNORE INTO schedules (account_id, slot_time, content_id) VALUES (1, ?, NULL)"
   ).run(new Date(Date.now() + 86400000).toISOString().slice(0, 16).replace("T", " ") + ":00");
-  db.prepare(
-    "INSERT INTO notes (patient_name, channel, content, summary) VALUES (?, ?, ?, ?)"
+  db.prepare("INSERT OR IGNORE INTO notes (patient_name, channel, content, summary) VALUES (?, ?, ?, ?)"
   ).run("李女士", "微信", "咨询发际线种植费用，预算 2 万内，想了解 FUE 和微针区别。", "已发送报价单与对比资料");
 
   // 演示素材
-  const insAsset = db.prepare(
-    "INSERT INTO assets (filename, file_type, surgery_type, patient_code, license, usage_count) VALUES (?, ?, ?, ?, ?, ?)"
+  const insAsset = db.prepare("INSERT OR IGNORE INTO assets (filename, file_type, surgery_type, patient_code, license, usage_count) VALUES (?, ?, ?, ?, ?, ?)"
   );
   const demoAssets: [string, string, string | null, string | null, string, number][] = [
     ["案例-术前对比-001.jpg", "image", "FUE", "P-2026-001", "authorized", 12],
@@ -336,8 +333,19 @@ if (!fs.existsSync(SEED_LOCK)) {
     ["术后护理清单.pdf", "doc", null, null, "authorized", 15],
   ];
   for (const a of demoAssets) insAsset.run(...a);
+  // 演示内容（待发布）
+  const insContent = db.prepare("INSERT OR IGNORE INTO contents (title, body, platform, role, status) VALUES (?, ?, ?, ?, ?)"
+  );
+  const demoContents = [
+    ["院长亲述｜Norwood 3级真实记录", "今天分享一例典型病例，Norwood III级正是植发黄金干预期…", "xiaohongshu", "director", "draft"],
+    ["发际线种植费用答疑", "最近很多姐妹私信问费用，今天统一回复：FUE按单位计费…", "xiaohongshu", "consultant", "draft"],
+    ["术后180天恢复日记", "从下定决心到现在整整180天，完整恢复过程记录…", "xiaohongshu", "case_study", "draft"],
+    ["抖音｜院长出镜讲脱发等级", "镜头前讲解Norwood分级，重点说III级干预时机…", "douyin", "director", "draft"],
+    ["科普｜发际线后移就是脱发吗", "先别慌，额角轻微后移未必是脱发，教你自测…", "xiaohongshu", "knowledge", "draft"],
+  ];
+  for (const c of demoContents) insContent.run(...c);
+
   fs.writeFileSync(SEED_LOCK, "");
-  }
 }
 
 export default db;

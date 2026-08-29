@@ -77,12 +77,28 @@ export function AiWorkshop() {
     toast.success("已复制");
   }
 
+  function saveDraft(v: Variant) {
+    fetch("/api/contents", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: v.title,
+        body: v.body,
+        platform,
+        role: v.role,
+        status: "draft",
+      }),
+    })
+      .then(() => toast.success("已保存到草稿箱，去「今日发布」可复制发布"))
+      .catch(() => toast.error("保存失败"));
+  }
+
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-2">
-        <Sparkles className="h-5 w-5 text-zinc-700" />
-        <h2 className="text-xl font-semibold tracking-tight text-zinc-900">AI 文案工坊</h2>
-        {!modelPowered && <span className="pill bg-zinc-100 text-zinc-500">模板模式</span>}
+        <Sparkles className="h-5 w-5 text-rose-400" />
+        <h2 className="text-xl font-semibold tracking-tight text-stone-900">AI 文案工坊</h2>
+        {!modelPowered && <span className="pill bg-stone-100 text-stone-500">模板模式</span>}
       </div>
 
       <Card>
@@ -145,24 +161,24 @@ export function AiWorkshop() {
                 <CardTitle className="flex items-center justify-between">
                   <span>{ROLE_LABELS[v.role] ?? v.role}</span>
                   {v.score && (
-                    <span className="pill bg-zinc-900 text-white">总分 {v.score.total}</span>
+                    <span className="pill bg-rose-400 text-white">总分 {v.score.total}</span>
                   )}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div>
-                  <div className="text-sm font-medium text-zinc-800">{v.title}</div>
-                  <p className="mt-1 whitespace-pre-wrap text-sm text-zinc-600">{v.body}</p>
+                  <div className="text-sm font-medium text-stone-800">{v.title}</div>
+                  <p className="mt-1 whitespace-pre-wrap text-sm text-stone-600">{v.body}</p>
                 </div>
                 {v.tags?.length > 0 && (
                   <div className="flex flex-wrap gap-1">
                     {v.tags.map((t, j) => (
-                      <span key={j} className="pill bg-zinc-100 text-zinc-500">#{t}</span>
+                      <span key={j} className="pill bg-stone-100 text-stone-500">#{t}</span>
                     ))}
                   </div>
                 )}
                 {v.score?.scores && (
-                  <div className="flex flex-wrap gap-2 text-xs text-zinc-400">
+                  <div className="flex flex-wrap gap-2 text-xs text-stone-400">
                     {Object.entries(v.score.scores).map(([k, val]) => (
                       <span key={k}>{k} {val}</span>
                     ))}
@@ -171,6 +187,9 @@ export function AiWorkshop() {
                 <div className="flex gap-2 pt-1">
                   <Button variant="outline" size="sm" onClick={() => copyText(`${v.title}\n\n${v.body}`)}>
                     <Copy className="h-3.5 w-3.5" /> 复制
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => saveDraft(v)}>
+                    保存草稿
                   </Button>
                 </div>
               </CardContent>
