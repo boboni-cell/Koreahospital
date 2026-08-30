@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { readAiConfig } from "@/lib/ai-config";
 import { getActiveTextConfig } from "@/lib/models";
 import { chatComplete, parseJsonBlock } from "@/lib/ai-client";
+import { selectSkillIds, resolveContents } from "@/lib/skills";
 
 interface ResearchInput {
   niche?: string;
@@ -14,6 +15,16 @@ const SOURCES = ["小红书", "抖音", "微博", "知乎", "B站", "公众号"]
 export async function POST(req: NextRequest) {
   const input: ResearchInput = await req.json();
   const cfg = (await getActiveTextConfig()) ?? (await readAiConfig());
+
+  // Q2=a：agent 混合选择并注入本次需要的 skill（如起号方法论 / 合规红线）
+  let skillContent = "";
+  try {
+    const { ids } = await selectSkillIds("选题研究", input as Record<string, unknown>);
+    skillContent = await resolveContents(ids);
+  } catch (e) {
+    console.warn("[agent] skill 注入跳过", e);
+  }
+
   if (!cfg.enabled) {
     return NextResponse.json(templateResearch(input));
   }
@@ -21,7 +32,15 @@ export async function POST(req: NextRequest) {
     const sys = [
       "你是矩阵运营选题研究员，参考多平台信源做选题发现与热度评估。",
       "遵守平台规则与医疗合规，不夸大、不承诺。只输出一个 JSON 对象，不要解释、不要 markdown 围栏。",
-    ].join("\n");
+    ];
+    if (skillContent) {
+      const extra = skillContent
+        .split(/^#\s*/m)
+        .map((s) => s.trim())
+        .filter((s) => s.length > 40)
+        .slice(0, 4);
+      if (extra.length) sys.push("以下是须遵守的补充规范（来自内部 skill）：", ...extra);
+    }
     const user = [
       `方向：${input.niche || "毛发移植"}`,
       `目标平台：${input.platform || "小红书"}`,
@@ -32,7 +51,7 @@ export async function POST(req: NextRequest) {
     ].join("\n");
     const text = await chatComplete(
       [
-        { role: "system", content: sys },
+        { role: "system", content: sys.join("\n") },
         { role: "user", content: user },
       ],
       cfg,

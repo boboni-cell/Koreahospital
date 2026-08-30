@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { readAiConfig } from "@/lib/ai-config";
 import { getActiveTextConfig } from "@/lib/models";
 import { chatComplete, parseJsonBlock } from "@/lib/ai-client";
+import { selectSkillIds, resolveContents } from "@/lib/skills";
 import {
   buildCopySystem,
   buildSingleRoleUser,
@@ -14,11 +15,12 @@ import {
 async function genOne(
   p: CopyInput,
   role: string,
-  cfg: Awaited<ReturnType<typeof readAiConfig>>
+  cfg: Awaited<ReturnType<typeof readAiConfig>>,
+  skillContent: string
 ) {
   const text = await chatComplete(
     [
-      { role: "system", content: buildCopySystem() },
+      { role: "system", content: buildCopySystem(skillContent) },
       { role: "user", content: buildSingleRoleUser(p, role) },
     ],
     cfg,
@@ -54,11 +56,21 @@ async function scoreOne(
 export async function POST(req: NextRequest) {
   const input: CopyInput = await req.json();
   const cfg = (await getActiveTextConfig()) ?? (await readAiConfig());
+
+  // Q2=a：生成前用 agent 混合选择本次需要的 skill（高频静态 + 模型动态挑），只注入命中的内容
+  let skillContent = "";
+  try {
+    const { ids } = await selectSkillIds("生成文案", input as Record<string, unknown>);
+    skillContent = await resolveContents(ids);
+  } catch (e) {
+    console.warn("[agent] skill 注入跳过", e);
+  }
+
   if (!cfg.enabled) {
     return NextResponse.json(templateCopy(input));
   }
   try {
-    const variants = await Promise.all(ROLE_ORDER.map((r) => genOne(input, r, cfg)));
+    const variants = await Promise.all(ROLE_ORDER.map((r) => genOne(input, r, cfg, skillContent)));
     const scored = await Promise.all(variants.map((v) => scoreOne(v, cfg)));
     const merged = variants.map((v, i) => ({ ...v, score: scored[i] }));
     return NextResponse.json({ variants: merged, modelPowered: true });

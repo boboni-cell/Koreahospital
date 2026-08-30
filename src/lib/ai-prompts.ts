@@ -25,13 +25,26 @@ export const ROLE_ORDER: string[] = [
   "viral",
 ];
 
-export function buildCopySystem(): string {
-  return [
+export function buildCopySystem(skills?: string): string {
+  const parts = [
     "你是韩国毛发移植医院的矩阵内容文案专家。",
     "严格遵守中国医疗广告法与平台规则：禁用「最佳/首选/保证效果/100%」等绝对化用语，不夸大疗效，不承诺结果。",
     "所有内容必须合规、真实、可落地，语气符合各账号人设。",
     "只输出一个 JSON 对象，不要任何解释文字、不要 markdown 围栏。",
-  ].join("\n");
+  ];
+  const extra = skills ? skills
+    .split(/^#\s*/m)
+    .map((s) => s.trim())
+    .filter((s) => s.length > 40)
+    .slice(0, 4) : [];
+  if (extra.length) {
+    parts.push(
+      "",
+      "以下是须遵守的补充规范（来自内部 skill，务必合并到上面规则中执行）：",
+      ...extra
+    );
+  }
+  return parts.join("\n");
 }
 
 export function buildCopyUser(p: CopyInput): string {
