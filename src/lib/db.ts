@@ -48,7 +48,9 @@ CREATE TABLE IF NOT EXISTS assets (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   filename TEXT NOT NULL,
   file_url TEXT,
+  r2_key TEXT,
   file_type TEXT DEFAULT 'image',
+  file_size INTEGER,
   surgery_type TEXT,
   patient_code TEXT,
   license TEXT DEFAULT 'pending',
@@ -346,6 +348,14 @@ if (!fs.existsSync(SEED_LOCK)) {
   for (const c of demoContents) insContent.run(...c);
 
   fs.writeFileSync(SEED_LOCK, "");
+}
+
+// 兼容已存在的旧库：补列（幂等）
+try {
+  db.prepare("SELECT r2_key FROM assets LIMIT 1").get();
+} catch {
+  db.exec("ALTER TABLE assets ADD COLUMN r2_key TEXT");
+  db.exec("ALTER TABLE assets ADD COLUMN file_size INTEGER");
 }
 
 export default db;

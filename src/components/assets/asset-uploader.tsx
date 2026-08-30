@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 import { UploadCloud } from "lucide-react";
@@ -19,6 +20,7 @@ import {
 import { SURGERY_TYPE_OPTIONS } from "@/lib/constants";
 
 export function AssetUploader() {
+  const router = useRouter();
   const [files, setFiles] = useState<File[]>([]);
   const [surgery, setSurgery] = useState("FUE");
   const [patientCode, setPatientCode] = useState("");
@@ -33,20 +35,19 @@ export function AssetUploader() {
     setUploading(true);
     try {
       for (const f of files) {
-        await fetch("/api/assets/upload", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            filename: f.name,
-            file_type: f.type.startsWith("image") ? "image" : "doc",
-            surgery_type: surgery,
-            patient_code: patientCode,
-            license,
-          }),
-        });
+        const fd = new FormData();
+        fd.append("file", f);
+        fd.append("surgery_type", surgery);
+        fd.append("patient_code", patientCode);
+        fd.append("license", license);
+        const r = await fetch("/api/assets/upload", { method: "POST", body: fd });
+        if (!r.ok) throw new Error("上传失败");
       }
-      toast.success(`已登记 ${files.length} 个素材`);
+      toast.success(`已上传 ${files.length} 个素材`);
       setFiles([]);
+      router.push("/assets");
+    } catch {
+      toast.error("上传失败，请重试");
     } finally {
       setUploading(false);
     }
@@ -62,7 +63,7 @@ export function AssetUploader() {
           <input {...getInputProps()} />
           <UploadCloud className="h-8 w-8 text-zinc-400" />
           <p className="mt-2 text-sm text-zinc-500">
-            {isDragActive ? "放开以上传" : "拖拽文件到此处，或点击选择"}
+            {isDragActive ? "放开以上传" : "拖拽图片 / 视频 / 文档到此处，或点击选择"}
           </p>
           {files.length > 0 && (
             <p className="mt-2 text-xs text-zinc-700">已选 {files.length} 个文件</p>

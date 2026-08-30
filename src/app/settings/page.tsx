@@ -1,5 +1,6 @@
 import { PageFrame } from "@/components/layout/page-frame";
 import { ModelConfigForm } from "@/components/settings/model-config-form";
+import { R2ConfigForm } from "@/components/settings/r2-config-form";
 
 export default function SettingsPage() {
   return (
@@ -10,7 +11,10 @@ export default function SettingsPage() {
           自带模型 API 接入（Bring Your Own Key），支持任何 OpenAI 兼容端点。
         </p>
       </div>
-      <ModelConfigForm />
+      <div className="space-y-6">
+        <ModelConfigForm />
+        <R2ConfigForm />
+      </div>
     </PageFrame>
   );
 }

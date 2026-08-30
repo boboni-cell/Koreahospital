@@ -7,27 +7,31 @@ import { AssetGrid, type Asset } from "@/components/assets/asset-grid";
 export default function AssetsPage() {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(true);
-  useEffect(() => {
+
+  const load = () =>
     fetch("/api/assets")
       .then((r) => r.json())
       .then((d) => setAssets(d))
       .finally(() => setLoading(false));
+
+  useEffect(() => {
+    load();
   }, []);
   return (
     <PageFrame>
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-xl font-semibold tracking-tight text-zinc-900">素材库</h2>
-        <a href="/assets/upload" className="text-sm text-zinc-500 hover:text-zinc-800">
+        <h2 className="text-xl font-semibold tracking-tight text-stone-900">素材库</h2>
+        <a href="/assets/upload" className="text-sm text-stone-500 hover:text-stone-800">
           批量上传 →
         </a>
       </div>
       {loading ? (
-        <p className="text-sm text-zinc-400">加载中…</p>
+        <p className="text-sm text-stone-400">加载中…</p>
       ) : (
-        <AssetGrid assets={assets} />
+        <AssetGrid assets={assets} onDeleted={load} />
       )}
       {!loading && assets.length === 0 && (
-        <p className="mt-6 text-sm text-zinc-400">暂无素材，去批量上传登记吧。</p>
+        <p className="mt-6 text-sm text-stone-400">暂无素材，去批量上传登记吧。</p>
       )}
     </PageFrame>
   );
