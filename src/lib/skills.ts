@@ -51,12 +51,27 @@ async function readSkillFile(abs: string): Promise<SkillEntry | null> {
   };
 }
 
-async function walk(dir: string): Promise<string[]> {
-  const out: string[] = [];
-  for (const e of await fs.readdir(dir, { withFileTypes: true })) {
-    const full = path.join(dir, e.name);
-    if (e.isDirectory()) out.push(...(await walk(full)));
-    else if (/\.(md|MD)$/.test(e.name)) out.push(full);
+async function walkSkills(dir: string): Promise<string[]> {
+  let out: string[] = [];
+  try {
+    for (const e of await fs.readdir(dir, { withFileTypes: true })) {
+      const full = path.join(dir, e.name);
+      if (e.isDirectory()) {
+        // 只认标准 skill 目录：含 SKILL.md 的文件夹；references/、scripts/ 不伪造成独立 skill
+        if (/^skill\.md$/i.test(e.name)) {
+          out.push(full);
+          continue;
+        }
+        if (e.name === "references" || e.name === "scripts" || e.name === "assets") {
+          continue; // 辅助目录跳过
+        }
+        out.push(...(await walkSkills(full)));
+      } else if (/^skill\.md$/i.test(e.name)) {
+        out.push(full);
+      }
+    }
+  } catch {
+    /* 目录不存在 */
   }
   return out;
 }
@@ -64,7 +79,7 @@ async function walk(dir: string): Promise<string[]> {
 /** 扫描 skills/ 目录，返回全部 skill */
 export async function listSkills(): Promise<SkillEntry[]> {
   try {
-    const files = await walk(SKILLS_DIR);
+    const files = await walkSkills(SKILLS_DIR);
     const all: SkillEntry[] = [];
     for (const f of files) {
       const s = await readSkillFile(f);
@@ -137,12 +152,18 @@ export async function selectSkillIds(
   }
 }
 
-/** 取一组 id 的正文（拼接注入） */
-export async function resolveContents(ids: string[]): Promise<string> {
+/** 取一组 id 的正文（拼接注入）。maxChars 控制注入上限，防止大 skill 撑爆 prompt。 */
+export async function resolveContents(
+  ids: string[],
+  maxChars = 6000
+): Promise<string> {
   const all = await listSkills();
   const byId = new Map(all.map((s) => [s.id, s]));
-  return ids
-    .map((id) => byId.get(id)?.content)
-    .filter(Boolean)
-    .join("\n\n---\n\n");
+  let joined = "";
+  for (const id of ids) {
+    const c = byId.get(id)?.content;
+    if (c) joined += (joined ? "\n\n---\n\n" : "") + c;
+    if (joined.length >= maxChars) break;
+  }
+  return joined.slice(0, maxChars);
 }
