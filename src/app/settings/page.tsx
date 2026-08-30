@@ -1,6 +1,7 @@
 import { PageFrame } from "@/components/layout/page-frame";
 import { ModelConfigForm } from "@/components/settings/model-config-form";
 import { R2ConfigForm } from "@/components/settings/r2-config-form";
+import { AgentConfigForm } from "@/components/settings/agent-config-form";
 
 export default function SettingsPage() {
   return (
@@ -14,6 +15,7 @@ export default function SettingsPage() {
       <div className="space-y-6">
         <ModelConfigForm />
         <R2ConfigForm />
+        <AgentConfigForm />
       </div>
     </PageFrame>
   );

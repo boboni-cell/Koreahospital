@@ -17,6 +17,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { SURGERY_TYPE_OPTIONS, PLATFORMS, NORWOOD_OPTIONS } from "@/lib/constants";
+import { ModelSwitcher } from "@/components/settings/model-switcher";
 
 interface Variant {
   role: string;
@@ -151,6 +152,10 @@ export function AiWorkshop() {
 
       <Card>
         <CardContent className="grid gap-3 pt-4 md:grid-cols-3">
+          <div className="space-y-1 md:col-span-3">
+            <Label>文案模型（一键切换）</Label>
+            <ModelSwitcher kind="text" onChange={() => {}} />
+          </div>
           <div className="space-y-1">
             <Label>患者编号</Label>
             <Input value={patientId} onChange={(e) => setPatientId(e.target.value)} placeholder="P-2026-001" />

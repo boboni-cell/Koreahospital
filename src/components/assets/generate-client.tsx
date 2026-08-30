@@ -16,6 +16,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { SURGERY_TYPE_OPTIONS } from "@/lib/constants";
+import { ModelSwitcher } from "@/components/settings/model-switcher";
 
 type GenKind = "image" | "video";
 
@@ -45,16 +46,16 @@ export function GenerateClient() {
   const [genFromContent, setGenFromContent] = useState(false);
   const [syncedId, setSyncedId] = useState<number | null>(null);
 
+  async function reloadModels() {
+    const list: any[] = await fetch("/api/models").then((r) => r.json());
+    setActiveModels({
+      image: list.find((m) => m.kind === "image" && m.isActive)?.name,
+      video: list.find((m) => m.kind === "video" && m.isActive)?.name,
+    });
+  }
+
   useEffect(() => {
-    fetch("/api/models")
-      .then((r) => r.json())
-      .then((list: any[]) => {
-        setActiveModels({
-          image: list.find((m) => m.kind === "image" && m.isActive)?.name,
-          video: list.find((m) => m.kind === "video" && m.isActive)?.name,
-        });
-      })
-      .catch(() => {});
+    reloadModels();
     fetch("/api/contents")
       .then((r) => r.json())
       .then((d: Content[]) => setContents(d))
@@ -253,13 +254,17 @@ export function GenerateClient() {
 
       {/* 手动生成 */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Card>
+        <Card className="mb-5">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Sparkles className="h-4 w-4" /> 手动生成设置
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
+            <div className="space-y-1">
+              <Label>生成模型（{kind === "image" ? "图像" : "视频"}，一键切换）</Label>
+              <ModelSwitcher kind={kind} activeName={activeModels[kind as "image" | "video"]} onChange={() => reloadModels()} />
+            </div>
             <div className="space-y-1">
               <Label>类型</Label>
               <Select value={kind} onValueChange={(v) => setKind(v as GenKind)}>
