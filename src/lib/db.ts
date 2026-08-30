@@ -42,6 +42,8 @@ CREATE TABLE IF NOT EXISTS contents (
   status TEXT DEFAULT 'draft',
   scheduled_for TEXT,
   cover_url TEXT,
+  published_at TEXT,
+  data_filled INTEGER DEFAULT 0,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -70,6 +72,18 @@ CREATE TABLE IF NOT EXISTS metrics (
   comments INTEGER DEFAULT 0,
   shares INTEGER DEFAULT 0,
   views INTEGER DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS post_metrics (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  content_id INTEGER,
+  date TEXT DEFAULT CURRENT_DATE,
+  likes INTEGER DEFAULT 0,
+  saves INTEGER DEFAULT 0,
+  comments INTEGER DEFAULT 0,
+  shares INTEGER DEFAULT 0,
+  views INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS tasks (
@@ -368,6 +382,12 @@ try {
   db.prepare("SELECT cover_url FROM contents LIMIT 1").get();
 } catch {
   db.exec("ALTER TABLE contents ADD COLUMN cover_url TEXT");
+}
+try {
+  db.prepare("SELECT published_at FROM contents LIMIT 1").get();
+} catch {
+  db.exec("ALTER TABLE contents ADD COLUMN published_at TEXT");
+  db.exec("ALTER TABLE contents ADD COLUMN data_filled INTEGER DEFAULT 0");
 }
 
 export default db;

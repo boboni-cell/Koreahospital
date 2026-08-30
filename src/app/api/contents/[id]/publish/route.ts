@@ -6,6 +6,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  db.prepare("UPDATE contents SET status='published' WHERE id=?").run(id);
-  return NextResponse.json({ ok: true, id });
+  const now = new Date().toISOString();
+  db.prepare("UPDATE contents SET status='published', published_at=COALESCE(published_at,?) WHERE id=?").run(now, id);
+  return NextResponse.json({ ok: true, id, published_at: now });
 }
