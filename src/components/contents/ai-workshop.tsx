@@ -46,6 +46,9 @@ export function AiWorkshop() {
   const [highlight, setHighlight] = useState("");
   const [platform, setPlatform] = useState("xiaohongshu");
   const [selectedRoles, setSelectedRoles] = useState<string[]>(ALL_ROLES);
+  const [customRoles, setCustomRoles] = useState<Record<string, string>>({});
+  const [newRoleName, setNewRoleName] = useState("");
+  const [newRoleBrief, setNewRoleBrief] = useState("");
   const [loading, setLoading] = useState(false);
   const [variants, setVariants] = useState<Variant[]>([]);
   const [modelPowered, setModelPowered] = useState(true);
@@ -63,6 +66,18 @@ export function AiWorkshop() {
       .catch(() => {});
   }, [searchParams]);
 
+  function addCustomRole() {
+    const name = newRoleName.trim();
+    if (!name) return toast.error("请填角色名");
+    const key = "custom:" + name;
+    if (customRoles[key]) return toast.error("角色已存在");
+    setCustomRoles((p) => ({ ...p, [key]: newRoleBrief.trim() || `${name}角色` }));
+    setSelectedRoles((p) => (p.includes(key) ? p : [...p, key]));
+    setNewRoleName("");
+    setNewRoleBrief("");
+    toast.success(`已添加自定义角色「${name}」`);
+  }
+
   async function generate() {
     if (!selectedRoles.length) return toast.error("请至少选择一个账号角色");
     setLoading(true);
@@ -79,6 +94,7 @@ export function AiWorkshop() {
           highlight,
           platform,
           roles: selectedRoles,
+          customRoles,
         }),
       });
       const d = await r.json();
@@ -194,6 +210,27 @@ export function AiWorkshop() {
                 className="rounded-full px-2.5 py-1 text-xs text-stone-400 hover:text-stone-600"
               >
                 {selectedRoles.length === ALL_ROLES.length ? "清空" : "全选"}
+              </button>
+            </div>
+            {/* 自定义角色 */}
+            <div className="flex items-center gap-1.5">
+              <input
+                value={newRoleName}
+                onChange={(e) => setNewRoleName(e.target.value)}
+                placeholder="自定义角色名"
+                className="h-8 w-28 rounded-full border border-stone-200 px-3 text-xs focus:outline-none"
+              />
+              <input
+                value={newRoleBrief}
+                onChange={(e) => setNewRoleBrief(e.target.value)}
+                placeholder="人设brief(可选)"
+                className="h-8 w-40 rounded-full border border-stone-200 px-3 text-xs focus:outline-none"
+              />
+              <button
+                onClick={addCustomRole}
+                className="rounded-full bg-stone-900 px-3 py-1 text-xs text-white hover:bg-stone-700"
+              >
+                添加角色
               </button>
             </div>
             <Button onClick={generate} disabled={loading} className="ml-auto">

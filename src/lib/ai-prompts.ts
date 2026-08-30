@@ -6,6 +6,7 @@ export interface CopyInput {
   highlight?: string;
   platform?: "xiaohongshu" | "douyin";
   roles?: string[]; // 用户选中的角色；空=全部
+  customRoles?: Record<string, string>; // 自定义角色 key -> 人设brief
 }
 
 export const ROLE_BRIEF: Record<string, string> = {
@@ -48,8 +49,9 @@ export function buildCopySystem(skills?: string): string {
   return parts.join("\n");
 }
 
-export function buildCopyUser(p: CopyInput): string {
-  const roles = ROLE_ORDER.map((r) => `- ${r}：${ROLE_BRIEF[r]}`).join("\n");
+export function buildCopyUser(p: CopyInput, roles: string[] = ROLE_ORDER): string {
+  const brief = (r: string) => ROLE_BRIEF[r] || (p.customRoles?.[r] ?? "");
+  const roleList = roles.map((r) => `- ${r}：${brief(r)}`).join("\n");
   return [
     `患者编号：${p.patientId || "（未填）"}`,
     `手术方式：${p.surgery || "植发"}`,
@@ -58,18 +60,19 @@ export function buildCopyUser(p: CopyInput): string {
     `关键亮点：${p.highlight || "发际线自然、密度均匀"}`,
     `目标平台：${p.platform === "douyin" ? "抖音（短视频口播文案）" : "小红书（图文笔记文案）"}`,
     "",
-    "请生成全部角色共 6 篇文案。输出 JSON 数组：",
-    roles,
+    `请生成所选角色共 ${roles.length} 篇文案。输出 JSON 数组：`,
+    roleList,
     "",
     '格式：[{"role":"director","title":"标题","body":"正文","tags":["标签1","标签2"]}, ...]',
   ].join("\n");
 }
 
-export function buildSingleRoleUser(p: CopyInput, role: string): string {
+export function buildSingleRoleUser(p: CopyInput, role: string, roles: string[] = ROLE_ORDER): string {
+  const brief = ROLE_BRIEF[role] || (p.customRoles?.[role] ?? "");
   return [
-    buildCopyUser(p),
+    buildCopyUser(p, roles),
     "",
-    `本次只生成角色：${role}（${ROLE_BRIEF[role] ?? ""}）`,
+    `本次只生成角色：${role}（${brief}）`,
     '只输出一个 JSON 对象：{"role":"' + role + '","title":"标题","body":"正文","tags":["标签1"]}',
   ].join("\n");
 }

@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS contents (
   role TEXT,
   status TEXT DEFAULT 'draft',
   scheduled_for TEXT,
+  cover_url TEXT,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -362,6 +363,11 @@ try {
   db.prepare("SELECT category FROM assets LIMIT 1").get();
 } catch {
   db.exec("ALTER TABLE assets ADD COLUMN category TEXT DEFAULT '未分类'");
+}
+try {
+  db.prepare("SELECT cover_url FROM contents LIMIT 1").get();
+} catch {
+  db.exec("ALTER TABLE contents ADD COLUMN cover_url TEXT");
 }
 
 export default db;

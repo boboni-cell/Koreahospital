@@ -16,12 +16,13 @@ async function genOne(
   p: CopyInput,
   role: string,
   cfg: Awaited<ReturnType<typeof readAiConfig>>,
-  skillContent: string
+  skillContent: string,
+  roles: string[]
 ) {
   const text = await chatComplete(
     [
       { role: "system", content: buildCopySystem(skillContent) },
-      { role: "user", content: buildSingleRoleUser(p, role) },
+      { role: "user", content: buildSingleRoleUser(p, role, roles) },
     ],
     cfg,
     { maxTokens: 2000, timeoutMs: 110000 }
@@ -76,7 +77,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(templateCopy(input));
   }
   try {
-    const variants = await Promise.all(roles.map((r) => genOne(input, r, cfg, skillContent)));
+    const variants = await Promise.all(roles.map((r) => genOne(input, r, cfg, skillContent, roles)));
     const scored = await Promise.all(variants.map((v) => scoreOne(v, cfg)));
     const merged = variants.map((v, i) => ({ ...v, score: scored[i] }));
     return NextResponse.json({ variants: merged, roles, modelPowered: true });

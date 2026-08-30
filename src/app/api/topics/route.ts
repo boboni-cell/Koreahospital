@@ -6,6 +6,14 @@ export async function GET() {
   return NextResponse.json(rows);
 }
 
+export function DELETE(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const id = searchParams.get("id");
+  if (!id) return NextResponse.json({ error: "缺 id" }, { status: 400 });
+  db.prepare("DELETE FROM topics WHERE id=?").run(id);
+  return NextResponse.json({ ok: true, id });
+}
+
 export async function POST(req: NextRequest) {
   const body = await req.json();
   const info = db

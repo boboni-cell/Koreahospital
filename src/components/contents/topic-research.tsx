@@ -31,7 +31,7 @@ export function TopicResearch() {
   const [topics, setTopics] = useState<Topic[]>([]);
   const [note, setNote] = useState("");
   const [modelPowered, setModelPowered] = useState(true);
-  const [webHits, setWebHits] = useState<number | null>(null);
+  const [engine, setEngine] = useState<string | null>(null);
 
   async function adopt(t: Topic) {
    fetch("/api/topics", {
@@ -60,7 +60,7 @@ export function TopicResearch() {
       setModelPowered(d.modelPowered !== false);
       setTopics(d.topics ?? []);
       setNote(d.note ?? "");
-      setWebHits(d.webHits ?? null);
+      setEngine(d.engine ?? null);
       if (d.modelPowered === false) toast.warning("模型未配置，展示模板选题");
     } catch (e) {
       toast.error("请求失败");
@@ -75,8 +75,8 @@ export function TopicResearch() {
         <Lightbulb className="h-5 w-5 text-rose-400" />
         <h2 className="text-xl font-semibold tracking-tight text-stone-900">选题研究</h2>
         {!modelPowered && <span className="pill bg-stone-100 text-stone-500">模板模式</span>}
-        {webHits !== null && webHits > 0 && (
-          <span className="pill bg-emerald-50 text-emerald-600">已联网检索 {webHits} 条</span>
+        {modelPowered && engine && (
+          <span className="pill bg-emerald-50 text-emerald-600">{engine} 检索</span>
         )}
       </div>
 

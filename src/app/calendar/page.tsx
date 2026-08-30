@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { Trash2 } from "lucide-react";
 import { PageFrame } from "@/components/layout/page-frame";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,8 +12,21 @@ interface Sched { id: number; account_id: number | null; slot_time: string; }
 export default function CalendarPage() {
   const [items, setItems] = useState<Sched[]>([]);
   useEffect(() => {
-    fetch("/api/schedules").then((r) => r.json()).then((d) => setItems(d));
+    load();
   }, []);
+
+  function load() {
+    fetch("/api/schedules").then((r) => r.json()).then((d) => setItems(d));
+  }
+
+  async function del(id: number) {
+    if (!confirm("确认删除这个排期？")) return;
+    const r = await fetch(`/api/schedules/${id}`, { method: "DELETE" });
+    if (r.ok) {
+      toast.success("已删除排期");
+      load();
+    } else toast.error("删除失败");
+  }
 
   // 未来 7 天
   const days = Array.from({ length: 7 }, (_, i) => {
@@ -44,9 +59,14 @@ export default function CalendarPage() {
                   <p className="text-xs text-zinc-300">—</p>
                 ) : (
                   list.map((it) => (
-                    <div key={it.id} className="rounded-lg bg-zinc-50 p-2 text-xs text-zinc-600">
-                      <Badge>账号 {it.account_id}</Badge>
-                      <div className="mt-1">{(it.slot_time || "").slice(11, 16)}</div>
+                    <div key={it.id} className="group flex items-center justify-between rounded-lg bg-zinc-50 p-2 text-xs text-zinc-600">
+                      <div>
+                        <Badge>账号 {it.account_id}</Badge>
+                        <div className="mt-1">{(it.slot_time || "").slice(11, 16)}</div>
+                      </div>
+                      <button onClick={() => del(it.id)} className="text-red-400 opacity-0 transition group-hover:opacity-100">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
                     </div>
                   ))
                 )}
