@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readAiConfig } from "@/lib/ai-config";
+import { getActiveTextConfig } from "@/lib/models";
 import { chatComplete, parseJsonBlock } from "@/lib/ai-client";
 import {
   buildCopySystem,
@@ -52,7 +53,7 @@ async function scoreOne(
 
 export async function POST(req: NextRequest) {
   const input: CopyInput = await req.json();
-  const cfg = await readAiConfig();
+  const cfg = (await getActiveTextConfig()) ?? (await readAiConfig());
   if (!cfg.enabled) {
     return NextResponse.json(templateCopy(input));
   }

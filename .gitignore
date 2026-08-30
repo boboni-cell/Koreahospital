@@ -4,6 +4,7 @@ data/clinic.db
 data/clinic.db-*
 data/ai-config.json
 data/r2-config.json
+data/models.json
 data/.seed.lock
 public/uploads/
 *.log
