@@ -36,19 +36,19 @@ export default function OpsHub() {
           <TodayList />
         </TabsContent>
         <TabsContent value="schedule">
-          <iframe src="/calendar" className="h-[80vh] w-full rounded-2xl border-0" title="内容排期" />
+          <iframe src="/calendar?bare=1" className="h-[80vh] w-full rounded-2xl border-0" title="内容排期" />
         </TabsContent>
         <TabsContent value="manage">
-          <iframe src="/contents" className="h-[80vh] w-full rounded-2xl border-0" title="内容管理" />
+          <iframe src="/contents?bare=1" className="h-[80vh] w-full rounded-2xl border-0" title="内容管理" />
         </TabsContent>
         <TabsContent value="new">
-          <iframe src="/contents/new" className="h-[80vh] w-full rounded-2xl border-0" title="新建内容" />
+          <iframe src="/contents/new?bare=1" className="h-[80vh] w-full rounded-2xl border-0" title="新建内容" />
         </TabsContent>
         <TabsContent value="ai">
           <AiWorkshop />
         </TabsContent>
         <TabsContent value="research">
-          <iframe src="/contents/research" className="h-[80vh] w-full rounded-2xl border-0" title="选题研究" />
+          <iframe src="/contents/research?bare=1" className="h-[80vh] w-full rounded-2xl border-0" title="选题研究" />
         </TabsContent>
       </Tabs.Root>
     </PageFrame>

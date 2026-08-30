@@ -35,6 +35,8 @@ const ROLE_LABELS: Record<string, string> = {
   viral: "引流版",
 };
 
+const ALL_ROLES = ["director", "consultant", "official", "case_study", "knowledge", "viral"];
+
 export function AiWorkshop() {
   const searchParams = useSearchParams();
   const [patientId, setPatientId] = useState("");
@@ -43,6 +45,7 @@ export function AiWorkshop() {
   const [days, setDays] = useState("180");
   const [highlight, setHighlight] = useState("");
   const [platform, setPlatform] = useState("xiaohongshu");
+  const [selectedRoles, setSelectedRoles] = useState<string[]>(ALL_ROLES);
   const [loading, setLoading] = useState(false);
   const [variants, setVariants] = useState<Variant[]>([]);
   const [modelPowered, setModelPowered] = useState(true);
@@ -61,6 +64,7 @@ export function AiWorkshop() {
   }, [searchParams]);
 
   async function generate() {
+    if (!selectedRoles.length) return toast.error("请至少选择一个账号角色");
     setLoading(true);
     setVariants([]);
     try {
@@ -74,6 +78,7 @@ export function AiWorkshop() {
           days,
           highlight,
           platform,
+          roles: selectedRoles,
         }),
       });
       const d = await r.json();
@@ -159,10 +164,41 @@ export function AiWorkshop() {
             <Label>关键亮点</Label>
             <Input value={highlight} onChange={(e) => setHighlight(e.target.value)} placeholder="发际线自然、密度均匀" />
           </div>
-          <div className="flex items-end md:col-span-3">
-            <Button onClick={generate} disabled={loading}>
+          <div className="flex flex-wrap items-center gap-2 md:col-span-3">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-xs text-stone-400">生成角色：</span>
+              {ALL_ROLES.map((r) => {
+                const on = selectedRoles.includes(r);
+                return (
+                  <button
+                    key={r}
+                    onClick={() =>
+                      setSelectedRoles((prev) =>
+                        on ? prev.filter((x) => x !== r) : [...prev, r]
+                      )
+                    }
+                    className={`rounded-full px-2.5 py-1 text-xs transition ${
+                      on
+                        ? "bg-rose-400 text-white"
+                        : "bg-stone-100 text-stone-500 hover:bg-stone-200"
+                    }`}
+                  >
+                    {ROLE_LABELS[r]}
+                  </button>
+                );
+              })}
+              <button
+                onClick={() =>
+                  setSelectedRoles(selectedRoles.length === ALL_ROLES.length ? [] : ALL_ROLES)
+                }
+                className="rounded-full px-2.5 py-1 text-xs text-stone-400 hover:text-stone-600"
+              >
+                {selectedRoles.length === ALL_ROLES.length ? "清空" : "全选"}
+              </button>
+            </div>
+            <Button onClick={generate} disabled={loading} className="ml-auto">
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-              {loading ? "生成中…" : "生成 5 角色文案"}
+              {loading ? "生成中…" : `生成 ${selectedRoles.length || 0} 篇文案`}
             </Button>
           </div>
         </CardContent>

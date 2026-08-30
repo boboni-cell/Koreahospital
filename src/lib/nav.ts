@@ -17,6 +17,7 @@ import {
   PlusCircle,
   MessageSquare,
   FileBarChart,
+  Rocket,
 } from "lucide-react";
 
 export interface NavItem {
@@ -29,7 +30,7 @@ export interface NavItem {
 
 export const NAV_ITEMS: NavItem[] = [
   { label: "首页仪表盘", href: "/", icon: LayoutDashboard, group: "总览", exact: true },
-  { label: "运营中心", href: "/ops", icon: Send, group: "运营" },
+  { label: "运营中心", href: "/ops", icon: Rocket, group: "运营" },
   { label: "今日待发", href: "/today", icon: Send, group: "运营" },
   { label: "内容排期", href: "/calendar", icon: CalendarDays, group: "运营" },
   { label: "内容管理", href: "/contents", icon: FileText, group: "运营" },

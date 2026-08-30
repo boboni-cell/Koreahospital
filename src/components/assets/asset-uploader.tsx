@@ -17,12 +17,13 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { SURGERY_TYPE_OPTIONS } from "@/lib/constants";
+import { SURGERY_TYPE_OPTIONS, ASSET_CATEGORY_OPTIONS } from "@/lib/constants";
 
 export function AssetUploader() {
   const router = useRouter();
   const [files, setFiles] = useState<File[]>([]);
   const [surgery, setSurgery] = useState("FUE");
+  const [category, setCategory] = useState("术前案例");
   const [patientCode, setPatientCode] = useState("");
   const [license, setLicense] = useState("pending");
   const [uploading, setUploading] = useState(false);
@@ -38,6 +39,7 @@ export function AssetUploader() {
         const fd = new FormData();
         fd.append("file", f);
         fd.append("surgery_type", surgery);
+        fd.append("category", category);
         fd.append("patient_code", patientCode);
         fd.append("license", license);
         const r = await fetch("/api/assets/upload", { method: "POST", body: fd });
@@ -71,6 +73,15 @@ export function AssetUploader() {
         </div>
 
         <div className="grid grid-cols-3 gap-3">
+          <div className="space-y-1">
+            <Label>素材类别</Label>
+            <Select value={category} onValueChange={(v) => setCategory(v ?? "术前案例")}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {ASSET_CATEGORY_OPTIONS.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
           <div className="space-y-1">
             <Label>手术类型</Label>
             <Select value={surgery} onValueChange={(v) => setSurgery(v ?? "FUE")}>

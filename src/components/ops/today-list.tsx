@@ -28,6 +28,7 @@ const ROLE: Record<string, string> = {
 export default function TodayList() {
   const [items, setItems] = useState<Content[]>([]);
   const [copied, setCopied] = useState<number | null>(null);
+  const [expanded, setExpanded] = useState<Set<number>>(new Set());
 
   const load = useCallback(() => {
     fetch("/api/contents")
@@ -41,6 +42,15 @@ export default function TodayList() {
 
   const pending = items.filter((c) => c.status !== "published");
   const done = items.filter((c) => c.status === "published");
+
+  function toggleExpand(id: number) {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   function copyText(c: Content) {
     navigator.clipboard.writeText(`${c.title}\n\n${c.body}`).then(() => {
@@ -84,7 +94,21 @@ export default function TodayList() {
                 <span className="text-xs text-stone-400">{ROLE[c.role] ?? c.role}</span>
               </div>
               <div className="text-sm font-semibold text-stone-800">{c.title}</div>
-              <p className="line-clamp-4 flex-1 text-xs leading-relaxed text-stone-500">{c.body}</p>
+              <p
+                className={`flex-1 text-xs leading-relaxed text-stone-500 ${
+                  expanded.has(c.id) ? "" : "line-clamp-4"
+                }`}
+              >
+                {c.body}
+              </p>
+              {(c.body?.length ?? 0) > 120 && (
+                <button
+                  onClick={() => toggleExpand(c.id)}
+                  className="self-start text-xs text-rose-500 hover:text-rose-600"
+                >
+                  {expanded.has(c.id) ? "收起 ▲" : "显示全部 ▼"}
+                </button>
+              )}
               <div className="flex gap-2 pt-1">
                 <Button size="sm" variant="outline" className="flex-1" onClick={() => copyText(c)}>
                   {copied === c.id ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}

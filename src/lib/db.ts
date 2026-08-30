@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS assets (
   file_url TEXT,
   r2_key TEXT,
   file_type TEXT DEFAULT 'image',
+  category TEXT DEFAULT '未分类',
   file_size INTEGER,
   surgery_type TEXT,
   patient_code TEXT,
@@ -324,15 +325,15 @@ if (!fs.existsSync(SEED_LOCK)) {
   ).run("李女士", "微信", "咨询发际线种植费用，预算 2 万内，想了解 FUE 和微针区别。", "已发送报价单与对比资料");
 
   // 演示素材
-  const insAsset = db.prepare("INSERT OR IGNORE INTO assets (filename, file_type, surgery_type, patient_code, license, usage_count) VALUES (?, ?, ?, ?, ?, ?)"
+  const insAsset = db.prepare("INSERT OR IGNORE INTO assets (filename, file_type, category, surgery_type, patient_code, license, usage_count) VALUES (?, ?, ?, ?, ?, ?, ?)"
   );
-  const demoAssets: [string, string, string | null, string | null, string, number][] = [
-    ["案例-术前对比-001.jpg", "image", "FUE", "P-2026-001", "authorized", 12],
-    ["案例-术后180天-001.jpg", "image", "FUE", "P-2026-001", "authorized", 9],
-    ["发际线设计示意图.png", "image", "微针", "P-2026-002", "authorized", 21],
-    ["手术环境-无菌层流.jpg", "image", "FUT", null, "authorized", 5],
-    ["患者授权书模板.pdf", "doc", null, null, "pending", 3],
-    ["术后护理清单.pdf", "doc", null, null, "authorized", 15],
+  const demoAssets: [string, string, string, string | null, string | null, string, number][] = [
+    ["案例-术前对比-001.jpg", "image", "术前案例", "FUE", "P-2026-001", "authorized", 12],
+    ["案例-术后180天-001.jpg", "image", "术后案例", "FUE", "P-2026-001", "authorized", 9],
+    ["发际线设计示意图.png", "image", "科普图示", "微针", "P-2026-002", "authorized", 21],
+    ["手术环境-无菌层流.jpg", "image", "手术环境", "FUT", null, "authorized", 5],
+    ["患者授权书模板.pdf", "doc", "授权文件", null, null, "pending", 3],
+    ["术后护理清单.pdf", "doc", "授权文件", null, null, "authorized", 15],
   ];
   for (const a of demoAssets) insAsset.run(...a);
   // 演示内容（待发布）
@@ -356,6 +357,11 @@ try {
 } catch {
   db.exec("ALTER TABLE assets ADD COLUMN r2_key TEXT");
   db.exec("ALTER TABLE assets ADD COLUMN file_size INTEGER");
+}
+try {
+  db.prepare("SELECT category FROM assets LIMIT 1").get();
+} catch {
+  db.exec("ALTER TABLE assets ADD COLUMN category TEXT DEFAULT '未分类'");
 }
 
 export default db;

@@ -19,13 +19,14 @@ export async function POST(req: NextRequest) {
       : await generateImage(m, body.prompt);
     const info = db
       .prepare(
-        "INSERT INTO assets (filename, file_url, r2_key, file_type, surgery_type, patient_code, license) VALUES (?, ?, ?, ?, ?, ?, ?)"
+        "INSERT INTO assets (filename, file_url, r2_key, file_type, category, surgery_type, patient_code, license) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
       )
       .run(
         body.filename || `${kind === "video" ? "视频" : "配图"}-${Date.now()}`,
         res.url,
         res.stored,
         res.file_type,
+        body.category || (kind === "video" ? "宣传物料" : "科普图示"),
         body.surgery_type || null,
         body.patient_code || null,
         "pending"

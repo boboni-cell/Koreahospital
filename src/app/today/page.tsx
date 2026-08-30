@@ -32,6 +32,7 @@ const ROLE: Record<string, string> = {
 export default function TodayPage() {
   const [items, setItems] = useState<Content[]>([]);
   const [copied, setCopied] = useState<number | null>(null);
+  const [expanded, setExpanded] = useState<Set<number>>(new Set());
 
   const load = useCallback(() => {
     fetch("/api/contents")
@@ -64,6 +65,15 @@ export default function TodayPage() {
       .catch(() => toast.error("标记失败"));
   }
 
+  function toggleExpand(id: number) {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
   return (
     <PageFrame>
       <div className="mb-4 flex items-center justify-between">
@@ -90,7 +100,21 @@ export default function TodayPage() {
                 <span className="text-xs text-stone-400">{ROLE[c.role] ?? c.role}</span>
               </div>
               <div className="text-sm font-semibold text-stone-800">{c.title}</div>
-              <p className="line-clamp-4 flex-1 text-xs leading-relaxed text-stone-500">{c.body}</p>
+              <p
+                className={`line-clamp-4 flex-1 text-xs leading-relaxed text-stone-500 ${
+                  expanded.has(c.id) ? "" : "line-clamp-4"
+                }`}
+              >
+                {c.body}
+              </p>
+              {(c.body?.length ?? 0) > 120 && (
+                <button
+                  onClick={() => toggleExpand(c.id)}
+                  className="self-start text-xs text-rose-500 hover:text-rose-600"
+                >
+                  {expanded.has(c.id) ? "收起 ▲" : "显示全部 ▼"}
+                </button>
+              )}
               <div className="flex gap-2 pt-1">
                 <Button
                   size="sm"

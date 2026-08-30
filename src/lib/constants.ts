@@ -7,6 +7,15 @@ export const SURGERY_TYPE_OPTIONS = [
   "发际线调整",
 ];
 
+export const ASSET_CATEGORY_OPTIONS = [
+  "术前案例",
+  "术后案例",
+  "科普图示",
+  "手术环境",
+  "授权文件",
+  "宣传物料",
+];
+
 export const PLATFORMS = [
   { id: "xiaohongshu", name: "小红书" },
   { id: "douyin", name: "抖音" },

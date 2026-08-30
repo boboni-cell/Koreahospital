@@ -57,10 +57,16 @@ export async function POST(req: NextRequest) {
   const input: CopyInput = await req.json();
   const cfg = (await getActiveTextConfig()) ?? (await readAiConfig());
 
+  // 用户可自选角色（多选）；未选则默认全部
+  const roles = input.roles && input.roles.length ? input.roles : ROLE_ORDER;
+
   // Q2=a：生成前用 agent 混合选择本次需要的 skill（高频静态 + 模型动态挑），只注入命中的内容
   let skillContent = "";
   try {
-    const { ids } = await selectSkillIds("生成文案", input as Record<string, unknown>);
+    const { ids } = await selectSkillIds("生成文案", {
+      ...(input as Record<string, unknown>),
+      roles,
+    });
     skillContent = await resolveContents(ids);
   } catch (e) {
     console.warn("[agent] skill 注入跳过", e);
@@ -70,10 +76,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(templateCopy(input));
   }
   try {
-    const variants = await Promise.all(ROLE_ORDER.map((r) => genOne(input, r, cfg, skillContent)));
+    const variants = await Promise.all(roles.map((r) => genOne(input, r, cfg, skillContent)));
     const scored = await Promise.all(variants.map((v) => scoreOne(v, cfg)));
     const merged = variants.map((v, i) => ({ ...v, score: scored[i] }));
-    return NextResponse.json({ variants: merged, modelPowered: true });
+    return NextResponse.json({ variants: merged, roles, modelPowered: true });
   } catch (e) {
     console.error("AI copy failed:", e);
     return NextResponse.json(templateCopy(input));

@@ -16,6 +16,7 @@ export async function POST(req: NextRequest) {
   const surgeryType = (form.get("surgery_type") as string) || null;
   const patientCode = (form.get("patient_code") as string) || null;
   const license = (form.get("license") as string) || "pending";
+  const category = (form.get("category") as string) || "未分类";
 
   if (!(file instanceof File)) {
     return NextResponse.json({ error: "缺少文件" }, { status: 400 });
@@ -39,13 +40,14 @@ export async function POST(req: NextRequest) {
 
   const info = db
     .prepare(
-      "INSERT INTO assets (filename, file_url, r2_key, file_type, file_size, surgery_type, patient_code, license) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+      "INSERT INTO assets (filename, file_url, r2_key, file_type, category, file_size, surgery_type, patient_code, license) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
     )
     .run(
       original,
       fileUrl,
       stored, // 本地阶段 r2_key 即文件名，后续迁移 R2 时直接复用
       fileType,
+      category,
       file.size,
       surgeryType,
       patientCode,

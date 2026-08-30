@@ -5,6 +5,7 @@ export interface CopyInput {
   days?: string;
   highlight?: string;
   platform?: "xiaohongshu" | "douyin";
+  roles?: string[]; // 用户选中的角色；空=全部
 }
 
 export const ROLE_BRIEF: Record<string, string> = {
