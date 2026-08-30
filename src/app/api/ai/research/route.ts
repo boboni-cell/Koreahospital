@@ -72,7 +72,8 @@ export async function POST(req: NextRequest) {
       "以下是本账本地已有的选题/内容（供对齐语境，避免重复）：",
       ...local,
       "",
-      '输出 JSON：{"sources":["信源1"],"topics":[{"title":"选题","heat":8,"angle":"切入点","why":"推荐理由"}],"note":"合规提示"}',
+      '输出 JSON：{"sources":["信源1"],"topics":[{"title":"选题","heat":8,"angle":"切入点","why":"推荐理由","contentType":"image"}],"note":"合规提示"}',
+      "其中 contentType 用 \"image\"（适合图文）或 \"video\"（适合视频/口播），每个选题都要给。",
     ].join("\n");
     const text = await chatComplete(
       [
@@ -84,7 +85,7 @@ export async function POST(req: NextRequest) {
     );
     const data = parseJsonBlock<{
       sources: string[];
-      topics: { title: string; heat: number; angle: string; why: string }[];
+      topics: { title: string; heat: number; angle: string; why: string; contentType?: "image" | "video" }[];
       note: string;
     }>(text);
     // 用配置的模型名作为来源标识（火山方舟/DeepSeek 等）
@@ -100,9 +101,9 @@ function templateResearch(input: ResearchInput) {
   return {
     sources: SOURCES,
     topics: [
-      { title: `[模板] ${input.niche || "毛发移植"} 高频疑问盘点`, heat: 8, angle: "科普合集", why: "未接入模型，模板选题" },
-      { title: `[模板] 术后第 ${input.platform === "douyin" ? "180" : "90"} 天真实记录`, heat: 7, angle: "案例日记", why: "模板选题" },
-      { title: `[模板] 费用到底怎么算`, heat: 9, angle: "顾问答疑", why: "模板选题" },
+      { title: `[模板] ${input.niche || "毛发移植"} 高频疑问盘点`, heat: 8, angle: "科普合集", why: "未接入模型，模板选题", contentType: "image" },
+      { title: `[模板] 术后第 ${input.platform === "douyin" ? "180" : "90"} 天真实记录`, heat: 7, angle: "案例日记", why: "模板选题", contentType: "video" },
+      { title: `[模板] 费用到底怎么算`, heat: 9, angle: "顾问答疑", why: "模板选题", contentType: "image" },
     ],
     note: "未接入模型，展示模板选题。在「系统设置」配置你的模型 Key 后可生成真实选题。",
     modelPowered: false,

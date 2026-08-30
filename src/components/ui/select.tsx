@@ -33,19 +33,18 @@ SelectValue.displayName = "SelectValue";
 
 const SelectContent = React.forwardRef<
   HTMLDivElement,
-  React.ComponentPropsWithoutRef<typeof Select.Popup>
+  React.ComponentPropsWithoutRef<typeof Select.Positioner>
 >(({ className, children, ...props }, ref) => (
   <Select.Portal>
-    <Select.Popup
+    <Select.Positioner
       ref={ref}
-      className={cn(
-        "z-50 min-w-[8rem] overflow-hidden rounded-lg border border-zinc-200 bg-white p-1 text-sm shadow-lg",
-        className
-      )}
+      className={cn("z-50", className)}
       {...props}
     >
-      {children}
-    </Select.Popup>
+      <Select.Popup className="min-w-[8rem] overflow-hidden rounded-lg border border-zinc-200 bg-white p-1 text-sm shadow-lg">
+        {children}
+      </Select.Popup>
+    </Select.Positioner>
   </Select.Portal>
 ));
 SelectContent.displayName = "SelectContent";

@@ -3,9 +3,12 @@ export const SURGERY_TYPE_OPTIONS = [
   "FUT",
   "微针",
   "不剃发",
-  "眉毛/睫毛",
   "发际线调整",
+  "眉毛/睫毛",
 ];
+
+// 脱发等级（Norwood）下拉选项 + 自定义填
+export const NORWOOD_OPTIONS = ["I", "II", "III", "IV", "V", "VI", "VII"];
 
 export const ASSET_CATEGORY_OPTIONS = [
   "术前案例",
@@ -19,10 +22,44 @@ export const ASSET_CATEGORY_OPTIONS = [
 export const PLATFORMS = [
   { id: "xiaohongshu", name: "小红书" },
   { id: "douyin", name: "抖音" },
+  { id: "tiktok", name: "TikTok" },
+  { id: "instagram", name: "Instagram" },
+  { id: "youtube", name: "YouTube" },
   { id: "weibo", name: "微博" },
-  { id: "zhihu", name: "知乎" },
-  { id: "shipinhao", name: "视频号" },
   { id: "wechat", name: "公众号" },
+  { id: "shipinhao", name: "微信视频号" },
+  { id: "naver", name: "Naver" },
+];
+
+export const PLATFORM_NAME: Record<string, string> = Object.fromEntries(
+  PLATFORMS.map((p) => [p.id, p.name])
+);
+
+/**
+ * 平台 → 建议调用的 skill id。
+ * 你之前添加的 skill（creator-buddy / mengke-wang 等）按平台路由。
+ * 未命中时回退到基础创作，未来你找到对应平台的 skill 后在此追加。
+ */
+export const PLATFORM_SKILL: Record<string, string | string[]> = {
+  xiaohongshu: ["space-xhs-positioning", "space-xhs-title", "space-xhs-writer"],
+  douyin: ["space-xhs-writer", "video-storyboard"],
+  tiktok: ["video-storyboard"],
+  instagram: ["gbro-cover-design", "space-xhs-title"],
+  youtube: ["video-storyboard"],
+  weibo: ["gbro-cover-design", "space-xhs-title"],
+  wechat: ["space-xhs-title", "space-wechat-layout"],
+  shipinhao: ["video-storyboard"],
+  naver: ["space-xhs-title"],
+};
+
+// 视频脚本类型（feature：广告 / 院长实拍 / 医院日常 / vlog…）
+export const VIDEO_SCRIPT_TYPES = [
+  { id: "ad", name: "品牌广告片" },
+  { id: "doctor", name: "院长出镜实拍" },
+  { id: "daily", name: "医院日常" },
+  { id: "vlog", name: "患者康复 vlog" },
+  { id: "tvc", name: "TVC 宣传片" },
+  { id: "education", name: "知识科普口播" },
 ];
 
 export const ROLES = [

@@ -13,6 +13,14 @@ import {
   DialogContentComp,
   DialogClose,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+import { VIDEO_SCRIPT_TYPES } from "@/lib/constants";
 
 interface Topic {
   id: number;
@@ -25,6 +33,7 @@ interface Topic {
 export default function TopicsPage() {
   const [topics, setTopics] = useState<Topic[]>([]);
   const [scriptTopic, setScriptTopic] = useState<Topic | null>(null);
+  const [scriptType, setScriptType] = useState("doctor");
   const [script, setScript] = useState("");
   const [scriptLoading, setScriptLoading] = useState(false);
   const router = useRouter();
@@ -42,8 +51,10 @@ export default function TopicsPage() {
     router.push(`/assets/generate?topic=${t.id}`);
   }
 
-  async function genScript(t: Topic) {
-    setScriptTopic(t);
+  async function genScript(t?: Topic) {
+    const target = t ?? scriptTopic;
+    if (!target) return;
+    setScriptTopic(target);
     setScript("");
     setScriptLoading(true);
     try {
@@ -51,7 +62,7 @@ export default function TopicsPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          topic: { title: t.title, description: t.description || "", role: "viral", platform: "douyin" },
+          topic: { title: target.title, description: target.description || "", role: "viral", platform: "douyin", type: scriptType },
         }),
       });
       const d = await r.json();
@@ -130,6 +141,21 @@ export default function TopicsPage() {
             </DialogClose>
             <div className="space-y-3 p-5">
               <h3 className="text-base font-semibold text-stone-900">视频脚本 · {scriptTopic.title}</h3>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs text-stone-400">脚本类型</span>
+                <Select value={scriptType} onValueChange={(v) => setScriptType(v ?? "doctor")}>
+                  <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {VIDEO_SCRIPT_TYPES.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button size="sm" onClick={() => genScript()} disabled={scriptLoading}>
+                  {scriptLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Clapperboard className="h-3.5 w-3.5" />}
+                  {scriptLoading ? "生成中…" : "按此类型生成"}
+                </Button>
+              </div>
               {scriptLoading ? (
                 <div className="flex items-center gap-2 py-8 text-sm text-stone-400">
                   <Loader2 className="h-4 w-4 animate-spin" /> 正在用 video-storyboard skill 生成拍摄脚本…

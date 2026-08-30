@@ -21,6 +21,7 @@ interface Topic {
   heat: number;
   angle: string;
   why: string;
+  contentType?: "image" | "video";
 }
 
 export function TopicResearch() {
@@ -121,7 +122,14 @@ export function TopicResearch() {
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <span>{t.title}</span>
-                  <span className="pill bg-rose-400 text-white">热度 {t.heat}</span>
+                  <span className="flex items-center gap-1">
+                    {t.contentType && (
+                      <span className={`pill ${t.contentType === "video" ? "bg-violet-100 text-violet-600" : "bg-rose-100 text-rose-600"}`}>
+                        {t.contentType === "video" ? "视频" : "图文"}
+                      </span>
+                    )}
+                    <span className="pill bg-rose-400 text-white">热度 {t.heat}</span>
+                  </span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 text-sm">

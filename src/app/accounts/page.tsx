@@ -15,7 +15,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { PLATFORMS } from "@/lib/constants";
+import { PLATFORMS, PLATFORM_NAME } from "@/lib/constants";
 
 interface Account {
   id: number;
@@ -26,14 +26,6 @@ interface Account {
   status: string;
 }
 
-const PLATFORM_NAMES: Record<string, string> = {
-  xiaohongshu: "小红书",
-  douyin: "抖音",
-  weibo: "微博",
-  zhihu: "知乎",
-  shipinhao: "视频号",
-  wechat: "公众号",
-};
 const ROLE_NAMES: Record<string, string> = {
   director: "院长号",
   consultant: "顾问号",
@@ -113,7 +105,7 @@ export default function AccountsPage() {
               <div className="flex items-center justify-between">
                 <span className="font-medium text-stone-800">{a.handle}</span>
                 <div className="flex items-center gap-2">
-                  <Badge>{PLATFORM_NAMES[a.platform] ?? a.platform}</Badge>
+                  <Badge>{PLATFORM_NAME[a.platform] ?? a.platform}</Badge>
                   <button
                     onClick={() => del(a.id)}
                     className="text-stone-300 transition hover:text-rose-500"

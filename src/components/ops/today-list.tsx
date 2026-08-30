@@ -35,19 +35,27 @@ const COMPLIANCE = [
   "无引导站外私下交易",
 ];
 
-/** 账号推荐：按内容角色/平台给出建议账号 */
-function recommendAccounts(role: string, platform: string): string[] {
-  const map: Record<string, string[]> = {
-    director: ["院长号"],
-    consultant: ["顾问号"],
-    case_study: ["案例号"],
-    knowledge: ["科普号"],
-    official: ["官方号"],
-    viral: ["引流号"],
+/** 按内容类型推荐发布账号（deterministic，按选题类型/关键词）；平台侧同步 */
+type AccountRec = { account: string; reason: string };
+function recommendAccounts(c: { title: string; body?: string; role: string; platform: string }): AccountRec[] {
+  const p = c.platform === "douyin" ? "抖音" : c.platform === "tiktok" ? "TikTok" : c.platform === "instagram" ? "Instagram" : c.platform === "youtube" ? "YouTube" : "小红书";
+  const text = `${c.title} ${c.body ?? ""}`.toLowerCase();
+  const roleMap: Record<string, string> = {
+    director: `${p}·院长号`,
+    consultant: `${p}·顾问号`,
+    official: `${p}·官方号`,
+    case_study: `${p}·案例号`,
+    knowledge: `${p}·科普号`,
+    viral: `${p}·引流号`,
   };
-  const base = map[role] ?? [];
-  const p = platform === "douyin" ? "抖音" : "小红书";
-  return base.map((b) => `${p}·${b}`);
+  // 类型判断：案例/对比 → 案例号；科普/干货/答疑 → 科普号；费用/流程/价格 → 顾问号；品牌/环境 → 官方号；热点/盘点 → 引流
+  if (/案例|对比|前后|180天|恢复|日记|记录/.test(text)) return [{ account: roleMap["case_study"] ?? `${p}·案例号`, reason: "案例/恢复记录，案例号最合适" }];
+  if (/费用|价格|多少钱|答疑|流程|怎么选|区别/.test(text)) return [{ account: roleMap["consultant"] ?? `${p}·顾问号`, reason: "费用/答疑类，顾问号承接咨询" }];
+  if (/科普|干货|是不是|误区|自测|常识/.test(text)) return [{ account: roleMap["knowledge"] ?? `${p}·科普号`, reason: "科普/干货，科普号涨粉" }];
+  if (/品牌|环境|体验|服务|探店/.test(text)) return [{ account: roleMap["official"] ?? `${p}·官方号`, reason: "品牌/环境，官方号立信任" }];
+  if (/热点|盘点|避坑|趋势|排行/.test(text)) return [{ account: `${p}·引流号`, reason: "热点/盘点，引流号抓流量" }];
+  // 兜底：按 role 角色映射
+  return [{ account: roleMap[c.role] ?? `${p}·院长号`, reason: `按角色 ${c.role} 推荐` }];
 }
 
 export default function TodayList() {
@@ -128,8 +136,21 @@ export default function TodayList() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
         <Badge className="bg-rose-100 text-rose-600">待发 {pending.length}</Badge>
+        <Badge className="bg-emerald-100 text-emerald-600">已发布 {done.length}</Badge>
+        <Badge className={done.some((c) => !c.data_filled) ? "bg-amber-100 text-amber-600" : "bg-stone-100 text-stone-400"}>
+          待回填 {done.filter((c) => !c.data_filled).length}
+        </Badge>
+        {done.length + pending.length > 0 && (
+          <div className="h-2 w-40 overflow-hidden rounded-full bg-stone-100">
+            <div
+              className="h-full rounded-full bg-emerald-400 transition-all"
+              style={{ width: `${Math.round((done.length / (done.length + pending.length)) * 100)}%` }}
+            />
+          </div>
+        )}
         <p className="text-xs text-stone-400">
-          确认后点「复制文案」去平台手动粘贴发布，再点「标记已发布」，回来可回填数据。
+          发布进度 {Math.round((done.length / (done.length + pending.length || 1)) * 100)}% ·
+          复制文案→平台发布→标记已发布→回填数据
         </p>
       </div>
 
@@ -151,10 +172,10 @@ export default function TodayList() {
                 </button>
               )}
 
-              {/* 账号推荐 */}
+              {/* 账号类型推荐 */}
               <div className="flex flex-wrap gap-1">
-                {recommendAccounts(c.role, c.platform).map((a) => (
-                  <span key={a} className="rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] text-indigo-500">📌 {a}</span>
+                {recommendAccounts(c).map((r) => (
+                  <span key={r.account} title={r.reason} className="rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] text-indigo-500">📌 {r.account}</span>
                 ))}
               </div>
 

@@ -16,7 +16,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { SURGERY_TYPE_OPTIONS } from "@/lib/constants";
+import { SURGERY_TYPE_OPTIONS, PLATFORMS, NORWOOD_OPTIONS } from "@/lib/constants";
 
 interface Variant {
   role: string;
@@ -41,7 +41,9 @@ export function AiWorkshop() {
   const searchParams = useSearchParams();
   const [patientId, setPatientId] = useState("");
   const [surgery, setSurgery] = useState("FUE");
+  const [surgeryCustom, setSurgeryCustom] = useState("");
   const [norwood, setNorwood] = useState("III");
+  const [norwoodCustom, setNorwoodCustom] = useState("");
   const [days, setDays] = useState("180");
   const [highlight, setHighlight] = useState("");
   const [platform, setPlatform] = useState("xiaohongshu");
@@ -52,6 +54,7 @@ export function AiWorkshop() {
   const [loading, setLoading] = useState(false);
   const [variants, setVariants] = useState<Variant[]>([]);
   const [modelPowered, setModelPowered] = useState(true);
+  const [mediaPlan, setMediaPlan] = useState<{ mediaType: string; shouldUseReal: boolean; desc: string; storyboard: { no: number; duration: string; shot: string; scene: string; voiceover: string }[] | null } | null>(null);
 
   // 从选题池带入：把选题标题/描述预填为关键亮点
   useEffect(() => {
@@ -88,8 +91,8 @@ export function AiWorkshop() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           patientId,
-          surgery,
-          norwood,
+          surgery: surgery === "__custom__" ? surgeryCustom : surgery,
+          norwood: norwood === "__custom__" ? norwoodCustom : norwood,
           days,
           highlight,
           platform,
@@ -101,6 +104,15 @@ export function AiWorkshop() {
       setModelPowered(d.modelPowered !== false);
       setVariants(d.variants ?? []);
       if (d.modelPowered === false) toast.warning("模型未配置，使用模板文案");
+      // 同步获取「该内容适合配什么图/视频」
+      try {
+        const mp = await fetch("/api/ai/media-plan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: { title: highlight || `${surgery ?? ""}植发`, body: highlight, platform, role: selectedRoles[0] ?? "" } }),
+        });
+        if (mp.ok) setMediaPlan(await mp.json());
+      } catch { /* 静默 */ }
     } catch (e) {
       toast.error("生成失败");
     } finally {
@@ -153,12 +165,29 @@ export function AiWorkshop() {
                 {SURGERY_TYPE_OPTIONS.map((s) => (
                   <SelectItem key={s} value={s}>{s}</SelectItem>
                 ))}
+                <SelectItem value="__custom__">自定义…</SelectItem>
               </SelectContent>
             </Select>
+            {surgery === "__custom__" && (
+              <Input className="mt-1" value={surgeryCustom} onChange={(e) => setSurgeryCustom(e.target.value)} placeholder="填写手术方式" />
+            )}
           </div>
           <div className="space-y-1">
             <Label>脱发等级 (Norwood)</Label>
-            <Input value={norwood} onChange={(e) => setNorwood(e.target.value)} placeholder="III" />
+            <Select value={norwood} onValueChange={(v) => setNorwood(v ?? "III")}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {NORWOOD_OPTIONS.map((n) => (
+                  <SelectItem key={n} value={n}>{n}</SelectItem>
+                ))}
+                <SelectItem value="__custom__">自定义…</SelectItem>
+              </SelectContent>
+            </Select>
+            {norwood === "__custom__" && (
+              <Input className="mt-1" value={norwoodCustom} onChange={(e) => setNorwoodCustom(e.target.value)} placeholder="填写脱发等级" />
+            )}
           </div>
           <div className="space-y-1">
             <Label>恢复天数</Label>
@@ -171,8 +200,9 @@ export function AiWorkshop() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="xiaohongshu">小红书</SelectItem>
-                <SelectItem value="douyin">抖音</SelectItem>
+                {PLATFORMS.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -242,7 +272,34 @@ export function AiWorkshop() {
       </Card>
 
       {variants.length > 0 && (
-        <div className="grid gap-4 md:grid-cols-2">
+        <>
+          {mediaPlan && (
+            <Card className="mb-4 border-rose-200 bg-rose-50/40">
+              <CardContent className="space-y-2 pt-4">
+                <div className="flex items-center gap-2">
+                  <span className={`pill ${mediaPlan.mediaType === "video" ? "bg-violet-100 text-violet-600" : "bg-rose-100 text-rose-600"}`}>
+                    {mediaPlan.mediaType === "video" ? "🎬 建议视频" : "🖼 建议配图"}
+                  </span>
+                  <span className={`pill ${mediaPlan.shouldUseReal ? "bg-emerald-100 text-emerald-600" : "bg-sky-100 text-sky-600"}`}>
+                    {mediaPlan.shouldUseReal ? "推荐：真实拍摄" : "推荐：AI 生成"}
+                  </span>
+                </div>
+                <p className="text-sm text-stone-700">{mediaPlan.desc}</p>
+                {mediaPlan.storyboard && mediaPlan.storyboard.length > 0 && (
+                  <div className="space-y-1">
+                    {mediaPlan.storyboard.map((s) => (
+                      <div key={s.no} className="rounded-lg bg-white p-2 text-xs text-stone-600">
+                        <span className="font-medium text-stone-800">镜头{s.no}（{s.duration}）</span> · {s.shot}
+                        <div className="text-stone-500">{s.scene}{s.voiceover ? `｜旁白：${s.voiceover}` : ""}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <p className="text-[11px] text-stone-400">如需拍摄脚本，去「选题池 → 生成视频脚本」可产出分镜直接拍摄。</p>
+              </CardContent>
+            </Card>
+          )}
+          <div className="grid gap-4 md:grid-cols-2">
           {variants.map((v, i) => (
             <Card key={i}>
               <CardHeader>
@@ -283,7 +340,8 @@ export function AiWorkshop() {
               </CardContent>
             </Card>
           ))}
-        </div>
+          </div>
+        </>
       )}
     </div>
   );

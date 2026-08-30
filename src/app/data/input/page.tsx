@@ -14,17 +14,13 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+import { PLATFORM_NAME } from "@/lib/constants";
 
 interface Account {
   id: number;
   platform: string;
   handle: string;
 }
-
-const PLATFORM_NAMES: Record<string, string> = {
-  xiaohongshu: "小红书",
-  douyin: "抖音",
-};
 
 export default function DataInputPage() {
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -90,7 +86,7 @@ export default function DataInputPage() {
                 <SelectContent>
                   {accounts.map((a) => (
                     <SelectItem key={a.id} value={String(a.id)}>
-                      {PLATFORM_NAMES[a.platform] ?? a.platform} · {a.handle}
+                      {PLATFORM_NAME[a.platform] ?? a.platform} · {a.handle}
                     </SelectItem>
                   ))}
                 </SelectContent>

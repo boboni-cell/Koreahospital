@@ -14,6 +14,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+import { PLATFORM_NAME } from "@/lib/constants";
 
 interface Sched {
   id: number;
@@ -21,8 +22,6 @@ interface Sched {
   slot_time: string;
 }
 interface Account { id: number; platform: string; handle: string; }
-
-const PLATFORM_NAMES: Record<string, string> = { xiaohongshu: "小红书", douyin: "抖音" };
 
 export default function SchedulePage() {
   const [items, setItems] = useState<Sched[]>([]);
@@ -70,7 +69,7 @@ export default function SchedulePage() {
               <SelectContent>
                 {accounts.map((a) => (
                   <SelectItem key={a.id} value={String(a.id)}>
-                    {PLATFORM_NAMES[a.platform] ?? a.platform} · {a.handle}
+                    {PLATFORM_NAME[a.platform] ?? a.platform} · {a.handle}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -94,7 +93,7 @@ export default function SchedulePage() {
               <CardContent className="flex items-center justify-between pt-4">
                 <span className="text-sm font-medium text-zinc-800">{it.slot_time?.replace("T", " ")}</span>
                 <span className="text-xs text-zinc-400">
-                  {acc ? `${PLATFORM_NAMES[acc.platform] ?? acc.platform} · ${acc.handle}` : "—"}
+                  {acc ? `${PLATFORM_NAME[acc.platform] ?? acc.platform} · ${acc.handle}` : "—"}
                 </span>
               </CardContent>
             </Card>

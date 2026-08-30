@@ -4,7 +4,7 @@ export interface CopyInput {
   norwood?: string;
   days?: string;
   highlight?: string;
-  platform?: "xiaohongshu" | "douyin";
+  platform?: string; // xiaohongshu | douyin | tiktok | instagram | youtube
   roles?: string[]; // 用户选中的角色；空=全部
   customRoles?: Record<string, string>; // 自定义角色 key -> 人设brief
 }
@@ -58,7 +58,7 @@ export function buildCopyUser(p: CopyInput, roles: string[] = ROLE_ORDER): strin
     `脱发等级：Norwood ${p.norwood || "III"}`,
     `恢复天数：${p.days || "180"}`,
     `关键亮点：${p.highlight || "发际线自然、密度均匀"}`,
-    `目标平台：${p.platform === "douyin" ? "抖音（短视频口播文案）" : "小红书（图文笔记文案）"}`,
+    `目标平台：${p.platform === "douyin" ? "抖音（短视频口播文案）" : p.platform === "tiktok" ? "TikTok（短视频）" : p.platform === "instagram" ? "Instagram（图文+Reels）" : p.platform === "youtube" ? "YouTube（中视频/Shorts）" : "小红书（图文笔记文案）"}`,
     "",
     `请生成所选角色共 ${roles.length} 篇文案。输出 JSON 数组：`,
     roleList,

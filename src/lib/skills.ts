@@ -108,19 +108,27 @@ export function catalog(all: SkillEntry[]) {
  */
 export async function selectSkillIds(
   task: string,
-  input: Record<string, unknown> = {}
+  input: Record<string, unknown> = {},
+  preferIds: string[] = []
 ): Promise<{ ids: string[]; modelPowered: boolean }> {
   const all = await listSkills();
   const always = all.filter((s) => s.tier === "always");
   const dynamic = all.filter((s) => s.tier === "dynamic");
 
-  const alwaysIds = always.map((s) => s.id);
+  // 平台专属 skill（你添加的）优先：只要存在就必带
+  const prefer = preferIds
+    .map((id) => all.find((s) => s.id === id || s.slug === id))
+    .filter((s): s is SkillEntry => !!s);
+
+  const alwaysIds = Array.from(
+    new Set([...always.map((s) => s.id), ...prefer.map((s) => s.id)])
+  );
   if (dynamic.length === 0) return { ids: alwaysIds, modelPowered: true };
 
   const cfg = (await getActiveTextConfig()) ?? (await readAiConfig());
   if (!cfg.enabled) {
     // 未接模型：全部 dynamic 直接返回（保守，宁多勿漏）
-    return { ids: [...alwaysIds, ...dynamic.map((s) => s.id)], modelPowered: false };
+    return { ids: Array.from(new Set([...alwaysIds, ...dynamic.map((s) => s.id)])), modelPowered: false };
   }
 
   try {
@@ -148,7 +156,7 @@ export async function selectSkillIds(
     return { ids: Array.from(new Set([...alwaysIds, ...chosen])), modelPowered: true };
   } catch (e) {
     console.error("skill 动态选择失败，退化为全量 dynamic", e);
-    return { ids: [...alwaysIds, ...dynamic.map((s) => s.id)], modelPowered: false };
+    return { ids: Array.from(new Set([...alwaysIds, ...dynamic.map((s) => s.id)])), modelPowered: false };
   }
 }
 

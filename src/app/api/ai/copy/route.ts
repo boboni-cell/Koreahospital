@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { readAiConfig } from "@/lib/ai-config";
 import { getActiveTextConfig } from "@/lib/models";
 import { chatComplete, parseJsonBlock } from "@/lib/ai-client";
+import { PLATFORM_SKILL } from "@/lib/constants";
 import { selectSkillIds, resolveContents } from "@/lib/skills";
 import {
   buildCopySystem,
@@ -61,13 +62,15 @@ export async function POST(req: NextRequest) {
   // 用户可自选角色（多选）；未选则默认全部
   const roles = input.roles && input.roles.length ? input.roles : ROLE_ORDER;
 
-  // Q2=a：生成前用 agent 混合选择本次需要的 skill（高频静态 + 模型动态挑），只注入命中的内容
+  // Q2=a：生成前用 agent 混合选择本次需要的 skill（高频静态 + 平台skill优先 + 模型动态挑）
   let skillContent = "";
   try {
-    const { ids } = await selectSkillIds("生成文案", {
-      ...(input as Record<string, unknown>),
-      roles,
-    });
+    const prefer = input.platform ? PLATFORM_SKILL[input.platform] ?? [] : [];
+    const { ids } = await selectSkillIds(
+      "生成文案",
+      { ...(input as Record<string, unknown>), roles, customRoles: input.customRoles },
+      Array.isArray(prefer) ? prefer : [prefer]
+    );
     skillContent = await resolveContents(ids);
   } catch (e) {
     console.warn("[agent] skill 注入跳过", e);
