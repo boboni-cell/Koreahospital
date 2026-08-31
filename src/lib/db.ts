@@ -691,4 +691,19 @@ CREATE TABLE IF NOT EXISTS asset_usage (
 CREATE INDEX IF NOT EXISTS idx_asset_usage_asset ON asset_usage(asset_id);
 `);
 
+
+// ---- Task 13：AI 审核与人工终审（增量、幂等） ----
+db.exec(`
+CREATE TABLE IF NOT EXISTS reviews (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  variant_id INTEGER NOT NULL,
+  reviewer_type TEXT NOT NULL,
+  result TEXT,
+  reasons TEXT,
+  evidence TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_reviews_variant ON reviews(variant_id);
+`);
+
 export default db;

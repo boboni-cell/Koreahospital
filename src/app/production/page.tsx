@@ -66,6 +66,17 @@ export default function ProductionPage() {
       .catch(() => {});
   }
 
+  const STATUS_LABEL: Record<string, string> = {
+    draft: "草稿", ai_review: "AI 审核", human_review: "待人工终审",
+    approved: "已批准", rejected: "已退回", blocked: "高风险/禁止",
+  };
+
+  function review(id: number, result: string, type: "ai" | "human") {
+    fetch("/api/reviews", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ variant_id: id, reviewer_type: type, result }) })
+      .then(() => { toast.success("审核已记录"); selectBrief(selectedId!); })
+      .catch(() => toast.error("审核失败"));
+  }
+
   function produce(id: number) {
     fetch("/api/produce", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ variant_id: id }) })
       .then(() => { toast.success("已生成，进入 AI 审核"); selectBrief(selectedId!); })
@@ -173,10 +184,13 @@ export default function ProductionPage() {
                       <div className="flex items-center gap-2">
                         <Badge className="bg-white text-stone-600">{PLATFORM_NAME[v.platform ?? ""] ?? v.platform ?? "通用"}</Badge>
                         <span className="text-[11px] text-stone-400">{v.format} · {v.account_name ?? "未绑账号"}</span>
-                        <Badge className={v.workflow_status === "ai_review" ? "bg-indigo-50 text-indigo-600" : "bg-stone-100 text-stone-500"}>{v.workflow_status === "ai_review" ? "AI 审核" : v.workflow_status}</Badge>
+                        <Badge className={v.workflow_status === "approved" ? "bg-emerald-50 text-emerald-600" : v.workflow_status === "blocked" ? "bg-rose-50 text-rose-600" : v.workflow_status === "ai_review" ? "bg-indigo-50 text-indigo-600" : "bg-stone-100 text-stone-500"}>{STATUS_LABEL[v.workflow_status] ?? v.workflow_status}</Badge>
                       </div>
-                      <div className="flex items-center gap-1">
+                      <div className="flex flex-wrap items-center gap-1">
                         <Button size="sm" variant="outline" onClick={() => produce(v.id)}><Sparkles className="h-3.5 w-3.5" /> AI 生成</Button>
+                        <Button size="sm" variant="outline" onClick={() => review(v.id, "", "ai")}>AI 审核</Button>
+                        <Button size="sm" variant="ghost" onClick={() => review(v.id, "approve", "human")} title="人工批准">通过</Button>
+                        <Button size="sm" variant="ghost" onClick={() => review(v.id, "reject", "human")} title="人工退回">退回</Button>
                         <Button size="sm" variant="ghost" onClick={() => (editVariantId === v.id ? saveVariant(v.id, v.content ?? "") : setEditVariantId(v.id))}>
                           {editVariantId === v.id ? <><Save className="h-3.5 w-3.5" /> 保存</> : "编辑"}
                         </Button>

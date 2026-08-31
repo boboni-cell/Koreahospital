@@ -33,9 +33,6 @@ function xhsBlueprint(brief: any, account: any, skillsText: string, ctx: string)
     "",
     "---",
     "⚠️ 合规：不使用绝对化用语；患者素材需授权；AI 不直接发布。",
-    "",
-    "（Skill 参考：）",
-    skillsText.slice(0, 500),
   ].join("\n");
   return body;
 }
@@ -72,9 +69,6 @@ function douyinBlueprint(brief: any, account: any, skillsText: string, ctx: stri
     "",
     "---",
     "⚠️ 合规：不承诺效果、不自动发布；医疗事实需审核。",
-    "",
-    "（Skill 参考：）",
-    skillsText.slice(0, 500),
   ];
   return lines.join("\n");
 }
