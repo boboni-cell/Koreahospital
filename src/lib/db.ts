@@ -626,4 +626,41 @@ if (contractCount === 0) {
   for (const c of contracts) ins.run(c.role, c.name, c.inputs, c.outputs, c.allowed, c.forbidden, c.handoff, c.fail);
 }
 
+
+// ---- Task 09：母版简报与平台版本（增量、幂等） ----
+db.exec(`
+CREATE TABLE IF NOT EXISTS content_briefs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  topic_id INTEGER,
+  project_id INTEGER,
+  title TEXT,
+  audience TEXT,
+  objective TEXT,
+  facts TEXT,
+  evidence TEXT,
+  compliance_notes TEXT,
+  status TEXT DEFAULT 'active',
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE IF NOT EXISTS content_variants (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  brief_id INTEGER NOT NULL,
+  platform TEXT,
+  account_id INTEGER,
+  format TEXT,
+  content TEXT,
+  workflow_status TEXT DEFAULT 'draft',
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE IF NOT EXISTS variant_versions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  variant_id INTEGER NOT NULL,
+  version INTEGER DEFAULT 1,
+  content TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_content_briefs_project ON content_briefs(project_id);
+CREATE INDEX IF NOT EXISTS idx_content_variants_brief ON content_variants(brief_id);
+`);
+
 export default db;
