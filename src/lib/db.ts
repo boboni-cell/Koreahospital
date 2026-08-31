@@ -132,10 +132,20 @@ CREATE TABLE IF NOT EXISTS notes (
   summary TEXT,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
-`);
 
-// 幂等约束：同一账号同一天一条（支持 CSV 重复上传不重复累计）
-db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_metrics_acc_date ON metrics(account_id, date)");
+-- 上传记录：每次批量导入的元数据
+CREATE TABLE IF NOT EXISTS metrics_uploads (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  rows_count INTEGER DEFAULT 0,
+  inserted INTEGER DEFAULT 0,
+  skipped INTEGER DEFAULT 0,
+  remark TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 幂等约束：同一账号同一天一条
+CREATE UNIQUE INDEX IF NOT EXISTS idx_metrics_acc_date ON metrics(account_id, date);
+`);
 
 // 首次启动种子（用文件锁避免构建期多 worker 并发重复播种）
 const SEED_LOCK = path.join(dataDir, ".seed.lock");

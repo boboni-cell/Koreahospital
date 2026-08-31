@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { PLATFORM_NAME } from "@/lib/constants";
 import { parseCsv, toCsv } from "@/lib/csv";
+import { DataUploadRecords } from "@/components/data-upload-records";
 
 interface Account {
   id: number;
@@ -305,6 +306,11 @@ export default function DataInputPage() {
             )}
           </CardContent>
         </Card>
+      </div>
+
+      {/* 已上传记录 */}
+      <div className="mt-6">
+        <DataUploadRecords />
       </div>
     </PageFrame>
   );

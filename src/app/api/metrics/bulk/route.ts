@@ -61,5 +61,10 @@ export async function POST(req: NextRequest) {
   });
   tx(rows);
 
+  // 记录本次上传事件
+  db.prepare(
+    "INSERT INTO metrics_uploads (rows_count, inserted, skipped) VALUES (?, ?, ?)"
+  ).run(rows.length, inserted, skipped);
+
   return NextResponse.json({ ok: true, inserted, skipped });
 }
