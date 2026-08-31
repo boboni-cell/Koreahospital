@@ -238,7 +238,7 @@ export default function WorkbenchPage() {
               <h3 className="text-sm font-semibold text-stone-800">六角色 Agent 协作</h3>
               <p className="text-xs text-stone-400">一个项目上下文上的岗位分工</p>
             </div>
-            <Badge className="bg-indigo-50 text-indigo-600 font-normal">6 角色</Badge>
+            <Link href="/agent-contracts"><Badge className="bg-indigo-50 text-indigo-600 font-normal transition hover:bg-indigo-100">6 角色合同 →</Badge></Link>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {AGENTS.map((ag) => {

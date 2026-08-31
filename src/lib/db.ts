@@ -594,4 +594,36 @@ CREATE TABLE IF NOT EXISTS knowledge_items (
 CREATE INDEX IF NOT EXISTS idx_knowledge_project_kind ON knowledge_items(project_id, kind);
 `);
 
+
+// ---- Task 08：六角色 Agent 合同（增量、幂等） ----
+db.exec(`
+CREATE TABLE IF NOT EXISTS agent_contracts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  role TEXT UNIQUE NOT NULL,
+  name TEXT,
+  inputs TEXT,
+  outputs TEXT,
+  allowed_actions TEXT,
+  forbidden_actions TEXT,
+  handoff_fields TEXT,
+  fail_condition TEXT,
+  status TEXT DEFAULT 'active',
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+`);
+
+const contractCount = (db.prepare("SELECT COUNT(*) AS n FROM agent_contracts").get() as { n: number }).n;
+if (contractCount === 0) {
+  const contracts = [
+    { role: "researcher", name: "研究员", inputs: "项目简报、平台、公开信号、竞品资料", outputs: "带来源的研究包、待确认信号", allowed: "提取/汇总公开信号、标注不确定性", forbidden: "把推测标记成平台事实", handoff: "研究包、信号ID、证据、时间", fail: "无项目简报或信号来源时停止，说明缺哪一项" },
+    { role: "strategist", name: "策略师", inputs: "项目简报、研究包、历史复盘", outputs: "账号定位、内容支柱、选题优先级、母版简报", allowed: "基于证据排优先级、配置内容支柱", forbidden: "绕过证据或合规约束", handoff: "母版简报、支柱ID、优先级、证据", fail: "项目简报或研究包缺失时停止" },
+    { role: "writer", name: "文案", inputs: "母版简报、平台规则、账号语气", outputs: "小红书文案或抖音脚本、标题、CTA", allowed: "在合规内生成文案/标题/CTA", forbidden: "自行发布、虚构医疗事实", handoff: "文案版本、标题、CTA、语气", fail: "母版简报或账号语气未定则停止" },
+    { role: "designer", name: "设计", inputs: "内容版本、素材授权、平台规格", outputs: "封面方案、配图计划、分镜、素材清单", allowed: "设计封面/分镜、引用已授权素材", forbidden: "使用未授权患者素材", handoff: "设计稿、素材清单、授权标记", fail: "素材授权不足时停止并列出缺失" },
+    { role: "publisher", name: "发布", inputs: "已批准版本、账号环境、排期", outputs: "可复制发布包、发布前检查", allowed: "生成发布包、前置检查", forbidden: "登录、自动发布、自动互动", handoff: "发布包、账号环境、排期、检查项", fail: "版本未批准或账号环境不可用时停止" },
+    { role: "analyst", name: "分析师", inputs: "发布快照、24h/7d/30d 数据", outputs: "归因报告、待确认回写建议", allowed: "分析数据、生成待确认建议", forbidden: "直接修改正式知识库", handoff: "归因报告、回写建议、数据不足标记", fail: "数据不足时不下结论并说明" },
+  ];
+  const ins = db.prepare("INSERT INTO agent_contracts (role, name, inputs, outputs, allowed_actions, forbidden_actions, handoff_fields, fail_condition) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+  for (const c of contracts) ins.run(c.role, c.name, c.inputs, c.outputs, c.allowed, c.forbidden, c.handoff, c.fail);
+}
+
 export default db;

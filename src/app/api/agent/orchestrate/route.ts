@@ -5,6 +5,7 @@ import { chatComplete, parseJsonBlock } from "@/lib/ai-client";
 import { catalog, listSkills, resolveContents } from "@/lib/skills";
 import { getAgentConfig } from "@/lib/agent";
 import { getProjectContext } from "@/lib/project-context";
+import { requireAgentPreconditions } from "@/lib/agent-contracts";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +35,10 @@ export async function POST(req: NextRequest) {
 
   try {
     const projectCtx = getProjectContext();
+    const pre = requireAgentPreconditions("strategist");
+    if (!pre.ok) {
+      return NextResponse.json({ ids: [], content: "", catalog: cat, modelPowered: false, plan: null, stopped: true, reason: pre.reason });
+    }
     const user = `任务：${task}\n附加信息：${JSON.stringify(input)}\n\n${projectCtx}\n\n可用 skill 列表：\n${cat.map((s) => `- [${s.id}] ${s.name}：${s.description}`).join("\n")}\n\n请按你的 system prompt 输出决策。`;
     const text = await chatComplete(
       [{ role: "system", content: systemPrompt }, { role: "user", content: user }],
