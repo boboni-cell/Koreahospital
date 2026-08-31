@@ -25,6 +25,11 @@ export interface Asset {
   file_size?: number | null;
   created_at?: string;
   tags?: string[];
+  sensitivity?: string;
+  authorization_scope?: string;
+  expires_at?: string;
+  allowed_platforms?: string;
+  ai_editable?: number;
 }
 
 function Thumb({ asset, className }: { asset: Asset; className?: string }) {
@@ -121,6 +126,16 @@ export function AssetGrid({ assets, onDeleted }: { assets: Asset[]; onDeleted?: 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openIndex, flatAssets.length]);
 
+  async function updateGate(a: Asset, patch: Partial<Asset>) {
+    try {
+      await fetch("/api/assets", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: a.id, ...patch }) });
+      toast.success("已更新素材分级/授权");
+      onDeleted?.();
+    } catch {
+      toast.error("更新失败");
+    }
+  }
+
   async function remove(asset: Asset) {
     if (!confirm(`确认删除素材「${asset.filename}」？\n本地文件（及已接入的 R2）将一并删除，不可恢复。`)) return;
     try {
@@ -160,7 +175,8 @@ export function AssetGrid({ assets, onDeleted }: { assets: Asset[]; onDeleted?: 
                         </div>
                         <div className="p-3">
                           <div className="truncate text-sm font-medium text-stone-800">{a.filename}</div>
-                          <div className="mt-1 flex items-center gap-2">
+                          <div className="mt-1 flex flex-wrap items-center gap-2">
+                            <Badge className={a.sensitivity === "sensitive" ? "bg-rose-50 text-rose-600" : "bg-stone-100 text-stone-500"}>{a.sensitivity === "sensitive" ? "敏感" : "普通"}</Badge>
                             <Badge>{a.license}</Badge>
                             <span className="text-xs text-stone-400">用 {a.usage_count}</span>
                           </div>
@@ -227,6 +243,23 @@ export function AssetGrid({ assets, onDeleted }: { assets: Asset[]; onDeleted?: 
                   <Field label="患者编号" value={current.patient_code} />
                   <Field label="授权" value={current.license} />
                   <Field label="大小" value={current.file_size ? `${(current.file_size / 1024).toFixed(0)} KB` : "—"} />
+                </div>
+
+                <div className={"rounded-xl px-3 py-2 text-xs " + (current.sensitivity === "sensitive" && current.license !== "authorized" ? "bg-rose-50 text-rose-600" : "bg-stone-50 text-stone-600")}>
+                  {current.sensitivity === "sensitive" && current.license !== "authorized"
+                    ? "⚠️ 敏感医疗素材且未授权，禁止进入待发布；请补授权或改用普通素材。"
+                    : current.sensitivity === "sensitive"
+                    ? "已授权敏感素材：可用于授权平台的发布。"
+                    : "普通素材：可直接用于发布。"}
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" variant="outline" onClick={() => updateGate(current, { sensitivity: current.sensitivity === "sensitive" ? "normal" : "sensitive" })}>
+                    {current.sensitivity === "sensitive" ? "标记为普通" : "标记为敏感"}
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => updateGate(current, { license: current.license === "authorized" ? "pending" : "authorized" })}>
+                    授权状态：{current.license}
+                  </Button>
                 </div>
 
                 <div className="flex gap-2">

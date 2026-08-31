@@ -663,4 +663,32 @@ CREATE INDEX IF NOT EXISTS idx_content_briefs_project ON content_briefs(project_
 CREATE INDEX IF NOT EXISTS idx_content_variants_brief ON content_variants(brief_id);
 `);
 
+
+// ---- Task 12：素材分级与授权门禁（增量、幂等） ----
+function ensureAssetColumn(name: string, ddl: string) {
+  try {
+    db.prepare(`SELECT ${name} FROM assets LIMIT 1`).get();
+  } catch {
+    db.exec(`ALTER TABLE assets ADD COLUMN ${ddl}`);
+  }
+}
+ensureAssetColumn("sensitivity", "sensitivity TEXT DEFAULT 'normal'");
+ensureAssetColumn("ai_suggested", "ai_suggested TEXT");
+ensureAssetColumn("authorization_scope", "authorization_scope TEXT");
+ensureAssetColumn("expires_at", "expires_at TEXT");
+ensureAssetColumn("allowed_platforms", "allowed_platforms TEXT");
+ensureAssetColumn("ai_editable", "ai_editable INTEGER DEFAULT 1");
+db.exec(`UPDATE assets SET sensitivity='sensitive' WHERE sensitivity IS NULL AND patient_code IS NOT NULL AND patient_code != ''`);
+db.exec(`UPDATE assets SET sensitivity='normal' WHERE sensitivity IS NULL`);
+
+db.exec(`
+CREATE TABLE IF NOT EXISTS asset_usage (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  asset_id INTEGER NOT NULL,
+  content_id INTEGER,
+  used_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_asset_usage_asset ON asset_usage(asset_id);
+`);
+
 export default db;
