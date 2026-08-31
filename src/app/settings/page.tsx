@@ -6,6 +6,7 @@ import { OperatorsPanel } from "@/components/settings/operators-panel";
 import { SkillsPanel } from "@/components/settings/skills-panel";
 import { SkillAuditPanel } from "@/components/settings/skill-audit-panel";
 import { AccessPanel } from "@/components/settings/access-panel";
+import { PlatformPanel } from "@/components/settings/platform-panel";
 
 export default function SettingsPage() {
   return (
@@ -21,6 +22,7 @@ export default function SettingsPage() {
         <SkillsPanel />
         <SkillAuditPanel />
         <AccessPanel />
+        <PlatformPanel />
         <ModelConfigForm />
         <R2ConfigForm />
         <AgentConfigForm />
