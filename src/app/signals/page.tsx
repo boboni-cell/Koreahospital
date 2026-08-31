@@ -34,6 +34,8 @@ export default function SignalsPage() {
   const [title, setTitle] = useState("");
   const [sourceUrl, setSourceUrl] = useState("");
   const [evidence, setEvidence] = useState("");
+  const [captureUrl, setCaptureUrl] = useState("");
+  const [capturing, setCapturing] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const load = () => {
@@ -49,6 +51,19 @@ export default function SignalsPage() {
       body: JSON.stringify({ platform, title, source_url: sourceUrl, evidence }),
     }).then(() => { setTitle(""); setSourceUrl(""); setEvidence(""); toast.success("已新增信号"); load(); })
       .catch(() => toast.error("新增失败"));
+  }
+
+  function capture() {
+    if (!captureUrl.trim()) return toast.error("请填写公开 URL");
+    setCapturing(true);
+    fetch("/api/signals/capture", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: captureUrl, platform }),
+    }).then((r) => r.json())
+      .then(() => { toast.success("已采集并进入待确认"); setCaptureUrl(""); load(); })
+      .catch(() => toast.error("采集失败"))
+      .finally(() => setCapturing(false));
   }
 
   function setStatus(id: number, status: string) {
@@ -109,6 +124,17 @@ export default function SignalsPage() {
           <Input className="flex-1 min-w-[160px]" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="信号标题" />
           <Input className="w-40" value={evidence} onChange={(e) => setEvidence(e.target.value)} placeholder="证据摘要" />
           <Button onClick={add}><Plus className="h-4 w-4" /> 新增信号</Button>
+        </CardContent>
+      </Card>
+
+      <Card className="mb-4">
+        <CardContent className="flex flex-wrap items-end gap-2 pt-4">
+          <Select value={platform} onValueChange={(v) => setPlatform(v ?? "xiaohongshu")}>
+            <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+            <SelectContent>{PLATFORMS.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
+          </Select>
+          <Input className="flex-1 min-w-[260px]" value={captureUrl} onChange={(e) => setCaptureUrl(e.target.value)} placeholder="公开页面 URL（人工触发只读采集）" />
+          <Button onClick={capture} disabled={capturing}>{capturing ? "采集中…" : "采集当前公开页"}</Button>
         </CardContent>
       </Card>
 
