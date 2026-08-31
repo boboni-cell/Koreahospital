@@ -29,6 +29,7 @@ export default function ReviewPage() {
   const [publishes, setPublishes] = useState<Publish[]>([]);
   const [drafts, setDrafts] = useState<Record<string, Record<string, number>>>({});
   const [insufficient, setInsufficient] = useState<Record<string, number>>({});
+  const [analyses, setAnalyses] = useState<Record<number, any[]>>({});
 
   const load = () => fetch("/api/metric-snapshots").then((r) => r.json()).then((d) => {
     setPublishes(d ?? []);
@@ -47,6 +48,22 @@ export default function ReviewPage() {
 
   function set(k: string, field: string, v: string) {
     setDrafts((s) => ({ ...s, [k]: { ...(s[k] ?? {}), [field]: Number(v) || 0 } }));
+  }
+
+  function generateAnalysis(publishId: number) {
+    fetch("/api/analyses", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ publish_id: publishId }) })
+      .then((r) => r.json()).then((d) => { toast.success("归因分析已生成"); setAnalyses((s) => ({ ...s, [publishId]: d.analyses ?? [] })); })
+      .catch(() => toast.error("分析失败"));
+  }
+
+  function decide(proposalId: number, action: string) {
+    fetch("/api/writeback", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ proposal_id: proposalId, action }) })
+      .then((r) => r.json()).then(() => { toast.success(action === "confirm" ? "已确认并写回知识库" : "已拒绝，不改知识库"); load(); })
+      .catch(() => toast.error("操作失败"));
+  }
+
+  function loadAnalyses(publishId: number) {
+    fetch("/api/analyses?publish_id=" + publishId).then((r) => r.json()).then((d) => setAnalyses((s) => ({ ...s, [publishId]: d ?? [] }))).catch(() => {});
   }
 
   function save(publishId: number, window: string) {
@@ -107,6 +124,38 @@ export default function ReviewPage() {
                 );
               })}
             </div>
+            <div className="mb-4 flex items-center gap-2">
+              <Button size="sm" onClick={() => { generateAnalysis(p.id); }}>生成归因分析</Button>
+              <span className="text-[11px] text-[#89828d]">Analyst 出诊断/证据/回写建议；确认后才写回知识库</span>
+            </div>
+            {(analyses[p.id] ?? []).length > 0 && (
+              <div className="mb-4 space-y-3">
+                {analyses[p.id]?.map((a) => (
+                  <div key={a.id} className="rounded-[6px] border border-[#e4e0e6] p-3">
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="font-semibold text-[#01011b]">归因</span>
+                      <Badge className={a.insufficient_data ? "bg-amber-50 text-amber-700" : "bg-[#473982]/10 text-[#473982]"}>{a.insufficient_data ? "数据不足" : "置信度 " + (a.confidence ?? "高")}</Badge>
+                    </div>
+                    <p className="mt-1 text-sm text-[#43394c]">{a.diagnosis}</p>
+                    <p className="text-[11px] text-[#89828d]">证据：{a.evidence}</p>
+                    {(a.proposals ?? []).map((pr: any) => (
+                      <div key={pr.id} className="mt-2 flex items-start justify-between gap-2 rounded-[4px] bg-[#ecedf2]/50 px-2 py-1.5">
+                        <div>
+                          <p className="text-xs text-[#01011b]">{pr.change}</p>
+                          <p className="text-[10px] text-[#89828d]">{pr.target_library} · {pr.reason} · {pr.status}</p>
+                        </div>
+                        {pr.status === "pending" && (
+                          <div className="flex gap-1">
+                            <Button size="sm" className="h-6 text-[11px]" onClick={() => decide(pr.id, "confirm")}>确认</Button>
+                            <Button size="sm" variant="ghost" className="h-6 text-[11px]" onClick={() => decide(pr.id, "reject")}>拒绝</Button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       ))}

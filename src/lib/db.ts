@@ -743,4 +743,30 @@ CREATE TABLE IF NOT EXISTS publish_metric_snapshots (
 CREATE INDEX IF NOT EXISTS idx_publish_metric_pub ON publish_metric_snapshots(publish_id);
 `);
 
+
+// ---- Task 16：归因与人工确认回写（增量、幂等） ----
+db.exec(`
+CREATE TABLE IF NOT EXISTS analyses (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  publish_id INTEGER NOT NULL,
+  diagnosis TEXT,
+  confidence TEXT,
+  evidence TEXT,
+  insufficient_data INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE IF NOT EXISTS writeback_proposals (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  analysis_id INTEGER NOT NULL,
+  target_library TEXT,
+  change TEXT,
+  reason TEXT,
+  status TEXT DEFAULT 'pending',
+  confirmed_by INTEGER,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_analyses_publish ON analyses(publish_id);
+CREATE INDEX IF NOT EXISTS idx_writeback_status ON writeback_proposals(status);
+`);
+
 export default db;
