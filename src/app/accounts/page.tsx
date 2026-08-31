@@ -15,7 +15,13 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { PLATFORMS, PLATFORM_NAME } from "@/lib/constants";
+import {
+  PLATFORMS,
+  PLATFORM_NAME,
+  ACCOUNT_ENVIRONMENT_STATUS,
+  ACCOUNT_ENVIRONMENT_NAME,
+  ACCOUNT_POSITIONING_OPTIONS,
+} from "@/lib/constants";
 
 interface Account {
   id: number;
@@ -24,6 +30,23 @@ interface Account {
   role: string;
   followers: number;
   status: string;
+  project_id?: number;
+  positioning?: string | null;
+  operator_id?: number | null;
+  operator_name?: string | null;
+  environment_status?: string;
+}
+
+interface Pillar {
+  id: number;
+  name: string;
+  description?: string | null;
+}
+
+interface AccountPillar {
+  pillar_id: number;
+  target_ratio: number;
+  name: string;
 }
 
 const ROLE_NAMES: Record<string, string> = {
@@ -32,39 +55,104 @@ const ROLE_NAMES: Record<string, string> = {
   official: "官方号",
   case_study: "案例号",
   knowledge: "科普号",
+  viral: "引流号",
 };
 
 export default function AccountsPage() {
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [pillars, setPillars] = useState<Pillar[]>([]);
+  const [pillarsByAccount, setPillarsByAccount] = useState<Record<number, AccountPillar[]>>({});
+  const [project, setProject] = useState<string>("");
+
   const [platform, setPlatform] = useState("xiaohongshu");
   const [handle, setHandle] = useState("");
   const [role, setRole] = useState("director");
+  const [positioning, setPositioning] = useState("");
+  const [environmentStatus, setEnvironmentStatus] = useState("configuring");
 
-  const [project, setProject] = useState<string>("");
-  const load = () => fetch("/api/accounts").then((r) => r.json()).then((d: Account[]) => setAccounts(d));
-  useEffect(() => { load(); }, []);
+  const [editingFor, setEditingFor] = useState<number | null>(null);
+  const [draft, setDraft] = useState<Record<number, number>>({});
+
+  const load = () =>
+    fetch("/api/accounts")
+      .then((r) => r.json())
+      .then((d: Account[]) => setAccounts(d));
+
   useEffect(() => {
+    load();
     fetch("/api/projects")
       .then((r) => r.json())
       .then((d) => setProject(d?.current?.name ?? ""))
       .catch(() => {});
+    fetch("/api/content-pillars")
+      .then((r) => r.json())
+      .then((d: Pillar[]) => setPillars(d))
+      .catch(() => {});
   }, []);
+
+  function loadPillarsFor(accountId: number): Promise<AccountPillar[]> {
+    return fetch(`/api/account-pillars?accountId=${accountId}`)
+      .then((r) => r.json())
+      .then((d: AccountPillar[]) => {
+        setPillarsByAccount((s) => ({ ...s, [accountId]: d }));
+        return d;
+      })
+      .catch(() => [] as AccountPillar[]);
+  }
 
   function add() {
     if (!handle.trim()) return toast.error("请填写账号名");
     fetch("/api/accounts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ platform, handle, role, followers: 0, status: "active" }),
+      body: JSON.stringify({ platform, handle, role, followers: 0, status: "active", positioning, environment_status: environmentStatus }),
     })
-      .then(() => { setHandle(""); toast.success("已新增账号"); load(); })
+      .then(() => {
+        setHandle("");
+        setPositioning("");
+        toast.success("已新增账号");
+        load();
+      })
       .catch(() => toast.error("新增失败"));
   }
 
   function del(id: number) {
     fetch(`/api/accounts/${id}`, { method: "DELETE" })
-      .then(() => { toast.success("已删除"); load(); })
+      .then(() => {
+        toast.success("已删除");
+        setPillarsByAccount((s) => {
+          const { [id]: _dropped, ...rest } = s;
+          return rest;
+        });
+        load();
+      })
       .catch(() => toast.error("删除失败"));
+  }
+
+  function openEditor(accountId: number) {
+    setEditingFor(accountId);
+    loadPillarsFor(accountId).then((d: AccountPillar[]) => {
+      const map: Record<number, number> = {};
+      for (const ap of d) map[ap.pillar_id] = ap.target_ratio;
+      setDraft(map);
+    });
+  }
+
+  function savePillars(accountId: number) {
+    const items = Object.entries(draft)
+      .filter(([, r]) => Number(r) > 0)
+      .map(([pid, r]) => ({ pillarId: Number(pid), targetRatio: Number(r) }));
+    fetch("/api/account-pillars", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ accountId, items }),
+    })
+      .then(() => {
+        toast.success("已保存内容支柱");
+        setEditingFor(null);
+        loadPillarsFor(accountId);
+      })
+      .catch(() => toast.error("保存失败"));
   }
 
   return (
@@ -85,7 +173,7 @@ export default function AccountsPage() {
             </SelectContent>
           </Select>
           <Input
-            className="flex-1 min-w-[160px]"
+            className="flex-1 min-w-[140px]"
             value={handle}
             onChange={(e) => setHandle(e.target.value)}
             placeholder="账号名 / 昵称"
@@ -100,6 +188,28 @@ export default function AccountsPage() {
               ))}
             </SelectContent>
           </Select>
+          <Input
+            className="w-40"
+            value={positioning}
+            onChange={(e) => setPositioning(e.target.value)}
+            placeholder="账号定位"
+            list="account-positioning"
+          />
+          <datalist id="account-positioning">
+            {ACCOUNT_POSITIONING_OPTIONS.map((p) => (
+              <option key={p} value={p} />
+            ))}
+          </datalist>
+          <Select value={environmentStatus} onValueChange={(v) => setEnvironmentStatus(v ?? "configuring")}>
+            <SelectTrigger className="w-28">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {ACCOUNT_ENVIRONMENT_STATUS.map((s) => (
+                <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Button onClick={add}>
             <Plus className="h-4 w-4" /> 新增账号
           </Button>
@@ -107,28 +217,77 @@ export default function AccountsPage() {
       </Card>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {accounts.map((a) => (
-          <Card key={a.id}>
-            <CardContent className="space-y-2 pt-4">
-              <div className="flex items-center justify-between">
-                <span className="font-medium text-stone-800">{a.handle}</span>
-                <div className="flex items-center gap-2">
-                  <Badge>{PLATFORM_NAME[a.platform] ?? a.platform}</Badge>
-                  <button
-                    onClick={() => del(a.id)}
-                    className="text-stone-300 transition hover:text-rose-500"
-                    aria-label="删除"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+        {accounts.map((a) => {
+          const ap = pillarsByAccount[a.id] ?? [];
+          return (
+            <Card key={a.id}>
+              <CardContent className="space-y-2 pt-4">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-stone-800">{a.handle}</span>
+                  <div className="flex items-center gap-2">
+                    <Badge>{PLATFORM_NAME[a.platform] ?? a.platform}</Badge>
+                    <button
+                      onClick={() => del(a.id)}
+                      className="text-stone-300 transition hover:text-rose-500"
+                      aria-label="删除"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
-              </div>
-              <div className="text-xs text-stone-400">
-                {ROLE_NAMES[a.role] ?? a.role} · 粉丝 {(a.followers ?? 0).toLocaleString()}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+                <div className="text-xs text-stone-400">
+                  {ROLE_NAMES[a.role] ?? a.role} · 粉丝 {(a.followers ?? 0).toLocaleString()}
+                </div>
+                <div className="flex flex-wrap gap-1 text-xs">
+                  {a.positioning && <Badge className="border border-stone-200 bg-white">{a.positioning}</Badge>}
+                  <Badge className="border border-stone-200 bg-white">{ACCOUNT_ENVIRONMENT_NAME[a.environment_status ?? "configuring"] ?? a.environment_status}</Badge>
+                  {a.operator_name && <Badge className="border border-stone-200 bg-white">{a.operator_name}</Badge>}
+                </div>
+
+                {ap.length > 0 && editingFor !== a.id && (
+                  <div className="flex flex-wrap gap-1">
+                    {ap.map((p) => (
+                      <span key={p.pillar_id} className="rounded-full bg-stone-100 px-2 py-0.5 text-[11px] text-stone-600">
+                        {p.name} {p.target_ratio > 0 ? `${p.target_ratio}%` : ""}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {editingFor === a.id ? (
+                  <div className="space-y-2 border-t border-stone-100 pt-2">
+                    <p className="text-xs font-medium text-stone-500">内容支柱与占比</p>
+                    {pillars.length === 0 && <p className="text-xs text-stone-300">暂无支柱（可到“内容支柱”配置）</p>}
+                    <div className="space-y-1">
+                      {pillars.map((p) => (
+                        <div key={p.id} className="flex items-center gap-2">
+                          <span className="flex-1 text-xs text-stone-600">{p.name}</span>
+                          <Input
+                            type="number"
+                            min={0}
+                            max={100}
+                            className="w-16"
+                            value={draft[p.id] ?? 0}
+                            onChange={(e) => setDraft((s) => ({ ...s, [p.id]: Number(e.target.value) || 0 }))}
+                          />
+                          <span className="text-xs text-stone-400">%</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={() => savePillars(a.id)}>保存</Button>
+                      <Button size="sm" variant="ghost" onClick={() => setEditingFor(null)}>取消</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <Button size="sm" variant="ghost" onClick={() => openEditor(a.id)}>
+                    编辑支柱
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
     </PageFrame>
   );

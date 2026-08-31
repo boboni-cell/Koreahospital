@@ -70,3 +70,27 @@ export const ROLES = [
   "knowledge",
   "viral",
 ];
+
+// 账号环境状态（PRD 8.1）
+export const ACCOUNT_ENVIRONMENT_STATUS = [
+  { id: "configuring", name: "配置中" },
+  { id: "active", name: "可用" },
+  { id: "paused", name: "暂停" },
+  { id: "login_expired", name: "登录失效" },
+  { id: "risk_limited", name: "风险限制" },
+  { id: "archived", name: "已归档" },
+];
+
+export const ACCOUNT_ENVIRONMENT_NAME: Record<string, string> = Object.fromEntries(
+  ACCOUNT_ENVIRONMENT_STATUS.map((s) => [s.id, s.name])
+);
+
+// 账号定位建议（一个账号只有一个主要定位）
+export const ACCOUNT_POSITIONING_OPTIONS = [
+  "医院官方号",
+  "院长IP号",
+  "案例见证号",
+  "海外获客号",
+  "科普号",
+  "咨询顾问号",
+];

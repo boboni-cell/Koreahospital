@@ -5,7 +5,9 @@ import { getCurrentProjectId } from "@/lib/projects";
 export async function GET() {
   const pid = getCurrentProjectId();
   const rows = db
-    .prepare("SELECT * FROM accounts WHERE project_id=? ORDER BY id ASC")
+    .prepare(
+      "SELECT a.id, a.platform, a.handle, a.role, a.followers, a.status, a.project_id, a.positioning, a.operator_id, a.environment_status, a.created_at, o.name AS operator_name FROM accounts a LEFT JOIN operators o ON o.id=a.operator_id WHERE a.project_id=? ORDER BY a.id ASC"
+    )
     .all(pid);
   return NextResponse.json(rows);
 }
@@ -13,10 +15,21 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const b = await req.json();
   const pid = getCurrentProjectId();
+  const opId = Number(b.operator_id) || null;
   const info = db
     .prepare(
-      "INSERT INTO accounts (platform, handle, role, followers, status, project_id) VALUES (?, ?, ?, ?, ?, ?)"
+      "INSERT INTO accounts (platform, handle, role, followers, status, project_id, positioning, operator_id, environment_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
     )
-    .run(b.platform ?? "xiaohongshu", b.handle ?? "新账号", b.role ?? "official", b.followers ?? 0, b.status ?? "active", pid);
+    .run(
+      b.platform ?? "xiaohongshu",
+      b.handle ?? "新账号",
+      b.role ?? "official",
+      b.followers ?? 0,
+      b.status ?? "active",
+      pid,
+      b.positioning ?? null,
+      opId,
+      b.environment_status ?? "configuring"
+    );
   return NextResponse.json({ id: info.lastInsertRowid });
 }

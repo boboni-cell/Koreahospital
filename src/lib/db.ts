@@ -442,4 +442,101 @@ for (const t of projectScopedTables) {
   db.prepare(`UPDATE ${t} SET project_id=? WHERE project_id IS NULL`).run(defaultProjectId);
 }
 
+
+// ---- Task 02：账号环境与内容支柱（增量、幂等） ----
+db.exec(`
+CREATE TABLE IF NOT EXISTS operators (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  responsibility TEXT,
+  status TEXT DEFAULT 'active',
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE IF NOT EXISTS content_pillars (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  project_id INTEGER,
+  name TEXT NOT NULL,
+  description TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE IF NOT EXISTS account_pillars (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  account_id INTEGER NOT NULL,
+  pillar_id INTEGER NOT NULL,
+  target_ratio REAL DEFAULT 0,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(account_id, pillar_id)
+);
+`);
+
+// accounts 补充账号环境字段
+function ensureAccountColumn(name: string, ddl: string) {
+  try {
+    db.prepare(`SELECT ${name} FROM accounts LIMIT 1`).get();
+  } catch {
+    db.exec(`ALTER TABLE accounts ADD COLUMN ${ddl}`);
+  }
+}
+ensureAccountColumn("positioning", "positioning TEXT");
+ensureAccountColumn("operator_id", "operator_id INTEGER");
+ensureAccountColumn("environment_status", "environment_status TEXT DEFAULT 'configuring'");
+
+// 默认运营者（首版单人）
+const opCount = (db.prepare("SELECT COUNT(*) AS n FROM operators").get() as { n: number }).n;
+let defaultOperatorId = 1;
+if (opCount === 0) {
+  const info = db.prepare("INSERT INTO operators (name, responsibility, status) VALUES (?, ?, ?)").run("运营者", "负责 Koreahospital 社媒运营", "active");
+  defaultOperatorId = Number(info.lastInsertRowid);
+} else {
+  defaultOperatorId = (db.prepare("SELECT id FROM operators ORDER BY id LIMIT 1").get() as { id: number }).id;
+}
+db.prepare("UPDATE accounts SET operator_id=? WHERE operator_id IS NULL").run(defaultOperatorId);
+
+// 默认内容支柱
+const projId = (db.prepare("SELECT id FROM projects ORDER BY is_default DESC, id ASC LIMIT 1").get() as { id: number }).id;
+const pillarNames = ["院长日常", "科普", "案例", "医院环境", "术后护理", "热点回应"];
+const pillarDescriptions: Record<string, string> = {
+  "院长日常": "院长个人 IP 日常、看诊片段、观点输出",
+  "科普": "脱发/植发等知识科普、答疑",
+  "案例": "患者案例、恢复日记（需授权留档）",
+  "医院环境": "院区环境、设备、无菌层流等",
+  "术后护理": "术后护理指导",
+  "热点回应": "对热门话题/争议的合规回应",
+};
+const pillarCount = (db.prepare("SELECT COUNT(*) AS n FROM content_pillars WHERE project_id=?").get(projId) as { n: number }).n;
+if (pillarCount === 0) {
+  const insPillar = db.prepare("INSERT INTO content_pillars (project_id, name, description) VALUES (?, ?, ?)");
+  for (const n of pillarNames) insPillar.run(projId, n, pillarDescriptions[n] ?? null);
+}
+
+// 为既有账号绑定默认内容支柱
+const pillarIdOf = (name: string) =>
+  (db.prepare("SELECT id FROM content_pillars WHERE project_id=? AND name=?").get(projId, name) as { id: number } | undefined)?.id;
+const accPillarCount = (db.prepare("SELECT COUNT(*) AS n FROM account_pillars").get() as { n: number }).n;
+if (accPillarCount === 0) {
+  const accs = db.prepare("SELECT id, role FROM accounts WHERE project_id=?").all(projId) as { id: number; role: string | null }[];
+  const insAp = db.prepare("INSERT OR IGNORE INTO account_pillars (account_id, pillar_id, target_ratio) VALUES (?, ?, ?)");
+  for (const a of accs) {
+    const role = a.role ?? "official";
+    if (role === "director") {
+      const pa = pillarIdOf("院长日常"); const pb = pillarIdOf("科普"); const pc = pillarIdOf("案例");
+      if (pa) insAp.run(a.id, pa, 40);
+      if (pb) insAp.run(a.id, pb, 35);
+      if (pc) insAp.run(a.id, pc, 25);
+    } else if (role === "knowledge") {
+      const pa = pillarIdOf("科普"); if (pa) insAp.run(a.id, pa, 100);
+    } else if (role === "case_study") {
+      const pa = pillarIdOf("案例"); if (pa) insAp.run(a.id, pa, 100);
+    } else if (role === "official") {
+      const pa = pillarIdOf("医院环境"); const pb = pillarIdOf("院长日常");
+      if (pa) insAp.run(a.id, pa, 60);
+      if (pb) insAp.run(a.id, pb, 40);
+    } else if (role === "consultant") {
+      const pa = pillarIdOf("科普"); if (pa) insAp.run(a.id, pa, 100);
+    } else if (role === "viral") {
+      const pa = pillarIdOf("热点回应"); if (pa) insAp.run(a.id, pa, 100);
+    }
+  }
+}
+
 export default db;
