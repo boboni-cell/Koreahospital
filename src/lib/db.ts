@@ -726,4 +726,21 @@ CREATE TABLE IF NOT EXISTS publish_snapshots (
 CREATE INDEX IF NOT EXISTS idx_publish_snapshots_variant ON publish_snapshots(variant_id);
 `);
 
+
+// ---- Task 15：三窗口指标与回填（增量、幂等） ----
+db.exec(`
+CREATE TABLE IF NOT EXISTS publish_metric_snapshots (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  publish_id INTEGER NOT NULL,
+  window TEXT NOT NULL,
+  platform_metrics TEXT,
+  business_metrics TEXT,
+  insufficient_data INTEGER DEFAULT 0,
+  observed_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(publish_id, window)
+);
+CREATE INDEX IF NOT EXISTS idx_publish_metric_pub ON publish_metric_snapshots(publish_id);
+`);
+
 export default db;
