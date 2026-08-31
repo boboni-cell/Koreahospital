@@ -4,6 +4,7 @@ import { R2ConfigForm } from "@/components/settings/r2-config-form";
 import { AgentConfigForm } from "@/components/settings/agent-config-form";
 import { OperatorsPanel } from "@/components/settings/operators-panel";
 import { SkillsPanel } from "@/components/settings/skills-panel";
+import { SkillAuditPanel } from "@/components/settings/skill-audit-panel";
 
 export default function SettingsPage() {
   return (
@@ -17,6 +18,7 @@ export default function SettingsPage() {
       <div className="space-y-6">
         <OperatorsPanel />
         <SkillsPanel />
+        <SkillAuditPanel />
         <ModelConfigForm />
         <R2ConfigForm />
         <AgentConfigForm />

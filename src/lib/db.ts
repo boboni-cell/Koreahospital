@@ -769,4 +769,29 @@ CREATE INDEX IF NOT EXISTS idx_analyses_publish ON analyses(publish_id);
 CREATE INDEX IF NOT EXISTS idx_writeback_status ON writeback_proposals(status);
 `);
 
+
+// ---- Task 19：外部方法论 Skill 审计（增量、幂等） ----
+db.exec(`
+CREATE TABLE IF NOT EXISTS skill_audits (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  repo TEXT,
+  url TEXT,
+  commit_ref TEXT,
+  license TEXT,
+  skill_id TEXT,
+  status TEXT DEFAULT 'suggested',
+  notes TEXT,
+  audited_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+`);
+
+const auditCount = (db.prepare("SELECT COUNT(*) AS n FROM skill_audits").get() as { n: number }).n;
+if (auditCount === 0) {
+  const subs = ["product-marketing", "customer-research", "competitor-profiling", "content-strategy", "social", "analytics", "marketing-loops"];
+  const insA = db.prepare("INSERT INTO skill_audits (repo, url, commit_ref, license, skill_id, status, notes) VALUES (?, ?, ?, ?, ?, 'suggested', ?)");
+  for (const s of subs) {
+    insA.run("coreyhaines31/marketingskills", "https://github.com/coreyhaines31/marketingskills", "待核对", "MIT", s, "候选子 Skill；引入前须逐份审核、去重，确认无自动脚本/未经验证医疗结论；medical-compliance 优先级不变");
+  }
+}
+
 export default db;
