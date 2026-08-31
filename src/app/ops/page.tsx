@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { PageFrame } from "@/components/layout/page-frame";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import TodayList from "@/components/ops/today-list";
@@ -48,6 +49,11 @@ export default function OpsHub() {
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-xl font-semibold tracking-tight text-stone-900">运营中心</h2>
         <div className="flex items-center gap-2">
+          <Link href="/workbench">
+            <span className="inline-flex items-center gap-1 rounded-lg bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-600 transition hover:bg-indigo-100">
+              运营工作区
+            </span>
+          </Link>
           <span className="text-xs text-stone-400">所有运营动作都在这里完成</span>
           {current && (
             <span className="text-xs text-stone-500">
