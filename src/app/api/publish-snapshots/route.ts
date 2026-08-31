@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 import { recordAction } from "@/lib/workflow-actions";
+import { PLATFORM_SKILL } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -44,9 +45,10 @@ export async function POST(req: NextRequest) {
     "- 时间：按排期发布，错峰",
   ].join("\n");
 
+  const skillIds = PLATFORM_SKILL[variant.platform ?? ""] ?? [];
   const info = db
     .prepare("INSERT INTO publish_snapshots (variant_id, content_version, content, assets, model, skills, review_result, platform, account_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
-    .run(variantId, verCount, variant.content, null, null, null, review?.result ?? null, variant.platform ?? null, account?.handle ?? null);
+    .run(variantId, verCount, variant.content, null, "平台+Skill 调度", JSON.stringify(skillIds), review?.result ?? null, variant.platform ?? null, account?.handle ?? null);
 
   recordAction({ objectType: "publish_snapshot", objectId: Number(info.lastInsertRowid), action: "publish_snapshot.create", detail: `发布包 #${info.lastInsertRowid} (v${verCount})，人工复制发布` });
 
