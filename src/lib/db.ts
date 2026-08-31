@@ -576,4 +576,22 @@ CREATE TABLE IF NOT EXISTS signals (
 CREATE INDEX IF NOT EXISTS idx_signals_project ON signals(project_id, status);
 `);
 
+
+// ---- Task 07：竞品与内容知识库（增量、幂等） ----
+db.exec(`
+CREATE TABLE IF NOT EXISTS knowledge_items (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  project_id INTEGER,
+  kind TEXT NOT NULL,
+  platform TEXT,
+  title TEXT,
+  content TEXT,
+  evidence TEXT,
+  source_signal_id INTEGER,
+  status TEXT DEFAULT 'active',
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_knowledge_project_kind ON knowledge_items(project_id, kind);
+`);
+
 export default db;
