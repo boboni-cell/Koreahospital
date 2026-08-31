@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Plus, Save, Layers, ArrowLeft, Trash2 } from "lucide-react";
+import { Plus, Save, Layers, ArrowLeft, Trash2, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { PageFrame } from "@/components/layout/page-frame";
 import { Card, CardContent } from "@/components/ui/card";
@@ -64,6 +64,12 @@ export default function ProductionPage() {
     fetch("/api/variants", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ brief_id: selectedId, platform: vplat, format: vformat, content: vcontent }) })
       .then(() => { setVcontent(""); toast.success("已派生平台版本"); selectBrief(selectedId); })
       .catch(() => {});
+  }
+
+  function produce(id: number) {
+    fetch("/api/produce", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ variant_id: id }) })
+      .then(() => { toast.success("已生成，进入 AI 审核"); selectBrief(selectedId!); })
+      .catch(() => toast.error("生成失败"));
   }
 
   function saveVariant(id: number, content: string) {
@@ -167,10 +173,14 @@ export default function ProductionPage() {
                       <div className="flex items-center gap-2">
                         <Badge className="bg-white text-stone-600">{PLATFORM_NAME[v.platform ?? ""] ?? v.platform ?? "通用"}</Badge>
                         <span className="text-[11px] text-stone-400">{v.format} · {v.account_name ?? "未绑账号"}</span>
+                        <Badge className={v.workflow_status === "ai_review" ? "bg-indigo-50 text-indigo-600" : "bg-stone-100 text-stone-500"}>{v.workflow_status === "ai_review" ? "AI 审核" : v.workflow_status}</Badge>
                       </div>
-                      <Button size="sm" variant="ghost" onClick={() => (editVariantId === v.id ? saveVariant(v.id, v.content ?? "") : setEditVariantId(v.id))}>
-                        {editVariantId === v.id ? <><Save className="h-3.5 w-3.5" /> 保存</> : "编辑"}
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button size="sm" variant="outline" onClick={() => produce(v.id)}><Sparkles className="h-3.5 w-3.5" /> AI 生成</Button>
+                        <Button size="sm" variant="ghost" onClick={() => (editVariantId === v.id ? saveVariant(v.id, v.content ?? "") : setEditVariantId(v.id))}>
+                          {editVariantId === v.id ? <><Save className="h-3.5 w-3.5" /> 保存</> : "编辑"}
+                        </Button>
+                      </div>
                     </div>
                     {editVariantId === v.id ? (
                       <Textarea className="mt-2 min-h-20" value={v.content ?? ""} onChange={(e) => setVariants((list) => list.map((x) => x.id === v.id ? { ...x, content: e.target.value } : x))} />
