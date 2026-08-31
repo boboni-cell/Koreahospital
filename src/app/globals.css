@@ -117,29 +117,38 @@
 
 body {
   background:
-    radial-gradient(circle at 100% 0%, #fdece9 0%, #f5f1ef 38%, #ede8e6 100%) fixed;
+    radial-gradient(circle at 15% 10%, rgba(203, 213, 225, 0.55) 0%, transparent 42%),
+    radial-gradient(circle at 88% 12%, rgba(199, 210, 254, 0.5) 0%, transparent 40%),
+    radial-gradient(circle at 82% 88%, rgba(254, 226, 226, 0.35) 0%, transparent 42%),
+    linear-gradient(135deg, #f7f8fa 0%, #eef1f5 48%, #e9edf3 100%) fixed;
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
 }
 
-/* 玻璃卡片（暖色微调） */
+/* 磨砂玻璃卡片 */
 .surface {
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(16px) saturate(180%);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.75);
   border-radius: 1.25rem;
   box-shadow:
-    0 1px 2px rgba(68, 64, 60, 0.04),
-    0 12px 30px -18px rgba(68, 64, 60, 0.18);
+    0 1px 2px rgba(50, 50, 60, 0.05),
+    0 18px 40px -24px rgba(50, 50, 60, 0.28);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.surface:hover {
+  box-shadow:
+    0 1px 2px rgba(50, 50, 60, 0.05),
+    0 24px 50px -24px rgba(50, 50, 60, 0.32);
 }
 
 .glass {
-  background: rgba(255, 255, 255, 0.65);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.75);
 }
 
 /* 设计稿玻璃卡片（sidebar / 概览容器） */

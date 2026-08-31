@@ -13,7 +13,7 @@ const SelectTrigger = React.forwardRef<
   <Select.Trigger
     ref={ref}
     className={cn(
-      "flex h-9 w-full items-center justify-between gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-1 text-sm text-zinc-800 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400",
+      "flex h-9 w-full items-center justify-between gap-2 rounded-lg glass px-3 py-1 text-sm text-stone-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200",
       className
     )}
     {...props}
@@ -41,7 +41,7 @@ const SelectContent = React.forwardRef<
       className={cn("z-50", className)}
       {...props}
     >
-      <Select.Popup className="min-w-[8rem] overflow-hidden rounded-lg border border-zinc-200 bg-white p-1 text-sm shadow-lg">
+      <Select.Popup className="min-w-[8rem] overflow-hidden rounded-lg glass p-1 text-sm shadow-lg">
         {children}
       </Select.Popup>
     </Select.Positioner>
