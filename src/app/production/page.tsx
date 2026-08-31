@@ -77,6 +77,12 @@ export default function ProductionPage() {
       .catch(() => toast.error("审核失败"));
   }
 
+  function publishPackage(id: number) {
+    fetch("/api/publish-snapshots", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ variant_id: id }) })
+      .then((r) => r.json()).then((d) => { if (d.error) { toast.error(d.error); return; } toast.success("发布包已生成并冻结快照"); selectBrief(selectedId!); })
+      .catch(() => toast.error("生成失败"));
+  }
+
   function produce(id: number) {
     fetch("/api/produce", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ variant_id: id }) })
       .then(() => { toast.success("已生成，进入 AI 审核"); selectBrief(selectedId!); })
@@ -191,6 +197,7 @@ export default function ProductionPage() {
                         <Button size="sm" variant="outline" onClick={() => review(v.id, "", "ai")}>AI 审核</Button>
                         <Button size="sm" variant="ghost" onClick={() => review(v.id, "approve", "human")} title="人工批准">通过</Button>
                         <Button size="sm" variant="ghost" onClick={() => review(v.id, "reject", "human")} title="人工退回">退回</Button>
+                        {v.workflow_status === "approved" && <Button size="sm" onClick={() => publishPackage(v.id)}>发布包</Button>}
                         <Button size="sm" variant="ghost" onClick={() => (editVariantId === v.id ? saveVariant(v.id, v.content ?? "") : setEditVariantId(v.id))}>
                           {editVariantId === v.id ? <><Save className="h-3.5 w-3.5" /> 保存</> : "编辑"}
                         </Button>

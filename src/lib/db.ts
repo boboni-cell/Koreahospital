@@ -706,4 +706,24 @@ CREATE TABLE IF NOT EXISTS reviews (
 CREATE INDEX IF NOT EXISTS idx_reviews_variant ON reviews(variant_id);
 `);
 
+
+// ---- Task 14：发布包与版本快照（增量、幂等） ----
+db.exec(`
+CREATE TABLE IF NOT EXISTS publish_snapshots (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  variant_id INTEGER NOT NULL,
+  content_version INTEGER DEFAULT 1,
+  content TEXT,
+  assets TEXT,
+  model TEXT,
+  skills TEXT,
+  review_result TEXT,
+  platform TEXT,
+  account_name TEXT,
+  published_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_publish_snapshots_variant ON publish_snapshots(variant_id);
+`);
+
 export default db;
