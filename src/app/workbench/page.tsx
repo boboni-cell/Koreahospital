@@ -285,6 +285,7 @@ export default function WorkbenchPage() {
           <CardContent className="pt-4">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-stone-800">内容支柱 / 知识库</h3>
+              <Link href="/signals" className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-700">信号池</Link>
               <Link href="/accounts" className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-700">账号矩阵 <ArrowUpRight className="h-3.5 w-3.5" /></Link>
             </div>
             <div className="space-y-2">

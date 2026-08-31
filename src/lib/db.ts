@@ -558,4 +558,22 @@ CREATE TABLE IF NOT EXISTS workflow_actions (
 CREATE INDEX IF NOT EXISTS idx_workflow_actions_obj ON workflow_actions(object_type, object_id);
 `);
 
+
+// ---- Task 05：平台信号池 A（增量、幂等） ----
+db.exec(`
+CREATE TABLE IF NOT EXISTS signals (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  project_id INTEGER,
+  platform TEXT,
+  source_url TEXT,
+  title TEXT,
+  evidence TEXT,
+  status TEXT DEFAULT 'pending',
+  confirmed_by INTEGER,
+  captured_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_signals_project ON signals(project_id, status);
+`);
+
 export default db;
