@@ -23,7 +23,7 @@ interface Signal {
 const STATUS_NAME: Record<string, { label: string; cls: string }> = {
   pending: { label: "待确认", cls: "bg-amber-50 text-amber-600" },
   confirmed: { label: "已确认", cls: "bg-emerald-50 text-emerald-600" },
-  rejected: { label: "已驳回", cls: "bg-stone-100 text-stone-500" },
+  rejected: { label: "已驳回", cls: "bg-[#ecedf2] text-[#717a94]" },
 };
 
 export default function SignalsPage() {
@@ -105,11 +105,11 @@ export default function SignalsPage() {
     <PageFrame>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight text-stone-900">平台信号池 <span className="text-xs font-normal text-stone-400">（未经人工确认不能进入选题池）</span></h2>
-          <p className="text-sm text-stone-500">人工填写、收藏 URL、CSV 导入；AI 只读采集结果进入待确认。</p>
+          <h2 className="text-xl font-semibold tracking-tight text-[#01011b]">平台信号池 <span className="text-xs font-normal text-[#89828d]">（未经人工确认不能进入选题池）</span></h2>
+          <p className="text-sm text-[#717a94]">人工填写、收藏 URL、CSV 导入；AI 只读采集结果进入待确认。</p>
         </div>
         <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+          <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#89828d]" />
           <Input className="w-48 pl-8" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="搜索信号" />
         </div>
       </div>
@@ -140,7 +140,7 @@ export default function SignalsPage() {
 
       <div className="mb-3 flex items-center gap-2">
         {["all", "pending", "confirmed", "rejected"].map((f) => (
-          <button key={f} onClick={() => setFilter(f)} className={"rounded-full px-3 py-1 text-xs transition " + (filter === f ? "bg-stone-800 text-white" : "bg-stone-100 text-stone-500 hover:bg-stone-200")}>
+          <button key={f} onClick={() => setFilter(f)} className={"rounded-full px-3 py-1 text-xs transition " + (filter === f ? "bg-[#31263b] text-white" : "bg-[#ecedf2] text-[#717a94] hover:bg-[#ecedf2]")}>
             {f === "all" ? "全部 " + signals.length : (STATUS_NAME[f]?.label ?? f) + " " + signals.filter((s) => s.status === f).length}
           </button>
         ))}
@@ -149,14 +149,14 @@ export default function SignalsPage() {
       </div>
 
       <div className="space-y-2">
-        {list.length === 0 ? <p className="text-center text-xs text-stone-300 py-8">暂无信号</p> : list.map((s) => (
-          <div key={s.id} className="flex items-center gap-3 rounded-xl border border-stone-200 bg-white px-4 py-3">
+        {list.length === 0 ? <p className="text-center text-xs text-[#a9a4ad] py-8">暂无信号</p> : list.map((s) => (
+          <div key={s.id} className="flex items-center gap-3 rounded-xl border border-[#e4e0e6] bg-white px-4 py-3">
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-stone-800">{s.title}</span>
-                <Badge className={STATUS_NAME[s.status]?.cls ?? "bg-stone-100"}>{STATUS_NAME[s.status]?.label ?? s.status}</Badge>
+                <span className="text-sm font-medium text-[#01011b]">{s.title}</span>
+                <Badge className={STATUS_NAME[s.status]?.cls ?? "bg-[#ecedf2]"}>{STATUS_NAME[s.status]?.label ?? s.status}</Badge>
               </div>
-              <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-stone-400">
+              <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-[#89828d]">
                 <span>{PLATFORM_NAME[s.platform ?? ""] ?? s.platform ?? "-"}</span>
                 {s.source_url && <a className="text-sky-600 hover:underline" href={s.source_url} target="_blank" rel="noreferrer">{s.source_url}</a>}
                 <span>{s.evidence}</span>
@@ -165,7 +165,7 @@ export default function SignalsPage() {
             <div className="flex items-center gap-1.5">
               {s.status !== "confirmed" && <Button size="sm" variant="ghost" onClick={() => setStatus(s.id, "confirmed")} title="确认"><Check className="h-4 w-4 text-emerald-600" /></Button>}
               {s.status !== "rejected" && <Button size="sm" variant="ghost" onClick={() => setStatus(s.id, "rejected")} title="驳回"><X className="h-4 w-4 text-rose-500" /></Button>}
-              <Button size="sm" variant="ghost" onClick={() => del(s.id)} title="删除"><Trash2 className="h-4 w-4 text-stone-400" /></Button>
+              <Button size="sm" variant="ghost" onClick={() => del(s.id)} title="删除"><Trash2 className="h-4 w-4 text-[#89828d]" /></Button>
             </div>
           </div>
         ))}

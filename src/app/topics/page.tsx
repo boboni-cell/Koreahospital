@@ -87,7 +87,7 @@ export default function TopicsPage() {
   return (
     <PageFrame>
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-xl font-semibold tracking-tight text-stone-900">选题池</h2>
+        <h2 className="text-xl font-semibold tracking-tight text-[#01011b]">选题池</h2>
         <Badge className="bg-rose-100 text-rose-600">{topics.length} 个</Badge>
       </div>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -96,13 +96,13 @@ export default function TopicsPage() {
             <CardContent className="space-y-2 pt-4">
               <div className="flex items-center justify-between">
                 <Badge>热度 {t.heat_score}</Badge>
-                <span className="text-xs text-stone-400">
+                <span className="text-xs text-[#89828d]">
                   {t.source === "adopted" ? "已采纳" : "手动"}
                 </span>
               </div>
-              <div className="text-sm font-medium text-stone-800">{t.title}</div>
+              <div className="text-sm font-medium text-[#01011b]">{t.title}</div>
               {t.description && (
-                <p className="line-clamp-2 text-xs text-stone-500">{t.description}</p>
+                <p className="line-clamp-2 text-xs text-[#717a94]">{t.description}</p>
               )}
               {/* 生成链路：文案 / 配图 / 视频脚本 */}
               <div className="grid grid-cols-3 gap-1.5 pt-1">
@@ -127,7 +127,7 @@ export default function TopicsPage() {
         ))}
       </div>
       {topics.length === 0 && (
-        <p className="mt-6 text-sm text-stone-400">暂无选题，去「选题研究」生成吧。</p>
+        <p className="mt-6 text-sm text-[#89828d]">暂无选题，去「选题研究」生成吧。</p>
       )}
 
       {/* 视频脚本弹窗 */}
@@ -135,14 +135,14 @@ export default function TopicsPage() {
         <DialogRoot open onOpenChange={(o) => !o && setScriptTopic(null)}>
           <DialogContentComp className="max-w-3xl">
             <DialogClose>
-              <button className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-stone-100 text-stone-500 hover:bg-stone-200">
+              <button className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-[#ecedf2] text-[#717a94] hover:bg-[#ecedf2]">
                 ✕
               </button>
             </DialogClose>
             <div className="space-y-3 p-5">
-              <h3 className="text-base font-semibold text-stone-900">视频脚本 · {scriptTopic.title}</h3>
+              <h3 className="text-base font-semibold text-[#01011b]">视频脚本 · {scriptTopic.title}</h3>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs text-stone-400">脚本类型</span>
+                <span className="text-xs text-[#89828d]">脚本类型</span>
                 <Select value={scriptType} onValueChange={(v) => setScriptType(v ?? "doctor")}>
                   <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -157,11 +157,11 @@ export default function TopicsPage() {
                 </Button>
               </div>
               {scriptLoading ? (
-                <div className="flex items-center gap-2 py-8 text-sm text-stone-400">
+                <div className="flex items-center gap-2 py-8 text-sm text-[#89828d]">
                   <Loader2 className="h-4 w-4 animate-spin" /> 正在用 video-storyboard skill 生成拍摄脚本…
                 </div>
               ) : script ? (
-                <pre className="max-h-[60vh] overflow-auto whitespace-pre-wrap rounded-xl bg-stone-50 p-4 text-sm leading-relaxed text-stone-700">
+                <pre className="max-h-[60vh] overflow-auto whitespace-pre-wrap rounded-xl bg-[#f6f4f5] p-4 text-sm leading-relaxed text-[#31263b]">
 {script}
                 </pre>
               ) : null}

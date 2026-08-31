@@ -146,8 +146,8 @@ export function AiWorkshop() {
     <div className="space-y-5">
       <div className="flex items-center gap-2">
         <Sparkles className="h-5 w-5 text-rose-400" />
-        <h2 className="text-xl font-semibold tracking-tight text-stone-900">AI 文案工坊</h2>
-        {!modelPowered && <span className="pill bg-stone-100 text-stone-500">模板模式</span>}
+        <h2 className="text-xl font-semibold tracking-tight text-[#01011b]">AI 文案工坊</h2>
+        {!modelPowered && <span className="pill bg-[#ecedf2] text-[#717a94]">模板模式</span>}
       </div>
 
       <Card>
@@ -217,7 +217,7 @@ export function AiWorkshop() {
           </div>
           <div className="flex flex-wrap items-center gap-2 md:col-span-3">
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-xs text-stone-400">生成角色：</span>
+              <span className="text-xs text-[#89828d]">生成角色：</span>
               {ALL_ROLES.map((r) => {
                 const on = selectedRoles.includes(r);
                 return (
@@ -231,7 +231,7 @@ export function AiWorkshop() {
                     className={`rounded-full px-2.5 py-1 text-xs transition ${
                       on
                         ? "bg-rose-400 text-white"
-                        : "bg-stone-100 text-stone-500 hover:bg-stone-200"
+                        : "bg-[#ecedf2] text-[#717a94] hover:bg-[#ecedf2]"
                     }`}
                   >
                     {ROLE_LABELS[r]}
@@ -242,7 +242,7 @@ export function AiWorkshop() {
                 onClick={() =>
                   setSelectedRoles(selectedRoles.length === ALL_ROLES.length ? [] : ALL_ROLES)
                 }
-                className="rounded-full px-2.5 py-1 text-xs text-stone-400 hover:text-stone-600"
+                className="rounded-full px-2.5 py-1 text-xs text-[#89828d] hover:text-[#43394c]"
               >
                 {selectedRoles.length === ALL_ROLES.length ? "清空" : "全选"}
               </button>
@@ -253,17 +253,17 @@ export function AiWorkshop() {
                 value={newRoleName}
                 onChange={(e) => setNewRoleName(e.target.value)}
                 placeholder="自定义角色名"
-                className="h-8 w-28 rounded-full border border-stone-200 px-3 text-xs focus:outline-none"
+                className="h-8 w-28 rounded-full border border-[#e4e0e6] px-3 text-xs focus:outline-none"
               />
               <input
                 value={newRoleBrief}
                 onChange={(e) => setNewRoleBrief(e.target.value)}
                 placeholder="人设brief(可选)"
-                className="h-8 w-40 rounded-full border border-stone-200 px-3 text-xs focus:outline-none"
+                className="h-8 w-40 rounded-full border border-[#e4e0e6] px-3 text-xs focus:outline-none"
               />
               <button
                 onClick={addCustomRole}
-                className="rounded-full bg-stone-900 px-3 py-1 text-xs text-white hover:bg-stone-700"
+                className="rounded-full bg-[#01011b] px-3 py-1 text-xs text-white hover:bg-stone-700"
               >
                 添加角色
               </button>
@@ -289,18 +289,18 @@ export function AiWorkshop() {
                     {mediaPlan.shouldUseReal ? "推荐：真实拍摄" : "推荐：AI 生成"}
                   </span>
                 </div>
-                <p className="text-sm text-stone-700">{mediaPlan.desc}</p>
+                <p className="text-sm text-[#31263b]">{mediaPlan.desc}</p>
                 {mediaPlan.storyboard && mediaPlan.storyboard.length > 0 && (
                   <div className="space-y-1">
                     {mediaPlan.storyboard.map((s) => (
-                      <div key={s.no} className="rounded-lg bg-white p-2 text-xs text-stone-600">
-                        <span className="font-medium text-stone-800">镜头{s.no}（{s.duration}）</span> · {s.shot}
-                        <div className="text-stone-500">{s.scene}{s.voiceover ? `｜旁白：${s.voiceover}` : ""}</div>
+                      <div key={s.no} className="rounded-lg bg-white p-2 text-xs text-[#43394c]">
+                        <span className="font-medium text-[#01011b]">镜头{s.no}（{s.duration}）</span> · {s.shot}
+                        <div className="text-[#717a94]">{s.scene}{s.voiceover ? `｜旁白：${s.voiceover}` : ""}</div>
                       </div>
                     ))}
                   </div>
                 )}
-                <p className="text-[11px] text-stone-400">如需拍摄脚本，去「选题池 → 生成视频脚本」可产出分镜直接拍摄。</p>
+                <p className="text-[11px] text-[#89828d]">如需拍摄脚本，去「选题池 → 生成视频脚本」可产出分镜直接拍摄。</p>
               </CardContent>
             </Card>
           )}
@@ -317,18 +317,18 @@ export function AiWorkshop() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <div>
-                  <div className="text-sm font-medium text-stone-800">{v.title}</div>
-                  <p className="mt-1 whitespace-pre-wrap text-sm text-stone-600">{v.body}</p>
+                  <div className="text-sm font-medium text-[#01011b]">{v.title}</div>
+                  <p className="mt-1 whitespace-pre-wrap text-sm text-[#43394c]">{v.body}</p>
                 </div>
                 {v.tags?.length > 0 && (
                   <div className="flex flex-wrap gap-1">
                     {v.tags.map((t, j) => (
-                      <span key={j} className="pill bg-stone-100 text-stone-500">#{t}</span>
+                      <span key={j} className="pill bg-[#ecedf2] text-[#717a94]">#{t}</span>
                     ))}
                   </div>
                 )}
                 {v.score?.scores && (
-                  <div className="flex flex-wrap gap-2 text-xs text-stone-400">
+                  <div className="flex flex-wrap gap-2 text-xs text-[#89828d]">
                     {Object.entries(v.score.scores).map(([k, val]) => (
                       <span key={k}>{k} {val}</span>
                     ))}

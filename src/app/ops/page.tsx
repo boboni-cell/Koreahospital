@@ -49,24 +49,24 @@ export default function OpsHub() {
   return (
     <PageFrame>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-xl font-semibold tracking-tight text-stone-900">运营中心</h2>
+        <h2 className="text-xl font-semibold tracking-tight text-[#01011b]">运营中心</h2>
         <div className="flex items-center gap-2">
           <Link href="/workbench">
-            <span className="inline-flex items-center gap-1 rounded-lg bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-600 transition hover:bg-indigo-100">
+            <span className="inline-flex items-center gap-1 rounded-lg bg-indigo-50 px-3 py-1.5 text-xs font-medium text-[#473982] transition hover:bg-indigo-100">
               运营工作区
             </span>
           </Link>
-          <span className="text-xs text-stone-400">所有运营动作都在这里完成</span>
+          <span className="text-xs text-[#89828d]">所有运营动作都在这里完成</span>
           {current && (
-            <span className="text-xs text-stone-500">
-              当前项目 · <span className="font-medium text-stone-700">{current.name}</span>
+            <span className="text-xs text-[#717a94]">
+              当前项目 · <span className="font-medium text-[#31263b]">{current.name}</span>
             </span>
           )}
           {projects.length > 1 && (
             <select
               value={current?.id ?? ""}
               onChange={(e) => switchProject(e.target.value)}
-              className="rounded-lg border border-stone-200 bg-white px-2 py-1 text-xs text-stone-600"
+              className="rounded-lg border border-[#e4e0e6] bg-white px-2 py-1 text-xs text-[#43394c]"
             >
               {projects.map((p) => (
                 <option key={p.id} value={p.id}>{p.name}</option>

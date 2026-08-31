@@ -101,24 +101,24 @@ export default function ProductionPage() {
     <PageFrame>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight text-stone-900">单篇生产</h2>
-          <p className="text-sm text-stone-500">选题生成母版简报，再派生各平台版本；各版本独立编辑、保留历史，互不覆盖母版事实。</p>
+          <h2 className="text-xl font-semibold tracking-tight text-[#01011b]">单篇生产</h2>
+          <p className="text-sm text-[#717a94]">选题生成母版简报，再派生各平台版本；各版本独立编辑、保留历史，互不覆盖母版事实。</p>
         </div>
-        <Link href="/workbench" className="inline-flex items-center gap-1 text-xs font-medium text-stone-500 hover:text-stone-800"><ArrowLeft className="h-3.5 w-3.5" /> 回工作区</Link>
+        <Link href="/workbench" className="inline-flex items-center gap-1 text-xs font-medium text-[#717a94] hover:text-[#01011b]"><ArrowLeft className="h-3.5 w-3.5" /> 回工作区</Link>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card>
           <CardContent className="space-y-3 pt-5">
-            <h3 className="text-sm font-semibold text-stone-800">母版简报</h3>
+            <h3 className="text-sm font-semibold text-[#01011b]">母版简报</h3>
             {briefs.length === 0 ? (
-              <p className="text-xs text-stone-300">暂无简报</p>
+              <p className="text-xs text-[#a9a4ad]">暂无简报</p>
             ) : (
               briefs.map((b) => (
                 <button key={b.id} onClick={() => selectBrief(b.id)}
-                  className={"w-full rounded-xl border px-3 py-2 text-left transition " + (selectedId === b.id ? "border-indigo-300 bg-indigo-50/50" : "border-stone-200 hover:border-stone-300")}>
-                  <p className="text-sm font-medium text-stone-800">{b.title}</p>
-                  <p className="text-[11px] text-stone-400">{b.variant_count ?? 0} 个平台版本</p>
+                  className={"w-full rounded-xl border px-3 py-2 text-left transition " + (selectedId === b.id ? "border-indigo-300 bg-indigo-50/50" : "border-[#e4e0e6] hover:border-[#dbd7da]")}>
+                  <p className="text-sm font-medium text-[#01011b]">{b.title}</p>
+                  <p className="text-[11px] text-[#89828d]">{b.variant_count ?? 0} 个平台版本</p>
                 </button>
               ))
             )}
@@ -128,7 +128,7 @@ export default function ProductionPage() {
         <div className="space-y-4 lg:col-span-2">
           <Card>
             <CardContent className="space-y-2 pt-5">
-              <h4 className="text-sm font-semibold text-stone-800">新建母版简报</h4>
+              <h4 className="text-sm font-semibold text-[#01011b]">新建母版简报</h4>
               <Input value={bf.title} onChange={(e) => setBf({ ...bf, title: e.target.value })} placeholder="简报标题（选题）" />
               <Input value={bf.audience} onChange={(e) => setBf({ ...bf, audience: e.target.value })} placeholder="目标人群" />
               <Input value={bf.objective} onChange={(e) => setBf({ ...bf, objective: e.target.value })} placeholder="内容目标" />
@@ -145,7 +145,7 @@ export default function ProductionPage() {
           <Card>
             <CardContent className="space-y-2 pt-5">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-stone-800">母版内容 · {sel.title}</h3>
+                <h3 className="text-sm font-semibold text-[#01011b]">母版内容 · {sel.title}</h3>
                 <Button size="sm" variant="outline" onClick={() => (editBriefId === selectedId ? saveBrief() : (setBf({ title: sel.title, audience: sel.audience ?? "", objective: sel.objective ?? "", facts: sel.facts ?? "", evidence: sel.evidence ?? "", compliance_notes: sel.compliance_notes ?? "" }), setEditBriefId(selectedId)))}>{editBriefId === selectedId ? "保存母版" : "编辑母版"}</Button>
               </div>
               {editBriefId === selectedId ? (
@@ -156,7 +156,7 @@ export default function ProductionPage() {
                   <Textarea className="min-h-12" value={bf.compliance_notes} onChange={(e) => setBf({ ...bf, compliance_notes: e.target.value })} />
                 </>
               ) : (
-                <div className="space-y-1 text-sm text-stone-600">
+                <div className="space-y-1 text-sm text-[#43394c]">
                   <p><b>人群：</b>{sel.audience || "—"}</p>
                   <p><b>目标：</b>{sel.objective || "—"}</p>
                   <p><b>事实：</b>{sel.facts || "—"}</p>
@@ -169,14 +169,14 @@ export default function ProductionPage() {
           <Card>
             <CardContent className="space-y-3 pt-5">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-stone-800">平台版本</h3>
-                <Badge className="bg-stone-100 text-stone-500">{variants.length} 个版本</Badge>
+                <h3 className="text-sm font-semibold text-[#01011b]">平台版本</h3>
+                <Badge className="bg-[#ecedf2] text-[#717a94]">{variants.length} 个版本</Badge>
               </div>
               <div className="flex flex-wrap items-end gap-2">
-                <select value={vplat} onChange={(e) => setVplat(e.target.value)} className="rounded-lg glass px-2 py-1.5 text-sm text-stone-600">
+                <select value={vplat} onChange={(e) => setVplat(e.target.value)} className="rounded-lg glass px-2 py-1.5 text-sm text-[#43394c]">
                   {PLATFORMS.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </select>
-                <select value={vformat} onChange={(e) => setVformat(e.target.value)} className="rounded-lg glass px-2 py-1.5 text-sm text-stone-600">
+                <select value={vformat} onChange={(e) => setVformat(e.target.value)} className="rounded-lg glass px-2 py-1.5 text-sm text-[#43394c]">
                   <option value="text">图文/文案</option>
                   <option value="video">视频/脚本</option>
                 </select>
@@ -184,13 +184,13 @@ export default function ProductionPage() {
                 <Button size="sm" onClick={addVariant}><Plus className="h-4 w-4" /> 派生版本</Button>
               </div>
               <div className="space-y-2">
-                {variants.length === 0 ? <p className="text-xs text-stone-300">暂无平台版本（可用上方派生小红书/抖音版本）</p> : variants.map((v) => (
-                  <div key={v.id} className="rounded-xl border border-stone-200 p-3">
+                {variants.length === 0 ? <p className="text-xs text-[#a9a4ad]">暂无平台版本（可用上方派生小红书/抖音版本）</p> : variants.map((v) => (
+                  <div key={v.id} className="rounded-xl border border-[#e4e0e6] p-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Badge className="bg-white text-stone-600">{PLATFORM_NAME[v.platform ?? ""] ?? v.platform ?? "通用"}</Badge>
-                        <span className="text-[11px] text-stone-400">{v.format} · {v.account_name ?? "未绑账号"}</span>
-                        <Badge className={v.workflow_status === "approved" ? "bg-emerald-50 text-emerald-600" : v.workflow_status === "blocked" ? "bg-rose-50 text-rose-600" : v.workflow_status === "ai_review" ? "bg-indigo-50 text-indigo-600" : "bg-stone-100 text-stone-500"}>{STATUS_LABEL[v.workflow_status] ?? v.workflow_status}</Badge>
+                        <Badge className="bg-white text-[#43394c]">{PLATFORM_NAME[v.platform ?? ""] ?? v.platform ?? "通用"}</Badge>
+                        <span className="text-[11px] text-[#89828d]">{v.format} · {v.account_name ?? "未绑账号"}</span>
+                        <Badge className={v.workflow_status === "approved" ? "bg-emerald-50 text-emerald-600" : v.workflow_status === "blocked" ? "bg-rose-50 text-rose-600" : v.workflow_status === "ai_review" ? "bg-[#473982]/10 text-[#473982]" : "bg-[#ecedf2] text-[#717a94]"}>{STATUS_LABEL[v.workflow_status] ?? v.workflow_status}</Badge>
                       </div>
                       <div className="flex flex-wrap items-center gap-1">
                         <Button size="sm" variant="outline" onClick={() => produce(v.id)}><Sparkles className="h-3.5 w-3.5" /> AI 生成</Button>
@@ -206,7 +206,7 @@ export default function ProductionPage() {
                     {editVariantId === v.id ? (
                       <Textarea className="mt-2 min-h-20" value={v.content ?? ""} onChange={(e) => setVariants((list) => list.map((x) => x.id === v.id ? { ...x, content: e.target.value } : x))} />
                     ) : (
-                      <p className="mt-2 whitespace-pre-wrap text-sm text-stone-700">{v.content || "—"}</p>
+                      <p className="mt-2 whitespace-pre-wrap text-sm text-[#31263b]">{v.content || "—"}</p>
                     )}
                   </div>
                 ))}

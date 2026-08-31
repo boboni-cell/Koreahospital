@@ -63,7 +63,7 @@ export default function TasksPage() {
 
   return (
     <PageFrame>
-      <h2 className="mb-4 text-xl font-semibold tracking-tight text-stone-900">任务看板</h2>
+      <h2 className="mb-4 text-xl font-semibold tracking-tight text-[#01011b]">任务看板</h2>
 
       <Card className="mb-5">
         <CardContent className="flex flex-wrap items-end gap-2 pt-4">
@@ -88,9 +88,9 @@ export default function TasksPage() {
       <div className="grid gap-3 sm:grid-cols-3">
         {(["todo", "doing", "done"] as const).map((st) => (
           <div key={st} className="space-y-3">
-            <div className="flex items-center justify-between text-sm font-medium text-stone-500">
+            <div className="flex items-center justify-between text-sm font-medium text-[#717a94]">
               <span>{STATUS_LABEL[st]}</span>
-              <span className="text-xs text-stone-400">
+              <span className="text-xs text-[#89828d]">
                 {tasks.filter((t) => t.status === st).length}
               </span>
             </div>
@@ -100,21 +100,21 @@ export default function TasksPage() {
                 <Card key={t.id}>
                   <CardContent className="space-y-2 pt-4">
                     <div className="flex items-start justify-between gap-2">
-                      <div className="text-sm font-medium text-stone-800">{t.title}</div>
+                      <div className="text-sm font-medium text-[#01011b]">{t.title}</div>
                       <button
                         onClick={() => del(t.id)}
-                        className="text-stone-300 transition hover:text-rose-500"
+                        className="text-[#a9a4ad] transition hover:text-rose-500"
                         aria-label="删除"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-stone-400">
+                    <div className="flex items-center gap-2 text-xs text-[#89828d]">
                       {t.assignee && <Badge>{t.assignee}</Badge>}
                       {t.due && <span>{t.due}</span>}
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-stone-400">状态</span>
+                      <span className="text-xs text-[#89828d]">状态</span>
                       <Select value={t.status} onValueChange={(v) => changeStatus(t.id, v ?? "todo")}>
                         <SelectTrigger className="h-8 w-28 text-xs">
                           <SelectValue />

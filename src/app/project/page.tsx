@@ -65,16 +65,16 @@ export default function ProjectPage() {
     <PageFrame>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight text-stone-900">项目简报与账号定位卡</h2>
-          <p className="text-sm text-stone-500">{brief ? `当前项目：${brief.name}` : "加载项目…"}</p>
+          <h2 className="text-xl font-semibold tracking-tight text-[#01011b]">项目简报与账号定位卡</h2>
+          <p className="text-sm text-[#717a94]">{brief ? `当前项目：${brief.name}` : "加载项目…"}</p>
         </div>
-        <Link href="/workbench" className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-700">回工作区 <ArrowUpRight className="h-3.5 w-3.5" /></Link>
+        <Link href="/workbench" className="inline-flex items-center gap-1 text-xs text-[#473982] hover:text-indigo-700">回工作区 <ArrowUpRight className="h-3.5 w-3.5" /></Link>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardContent className="space-y-3 pt-4">
-            <h3 className="text-sm font-semibold text-stone-800">项目营销简报</h3>
+            <h3 className="text-sm font-semibold text-[#01011b]">项目营销简报</h3>
             <Field label="营销对象"><Input value={form.marketing_brief} onChange={(e) => setForm({ ...form, marketing_brief: e.target.value })} placeholder="例如：脱发/植发人群" /></Field>
             <Field label="目标人群"><Textarea className="min-h-16" value={form.audience} onChange={(e) => setForm({ ...form, audience: e.target.value })} placeholder="年龄、性别、城市、痛点…" /></Field>
             <Field label="品牌语气"><Input value={form.voice} onChange={(e) => setForm({ ...form, voice: e.target.value })} placeholder="专业、亲切、克制" /></Field>
@@ -88,18 +88,18 @@ export default function ProjectPage() {
           <Card>
             <CardContent className="pt-4">
               <div className="mb-3 flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-stone-800">平台分工表</h3>
+                <h3 className="text-sm font-semibold text-[#01011b]">平台分工表</h3>
                 <Badge className="bg-sky-50 text-sky-600"><Users className="h-3 w-3" /> {accounts.length} 账号</Badge>
               </div>
               <div className="space-y-3">
                 {Object.entries(platformSplit).map(([platform, list]) => (
                   <div key={platform}>
-                    <p className="mb-1 text-xs font-medium text-stone-500">{PLATFORM_NAME[platform] ?? platform}</p>
+                    <p className="mb-1 text-xs font-medium text-[#717a94]">{PLATFORM_NAME[platform] ?? platform}</p>
                     <div className="flex flex-wrap gap-1.5">
                       {list.map((a) => (
-                        <span key={a.id} className="rounded-lg bg-stone-50 px-2 py-1 text-xs text-stone-600">
+                        <span key={a.id} className="rounded-lg bg-[#f6f4f5] px-2 py-1 text-xs text-[#43394c]">
                           {a.handle}
-                          <span className="text-stone-300"> · {a.role ?? "-"}</span>
+                          <span className="text-[#a9a4ad]"> · {a.role ?? "-"}</span>
                         </span>
                       ))}
                     </div>
@@ -111,15 +111,15 @@ export default function ProjectPage() {
 
           <Card>
             <CardContent className="pt-4">
-              <h3 className="mb-3 text-sm font-semibold text-stone-800">账号定位卡</h3>
+              <h3 className="mb-3 text-sm font-semibold text-[#01011b]">账号定位卡</h3>
               <div className="space-y-2">
-                {accounts.length === 0 ? <p className="text-xs text-stone-300">暂无账号</p> : accounts.map((a) => (
-                  <div key={a.id} className="rounded-lg border border-stone-100 bg-stone-50/50 px-3 py-2">
+                {accounts.length === 0 ? <p className="text-xs text-[#a9a4ad]">暂无账号</p> : accounts.map((a) => (
+                  <div key={a.id} className="rounded-lg border border-[#ecedf2] bg-[#f6f4f5]/50 px-3 py-2">
                     <div className="flex items-center justify-between">
-                      <p className="text-sm text-stone-700">{a.handle}</p>
-                      <span className="text-[11px] text-stone-400">{PLATFORM_NAME[a.platform] ?? a.platform}</span>
+                      <p className="text-sm text-[#31263b]">{a.handle}</p>
+                      <span className="text-[11px] text-[#89828d]">{PLATFORM_NAME[a.platform] ?? a.platform}</span>
                     </div>
-                    <div className="flex flex-wrap gap-1 text-[11px] text-stone-500">
+                    <div className="flex flex-wrap gap-1 text-[11px] text-[#717a94]">
                       <span>定位：{a.positioning ?? "未定"}</span>
                       <span>· 环境：{a.environment_status ?? "配置中"}</span>
                       <span>· 运营：{a.operator_name ?? "-"}</span>
@@ -138,7 +138,7 @@ export default function ProjectPage() {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1">
-      <label className="text-xs font-medium text-stone-500">{label}</label>
+      <label className="text-xs font-medium text-[#717a94]">{label}</label>
       {children}
     </div>
   );

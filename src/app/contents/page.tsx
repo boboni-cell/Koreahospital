@@ -95,16 +95,16 @@ export default function ContentsPage() {
 
   return (
     <PageFrame>
-      <h2 className="mb-4 text-xl font-semibold tracking-tight text-stone-900">内容管理</h2>
+      <h2 className="mb-4 text-xl font-semibold tracking-tight text-[#01011b]">内容管理</h2>
 
-      {groups.length === 0 && <p className="text-sm text-stone-400">暂无内容，去「新建内容」或「AI 文案工坊」添加吧。</p>}
+      {groups.length === 0 && <p className="text-sm text-[#89828d]">暂无内容，去「新建内容」或「AI 文案工坊」添加吧。</p>}
 
       {groups.map((g) => (
         <div key={g.platform} className="mb-8">
           <div className="mb-3 flex items-center gap-2">
             <span className="inline-block h-2 w-2 rounded-full bg-rose-400" />
-            <h3 className="text-sm font-semibold text-stone-800">{g.name}</h3>
-            <span className="text-xs text-stone-400">{g.items.length} 篇</span>
+            <h3 className="text-sm font-semibold text-[#01011b]">{g.name}</h3>
+            <span className="text-xs text-[#89828d]">{g.items.length} 篇</span>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {g.items.map((c) => (
@@ -112,7 +112,7 @@ export default function ContentsPage() {
                 <CardContent className="flex flex-1 flex-col gap-2 pt-4">
                   <div className="flex items-center justify-between">
                     <Badge>{PLATFORM_NAME[c.platform] ?? c.platform}</Badge>
-                    <span className="text-xs text-stone-400">{ROLE[c.role] ?? c.role}</span>
+                    <span className="text-xs text-[#89828d]">{ROLE[c.role] ?? c.role}</span>
                   </div>
 
                   {editing === c.id ? (
@@ -126,8 +126,8 @@ export default function ContentsPage() {
                     </div>
                   ) : (
                     <>
-                      <div className="text-sm font-medium text-stone-800">{c.title}</div>
-                      <p className="line-clamp-3 text-xs leading-relaxed text-stone-500">{c.body}</p>
+                      <div className="text-sm font-medium text-[#01011b]">{c.title}</div>
+                      <p className="line-clamp-3 text-xs leading-relaxed text-[#717a94]">{c.body}</p>
                     </>
                   )}
 
@@ -138,7 +138,7 @@ export default function ContentsPage() {
 
                   {editing !== c.id && (
                     <>
-                      <div className="flex items-center gap-1.5 text-xs text-stone-400">
+                      <div className="flex items-center gap-1.5 text-xs text-[#89828d]">
                         <CalendarClock className="h-3.5 w-3.5" />
                         {c.scheduled_for ? c.scheduled_for.slice(0, 16).replace("T", " ") : "未排期"}
                         {c.scheduled_for && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />}
@@ -148,7 +148,7 @@ export default function ContentsPage() {
                           type="datetime-local"
                           value={drafts[c.id] ?? ""}
                           onChange={(e) => setDrafts((p) => ({ ...p, [c.id]: e.target.value }))}
-                          className="h-8 flex-1 rounded-lg border border-stone-200 px-2 text-xs focus:outline-none"
+                          className="h-8 flex-1 rounded-lg border border-[#e4e0e6] px-2 text-xs focus:outline-none"
                         />
                         <Button size="sm" variant="outline" onClick={() => setSchedule(c)}>排期</Button>
                         <Button size="sm" variant="ghost" onClick={() => startEdit(c)}><Pencil className="h-3.5 w-3.5" /></Button>

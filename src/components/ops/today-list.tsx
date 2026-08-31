@@ -137,18 +137,18 @@ export default function TodayList() {
       <div className="flex flex-wrap items-center gap-2">
         <Badge className="bg-rose-100 text-rose-600">待发 {pending.length}</Badge>
         <Badge className="bg-emerald-100 text-emerald-600">已发布 {done.length}</Badge>
-        <Badge className={done.some((c) => !c.data_filled) ? "bg-amber-100 text-amber-600" : "bg-stone-100 text-stone-400"}>
+        <Badge className={done.some((c) => !c.data_filled) ? "bg-amber-100 text-amber-600" : "bg-[#ecedf2] text-[#89828d]"}>
           待回填 {done.filter((c) => !c.data_filled).length}
         </Badge>
         {done.length + pending.length > 0 && (
-          <div className="h-2 w-40 overflow-hidden rounded-full bg-stone-100">
+          <div className="h-2 w-40 overflow-hidden rounded-full bg-[#ecedf2]">
             <div
               className="h-full rounded-full bg-emerald-400 transition-all"
               style={{ width: `${Math.round((done.length / (done.length + pending.length)) * 100)}%` }}
             />
           </div>
         )}
-        <p className="text-xs text-stone-400">
+        <p className="text-xs text-[#89828d]">
           发布进度 {Math.round((done.length / (done.length + pending.length || 1)) * 100)}% ·
           复制文案→平台发布→标记已发布→回填数据
         </p>
@@ -160,10 +160,10 @@ export default function TodayList() {
             <CardContent className="flex flex-1 flex-col gap-3 pt-4">
               <div className="flex items-center justify-between">
                 <Badge>{PLATFORM[c.platform] ?? c.platform}</Badge>
-                <span className="text-xs text-stone-400">{ROLE[c.role] ?? c.role}</span>
+                <span className="text-xs text-[#89828d]">{ROLE[c.role] ?? c.role}</span>
               </div>
-              <div className="text-sm font-semibold text-stone-800">{c.title}</div>
-              <p className={`flex-1 text-xs leading-relaxed text-stone-500 ${expanded.has(c.id) ? "" : "line-clamp-4"}`}>
+              <div className="text-sm font-semibold text-[#01011b]">{c.title}</div>
+              <p className={`flex-1 text-xs leading-relaxed text-[#717a94] ${expanded.has(c.id) ? "" : "line-clamp-4"}`}>
                 {c.body}
               </p>
               {(c.body?.length ?? 0) > 120 && (
@@ -175,7 +175,7 @@ export default function TodayList() {
               {/* 账号类型推荐 */}
               <div className="flex flex-wrap gap-1">
                 {recommendAccounts(c).map((r) => (
-                  <span key={r.account} title={r.reason} className="rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] text-indigo-500">📌 {r.account}</span>
+                  <span key={r.account} title={r.reason} className="rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] text-[#6f63b7]">📌 {r.account}</span>
                 ))}
               </div>
 
@@ -199,9 +199,9 @@ export default function TodayList() {
           <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
             <div className="mb-3 flex items-center gap-2">
               <ShieldAlert className="h-5 w-5 text-amber-500" />
-              <h3 className="text-sm font-semibold text-stone-800">发布前合规自查（可跳过）</h3>
+              <h3 className="text-sm font-semibold text-[#01011b]">发布前合规自查（可跳过）</h3>
             </div>
-            <ul className="mb-4 space-y-2 text-xs text-stone-600">
+            <ul className="mb-4 space-y-2 text-xs text-[#43394c]">
               {COMPLIANCE.map((item) => {
                 const on = complianceChecked.has(confirmPublish);
                 return (
@@ -215,7 +215,7 @@ export default function TodayList() {
                           return next;
                         })
                       }
-                      className={`flex h-4 w-4 items-center justify-center rounded border ${on ? "border-emerald-500 bg-emerald-500 text-white" : "border-stone-300"}`}
+                      className={`flex h-4 w-4 items-center justify-center rounded border ${on ? "border-emerald-500 bg-emerald-500 text-white" : "border-[#dbd7da]"}`}
                     >
                       {on && <Check className="h-3 w-3" />}
                     </button>
@@ -245,7 +245,7 @@ export default function TodayList() {
       {/* 已发布 + 数据回填 */}
       {done.length > 0 && (
         <div className="mt-8">
-          <h3 className="mb-3 text-sm font-medium text-stone-400">已发布（{done.length}）</h3>
+          <h3 className="mb-3 text-sm font-medium text-[#89828d]">已发布（{done.length}）</h3>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {done.map((c) => {
               const m = mOf(c.id);
@@ -258,7 +258,7 @@ export default function TodayList() {
                         {c.data_filled ? "已回填" : "待回填"}
                       </Badge>
                     </div>
-                    <div className="truncate text-sm font-medium text-stone-800">{c.title}</div>
+                    <div className="truncate text-sm font-medium text-[#01011b]">{c.title}</div>
                     {!c.data_filled ? (
                       <div className="grid grid-cols-5 gap-1.5 text-xs">
                         <Field label="赞" value={m.likes} onChange={(v) => setM(c.id, "likes", v)} />
@@ -296,12 +296,12 @@ export default function TodayList() {
 function Field({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   return (
     <label className="flex flex-col items-center gap-0.5">
-      <span className="text-[10px] text-stone-400">{label}</span>
+      <span className="text-[10px] text-[#89828d]">{label}</span>
       <input
         type="number"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-7 w-full rounded border border-stone-200 px-1 text-center text-xs focus:outline-none"
+        className="h-7 w-full rounded border border-[#e4e0e6] px-1 text-center text-xs focus:outline-none"
       />
     </label>
   );

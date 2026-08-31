@@ -43,7 +43,7 @@ const COLUMNS: { id: ColumnId; label: string; hint: string; dot: string }[] = [
 
 function Avatar({ name }: { name: string }) {
   return (
-    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-stone-200 text-[11px] font-medium text-stone-600 ring-2 ring-white">
+    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#ecedf2] text-[11px] font-medium text-[#43394c] ring-2 ring-white">
       {name.slice(0, 1)}
     </span>
   );
@@ -61,13 +61,13 @@ function Pie({ segments, size = 104, center, label }: { segments: { label: strin
     <div className="flex flex-col items-center gap-2">
       <div className="relative grid place-items-center rounded-full" style={{ width: size, height: size, background: "conic-gradient(" + stops + ")" }}>
         <span className="text-lg font-semibold text-white">{center ?? total}</span>
-        {label && <span className="absolute -bottom-4 text-[11px] text-stone-500">{label}</span>}
+        {label && <span className="absolute -bottom-4 text-[11px] text-[#717a94]">{label}</span>}
       </div>
-      <div className="mt-4 flex flex-wrap justify-center gap-x-2 gap-y-1 text-[11px] text-stone-500">
+      <div className="mt-4 flex flex-wrap justify-center gap-x-2 gap-y-1 text-[11px] text-[#717a94]">
         {segments.map((s, i) => (
           <span key={s.label} className="inline-flex items-center gap-1">
             <span className="h-2 w-2 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-            {s.label} <b className="text-stone-700">{s.value}</b>
+            {s.label} <b className="text-[#31263b]">{s.value}</b>
           </span>
         ))}
       </div>
@@ -149,15 +149,15 @@ export default function WorkbenchPage() {
         <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
           <div>
             <div className="mb-2 flex items-center gap-2">
-              <Badge className="bg-stone-100 text-stone-500 font-normal">运营工作区</Badge>
-              {project && <span className="text-xs text-stone-400">当前项目 · {project.name}</span>}
+              <Badge className="bg-[#ecedf2] text-[#717a94] font-normal">运营工作区</Badge>
+              {project && <span className="text-xs text-[#89828d]">当前项目 · {project.name}</span>}
             </div>
-            <h2 className="text-2xl font-semibold tracking-tight text-stone-900">内容从选题到复盘，一站流转</h2>
-            <p className="mt-1 text-sm text-stone-500">项目上下文、账号矩阵、内容管线、六角色 Agent 与数据复盘。</p>
+            <h2 className="text-2xl font-semibold tracking-tight text-[#01011b]">内容从选题到复盘，一站流转</h2>
+            <p className="mt-1 text-sm text-[#717a94]">项目上下文、账号矩阵、内容管线、六角色 Agent 与数据复盘。</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+              <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#89828d]" />
               <Input className="w-52 pl-8" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="搜索内容" />
             </div>
             <Button variant="outline" size="sm" onClick={refresh} disabled={loading}><RefreshCw className="h-4 w-4" /> 刷新</Button>
@@ -167,17 +167,17 @@ export default function WorkbenchPage() {
           </div>
         </div>
 
-        <div className="mb-8 flex items-center gap-3 overflow-x-auto border-b border-stone-100 pb-4">
-          <Users className="h-4 w-4 shrink-0 text-stone-400" />
-          {accounts.length === 0 ? <span className="text-xs text-stone-300">暂无账号</span> : accounts.map((a) => (
+        <div className="mb-8 flex items-center gap-3 overflow-x-auto border-b border-[#ecedf2] pb-4">
+          <Users className="h-4 w-4 shrink-0 text-[#89828d]" />
+          {accounts.length === 0 ? <span className="text-xs text-[#a9a4ad]">暂无账号</span> : accounts.map((a) => (
             <div key={a.id} className="group relative shrink-0">
               <Avatar name={a.handle} />
-              <div className="pointer-events-none absolute left-1/2 top-full z-10 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded-md bg-stone-800 px-2 py-1 text-[11px] text-white opacity-0 shadow transition group-hover:opacity-100">
+              <div className="pointer-events-none absolute left-1/2 top-full z-10 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded-md bg-[#31263b] px-2 py-1 text-[11px] text-white opacity-0 shadow transition group-hover:opacity-100">
                 {PLATFORM_NAME[a.platform] ?? a.platform} · {a.handle}
               </div>
             </div>
           ))}
-          <Link href="/accounts" className="ml-auto shrink-0 text-xs text-stone-500 hover:text-stone-700">管理账号 →</Link>
+          <Link href="/accounts" className="ml-auto shrink-0 text-xs text-[#717a94] hover:text-[#31263b]">管理账号 →</Link>
         </div>
 
         <div className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -194,29 +194,29 @@ export default function WorkbenchPage() {
                 <div className="mb-3 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className={"h-2 w-2 rounded-full " + col.dot} />
-                    <span className="text-sm font-medium text-stone-700">{col.label}</span>
-                    <Badge className="bg-stone-100 text-stone-500 font-normal">{filtered[col.id].length}</Badge>
+                    <span className="text-sm font-medium text-[#31263b]">{col.label}</span>
+                    <Badge className="bg-[#ecedf2] text-[#717a94] font-normal">{filtered[col.id].length}</Badge>
                   </div>
-                  <span className="text-[11px] text-stone-400">{col.hint}</span>
+                  <span className="text-[11px] text-[#89828d]">{col.hint}</span>
                 </div>
                 <div className="space-y-2.5">
                   {filtered[col.id].length === 0 ? (
-                    <div className="rounded-lg border border-dashed border-stone-200 py-10 text-center text-xs text-stone-300">
+                    <div className="rounded-lg border border-dashed border-[#e4e0e6] py-10 text-center text-xs text-[#a9a4ad]">
                       {loading ? "加载中…" : "暂无内容"}
                     </div>
                   ) : (
                     filtered[col.id].map((c) => (
                       <Link href="/contents" key={c.id}>
-                        <div className="group cursor-pointer rounded-lg border border-stone-200 p-3 transition hover:-translate-y-0.5 hover:border-stone-300 hover:shadow-sm">
+                        <div className="group cursor-pointer rounded-lg border border-[#e4e0e6] p-3 transition hover:-translate-y-0.5 hover:border-[#dbd7da] hover:shadow-sm">
                           <div className="mb-2 flex items-center justify-between">
-                            <span className="text-[11px] text-stone-400">{PLATFORM_NAME[c.platform] ?? c.platform}</span>
+                            <span className="text-[11px] text-[#89828d]">{PLATFORM_NAME[c.platform] ?? c.platform}</span>
                             <Avatar name={accounts.find((a) => a.platform === c.platform)?.handle ?? "-"} />
                           </div>
-                          <p className="line-clamp-2 text-sm text-stone-800">{c.title}</p>
-                          <div className="mt-2 flex items-center justify-between text-[11px] text-stone-400">
+                          <p className="line-clamp-2 text-sm text-[#01011b]">{c.title}</p>
+                          <div className="mt-2 flex items-center justify-between text-[11px] text-[#89828d]">
                             <span>{c.scheduled_for ? c.scheduled_for.slice(0, 16).replace("T", " ") : c.created_at.slice(0, 10)}</span>
                             {c.status !== "published" ? (
-                              <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); markPublished(c.id); }} className="inline-flex items-center gap-1 text-stone-500 opacity-0 transition group-hover:opacity-100 hover:text-emerald-600" title="标记已发布">
+                              <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); markPublished(c.id); }} className="inline-flex items-center gap-1 text-[#717a94] opacity-0 transition group-hover:opacity-100 hover:text-emerald-600" title="标记已发布">
                                 <CheckCircle2 className="h-3.5 w-3.5" /> 发布
                               </button>
                             ) : (
@@ -236,26 +236,26 @@ export default function WorkbenchPage() {
         <div className="mb-8">
           <div className="mb-4 flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-semibold text-stone-800">六角色 Agent 协作</h3>
-              <p className="text-xs text-stone-400">一个项目上下文上的岗位分工</p>
+              <h3 className="text-sm font-semibold text-[#01011b]">六角色 Agent 协作</h3>
+              <p className="text-xs text-[#89828d]">一个项目上下文上的岗位分工</p>
             </div>
-            <Link href="/agent-contracts"><Badge className="bg-indigo-50 text-indigo-600 font-normal transition hover:bg-indigo-100">6 角色合同 →</Badge></Link>
+            <Link href="/agent-contracts"><Badge className="bg-[#473982]/10 text-[#473982] font-normal transition hover:bg-indigo-100">6 角色合同 →</Badge></Link>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {AGENTS.map((ag) => {
               const Icon = ag.icon;
               return (
-                <div key={ag.id} className="flex items-center gap-3 rounded-xl border border-stone-200 p-3">
-                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-stone-100 text-stone-600">
+                <div key={ag.id} className="flex items-center gap-3 rounded-xl border border-[#e4e0e6] p-3">
+                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-[#ecedf2] text-[#43394c]">
                     <Icon className="h-5 w-5" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-stone-800">{ag.name}<span className="ml-1 text-[11px] text-stone-400">{ag.en}</span></p>
-                    <p className="truncate text-[11px] text-stone-400">{ag.desc}</p>
+                    <p className="text-sm font-medium text-[#01011b]">{ag.name}<span className="ml-1 text-[11px] text-[#89828d]">{ag.en}</span></p>
+                    <p className="truncate text-[11px] text-[#89828d]">{ag.desc}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-base font-semibold text-stone-700">{agentCounts[ag.id] ?? 0}</p>
-                    <p className="text-[10px] text-stone-400">队列</p>
+                    <p className="text-base font-semibold text-[#31263b]">{agentCounts[ag.id] ?? 0}</p>
+                    <p className="text-[10px] text-[#89828d]">队列</p>
                   </div>
                 </div>
               );
@@ -267,21 +267,21 @@ export default function WorkbenchPage() {
           <Card>
             <CardContent className="pt-5">
               <div className="mb-3 flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-stone-800">知识库</h3>
-                <div className="flex items-center gap-3 text-xs text-stone-500">
-                  <Link href="/knowledge" className="hover:text-stone-700">知识库</Link>
-                  <Link href="/signals" className="hover:text-stone-700">信号池</Link>
-                  <Link href="/accounts" className="hover:text-stone-700">账号矩阵 <ArrowUpRight className="h-3.5 w-3.5" /></Link>
+                <h3 className="text-sm font-semibold text-[#01011b]">知识库</h3>
+                <div className="flex items-center gap-3 text-xs text-[#717a94]">
+                  <Link href="/knowledge" className="hover:text-[#31263b]">知识库</Link>
+                  <Link href="/signals" className="hover:text-[#31263b]">信号池</Link>
+                  <Link href="/accounts" className="hover:text-[#31263b]">账号矩阵 <ArrowUpRight className="h-3.5 w-3.5" /></Link>
                 </div>
               </div>
               <div className="space-y-2">
-                {pillars.length === 0 ? <p className="text-xs text-stone-300">暂无内容支柱</p> : pillars.map((p) => (
-                  <div key={p.id} className="flex items-center justify-between rounded-lg border border-stone-100 px-3 py-2">
+                {pillars.length === 0 ? <p className="text-xs text-[#a9a4ad]">暂无内容支柱</p> : pillars.map((p) => (
+                  <div key={p.id} className="flex items-center justify-between rounded-lg border border-[#ecedf2] px-3 py-2">
                     <div>
-                      <p className="text-sm text-stone-700">{p.name}</p>
-                      <p className="text-[11px] text-stone-400">{p.description ?? "—"}</p>
+                      <p className="text-sm text-[#31263b]">{p.name}</p>
+                      <p className="text-[11px] text-[#89828d]">{p.description ?? "—"}</p>
                     </div>
-                    <span className="text-xs text-stone-300">{p.id}</span>
+                    <span className="text-xs text-[#a9a4ad]">{p.id}</span>
                   </div>
                 ))}
               </div>
@@ -290,7 +290,7 @@ export default function WorkbenchPage() {
 
           <Card>
             <CardContent className="pt-5">
-              <h3 className="mb-2 text-sm font-semibold text-stone-800">数据总览</h3>
+              <h3 className="mb-2 text-sm font-semibold text-[#01011b]">数据总览</h3>
               <div className="grid grid-cols-2 gap-4">
                 <Pie segments={statusSegments} center={contents.length} label="内容状态" />
                 <Pie segments={accountSegments} center={accounts.length} label="账号健康" />
@@ -310,11 +310,11 @@ export default function WorkbenchPage() {
 
 function Stat({ label, value, icon }: { label: string; value: number; icon: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-stone-200 p-3">
-      <div className="grid h-10 w-10 place-items-center rounded-lg bg-stone-100 text-stone-500">{icon}</div>
+    <div className="flex items-center gap-3 rounded-xl border border-[#e4e0e6] p-3">
+      <div className="grid h-10 w-10 place-items-center rounded-lg bg-[#ecedf2] text-[#717a94]">{icon}</div>
       <div>
-        <p className="text-xl font-semibold text-stone-800">{value}</p>
-        <p className="text-xs text-stone-400">{label}</p>
+        <p className="text-xl font-semibold text-[#01011b]">{value}</p>
+        <p className="text-xs text-[#89828d]">{label}</p>
       </div>
     </div>
   );
@@ -322,9 +322,9 @@ function Stat({ label, value, icon }: { label: string; value: number; icon: Reac
 
 function Tile({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-lg bg-stone-50 py-2">
-      <p className="font-medium text-stone-700">{value}</p>
-      <p className="text-stone-400">{label}</p>
+    <div className="rounded-lg bg-[#f6f4f5] py-2">
+      <p className="font-medium text-[#31263b]">{value}</p>
+      <p className="text-[#89828d]">{label}</p>
     </div>
   );
 }

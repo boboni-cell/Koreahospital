@@ -101,7 +101,7 @@ export default function DataReportPage() {
   return (
     <PageFrame>
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-xl font-semibold tracking-tight text-stone-900">报表中心</h2>
+        <h2 className="text-xl font-semibold tracking-tight text-[#01011b]">报表中心</h2>
         <Button onClick={exportCsv} disabled={busy || !report}>
           <Download className="h-4 w-4" /> {busy ? "导出中…" : "导出 CSV"}
         </Button>
@@ -115,7 +115,7 @@ export default function DataReportPage() {
 
         <TabsContent value={range}>
           {loading ? (
-            <div className="flex items-center gap-2 py-10 text-sm text-stone-400">
+            <div className="flex items-center gap-2 py-10 text-sm text-[#89828d]">
               <Loader2 className="h-4 w-4 animate-spin" /> 汇总中…
             </div>
           ) : report ? (
@@ -133,24 +133,24 @@ export default function DataReportPage() {
               {/* 按日趋势 */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-sm font-medium text-stone-600">
+                  <CardTitle className="text-sm font-medium text-[#43394c]">
                     按日汇总（{report.start} ~ {report.end}）
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   {report.rows.length === 0 ? (
-                    <p className="text-sm text-stone-400">该区间还没有回填数据的发布内容。</p>
+                    <p className="text-sm text-[#89828d]">该区间还没有回填数据的发布内容。</p>
                   ) : (
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="text-left text-xs text-stone-400">
+                        <tr className="text-left text-xs text-[#89828d]">
                           <th className="py-1">日期</th><th>发布</th><th>点赞</th><th>收藏</th><th>评论</th><th>分享</th><th>播放</th>
                         </tr>
                       </thead>
                       <tbody>
                         {report.rows.map((r) => (
-                          <tr key={r.date} className="border-t border-stone-100">
-                            <td className="py-1.5 text-stone-700">{r.date}</td>
+                          <tr key={r.date} className="border-t border-[#ecedf2]">
+                            <td className="py-1.5 text-[#31263b]">{r.date}</td>
                             <td>{r.posts}</td><td>{r.likes}</td><td>{r.saves}</td>
                             <td>{r.comments}</td><td>{r.shares}</td><td>{r.views}</td>
                           </tr>
@@ -164,25 +164,25 @@ export default function DataReportPage() {
               {/* 内容清单 */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-sm font-medium text-stone-600">
+                  <CardTitle className="text-sm font-medium text-[#43394c]">
                     已发布内容（{report.contents.length}）
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   {report.contents.length === 0 && (
-                    <p className="text-sm text-stone-400">该区间没有已发布内容。</p>
+                    <p className="text-sm text-[#89828d]">该区间没有已发布内容。</p>
                   )}
                   {report.contents.map((c) => (
-                    <div key={c.id} className="flex items-center justify-between rounded-xl bg-stone-50 px-3 py-2 text-sm">
+                    <div key={c.id} className="flex items-center justify-between rounded-xl bg-[#f6f4f5] px-3 py-2 text-sm">
                       <div className="min-w-0">
-                        <div className="truncate font-medium text-stone-800">{c.title}</div>
-                        <div className="mt-0.5 text-xs text-stone-400">
+                        <div className="truncate font-medium text-[#01011b]">{c.title}</div>
+                        <div className="mt-0.5 text-xs text-[#89828d]">
                           {PLATFORM[c.platform] ?? c.platform} · {ROLE[c.role] ?? c.role}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 text-xs text-stone-500">
+                      <div className="flex items-center gap-2 text-xs text-[#717a94]">
                         <span>👍 {c.likes} · 👁 {c.views}</span>
-                        <Badge className={c.data_filled ? "bg-emerald-100 text-emerald-600" : "bg-stone-100 text-stone-400"}>
+                        <Badge className={c.data_filled ? "bg-emerald-100 text-emerald-600" : "bg-[#ecedf2] text-[#89828d]"}>
                           {c.data_filled ? "已回填" : "待回填"}
                         </Badge>
                       </div>
@@ -202,8 +202,8 @@ function Metric({ label, value }: { label: string; value: number }) {
   return (
     <Card>
       <CardContent className="py-3">
-        <div className="text-[11px] text-stone-400">{label}</div>
-        <div className="mt-1 text-xl font-semibold text-stone-800">{value}</div>
+        <div className="text-[11px] text-[#89828d]">{label}</div>
+        <div className="mt-1 text-xl font-semibold text-[#01011b]">{value}</div>
       </CardContent>
     </Card>
   );

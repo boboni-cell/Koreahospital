@@ -56,7 +56,7 @@ export function AgentConfigForm() {
             value={loading ? "加载中…" : prompt}
             onChange={(e) => setPrompt(e.target.value)}
             rows={14}
-            className="w-full rounded-xl border border-stone-200 bg-white px-3 py-2 font-mono text-xs leading-relaxed focus:outline-none"
+            className="w-full rounded-xl border border-[#e4e0e6] bg-white px-3 py-2 font-mono text-xs leading-relaxed focus:outline-none"
           />
         </div>
         <div className="flex items-center justify-between">

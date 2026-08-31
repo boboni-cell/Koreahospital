@@ -151,19 +151,19 @@ export function AssetGrid({ assets, onDeleted }: { assets: Asset[]; onDeleted?: 
   return (
     <>
       {groups.length === 0 && (
-        <p className="mt-6 text-sm text-stone-400">暂无素材，去批量上传登记吧。</p>
+        <p className="mt-6 text-sm text-[#89828d]">暂无素材，去批量上传登记吧。</p>
       )}
 
       {groups.map((g) => (
         <div key={g.cat} className="mb-8">
           <div className="mb-3 flex items-center gap-2">
             <span className="inline-block h-2 w-2 rounded-full bg-rose-400" />
-            <h3 className="text-sm font-semibold text-stone-800">{g.cat}</h3>
-            <span className="text-xs text-stone-400">{g.days.reduce((n, d) => n + d.items.length, 0)} 个</span>
+            <h3 className="text-sm font-semibold text-[#01011b]">{g.cat}</h3>
+            <span className="text-xs text-[#89828d]">{g.days.reduce((n, d) => n + d.items.length, 0)} 个</span>
           </div>
           {g.days.map((d) => (
             <div key={g.cat + d.day} className="mb-4">
-              <div className="mb-2 text-[11px] text-stone-400">{d.day}</div>
+              <div className="mb-2 text-[11px] text-[#89828d]">{d.day}</div>
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
                 {d.items.map((a) => {
                   const idx = flatAssets.findIndex((x) => x.id === a.id);
@@ -174,15 +174,15 @@ export function AssetGrid({ assets, onDeleted }: { assets: Asset[]; onDeleted?: 
                           <Thumb asset={a} className="h-full w-full object-cover" />
                         </div>
                         <div className="p-3">
-                          <div className="truncate text-sm font-medium text-stone-800">{a.filename}</div>
+                          <div className="truncate text-sm font-medium text-[#01011b]">{a.filename}</div>
                           <div className="mt-1 flex flex-wrap items-center gap-2">
-                            <Badge className={a.sensitivity === "sensitive" ? "bg-rose-50 text-rose-600" : "bg-stone-100 text-stone-500"}>{a.sensitivity === "sensitive" ? "敏感" : "普通"}</Badge>
+                            <Badge className={a.sensitivity === "sensitive" ? "bg-rose-50 text-rose-600" : "bg-[#ecedf2] text-[#717a94]"}>{a.sensitivity === "sensitive" ? "敏感" : "普通"}</Badge>
                             <Badge>{a.license}</Badge>
-                            <span className="text-xs text-stone-400">用 {a.usage_count}</span>
+                            <span className="text-xs text-[#89828d]">用 {a.usage_count}</span>
                           </div>
                         </div>
                       </button>
-                      <button onClick={() => remove(a)} className="flex w-full items-center justify-center gap-1 border-t border-stone-100 py-2 text-xs text-red-500 transition hover:bg-red-50">
+                      <button onClick={() => remove(a)} className="flex w-full items-center justify-center gap-1 border-t border-[#ecedf2] py-2 text-xs text-red-500 transition hover:bg-red-50">
                         <Trash2 className="h-3.5 w-3.5" /> 删除
                       </button>
                     </div>
@@ -230,10 +230,10 @@ export function AssetGrid({ assets, onDeleted }: { assets: Asset[]; onDeleted?: 
 
               <div className="space-y-4 p-5">
                 <div className="glass flex flex-wrap items-center gap-2 rounded-xl px-3 py-2">
-                  <span className="text-sm font-medium text-stone-800">{current.filename}</span>
+                  <span className="text-sm font-medium text-[#01011b]">{current.filename}</span>
                   <Badge>{current.license}</Badge>
                   <Badge>{current.category}</Badge>
-                  <span className="text-xs text-stone-400">使用 {current.usage_count} 次</span>
+                  <span className="text-xs text-[#89828d]">使用 {current.usage_count} 次</span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
@@ -245,7 +245,7 @@ export function AssetGrid({ assets, onDeleted }: { assets: Asset[]; onDeleted?: 
                   <Field label="大小" value={current.file_size ? `${(current.file_size / 1024).toFixed(0)} KB` : "—"} />
                 </div>
 
-                <div className={"rounded-xl px-3 py-2 text-xs " + (current.sensitivity === "sensitive" && current.license !== "authorized" ? "bg-rose-50 text-rose-600" : "bg-stone-50 text-stone-600")}>
+                <div className={"rounded-xl px-3 py-2 text-xs " + (current.sensitivity === "sensitive" && current.license !== "authorized" ? "bg-rose-50 text-rose-600" : "bg-[#f6f4f5] text-[#43394c]")}>
                   {current.sensitivity === "sensitive" && current.license !== "authorized"
                     ? "⚠️ 敏感医疗素材且未授权，禁止进入待发布；请补授权或改用普通素材。"
                     : current.sensitivity === "sensitive"
@@ -265,10 +265,10 @@ export function AssetGrid({ assets, onDeleted }: { assets: Asset[]; onDeleted?: 
                 <div className="flex gap-2">
                   {current.file_url ? (
                     <a href={current.file_url} download={current.filename} className="flex-1">
-                      <Button className="w-full bg-stone-900 hover:bg-stone-700"><Download className="h-4 w-4" /> 下载素材</Button>
+                      <Button className="w-full bg-[#01011b] hover:bg-stone-700"><Download className="h-4 w-4" /> 下载素材</Button>
                     </a>
                   ) : (
-                    <Button disabled className="flex-1 bg-stone-200 text-stone-400"><Download className="h-4 w-4" /> 无文件（旧素材）</Button>
+                    <Button disabled className="flex-1 bg-[#ecedf2] text-[#89828d]"><Download className="h-4 w-4" /> 无文件（旧素材）</Button>
                   )}
                   <Button variant="destructive" onClick={() => current && remove(current)}><Trash2 className="h-4 w-4" /> 删除</Button>
                 </div>
@@ -284,8 +284,8 @@ export function AssetGrid({ assets, onDeleted }: { assets: Asset[]; onDeleted?: 
 function Field({ label, value }: { label: string; value: string | null }) {
   return (
     <div>
-      <div className="text-xs text-stone-400">{label}</div>
-      <div className="font-medium text-stone-800">{value || "—"}</div>
+      <div className="text-xs text-[#89828d]">{label}</div>
+      <div className="font-medium text-[#01011b]">{value || "—"}</div>
     </div>
   );
 }

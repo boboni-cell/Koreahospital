@@ -230,7 +230,7 @@ export function GenerateClient() {
           </div>
 
           {plan && (
-            <div className="rounded-xl bg-stone-50 p-3 text-sm">
+            <div className="rounded-xl bg-[#f6f4f5] p-3 text-sm">
               <div className="flex items-center gap-2">
                 {plan.shouldUseReal ? (
                   <span className="flex items-center gap-1 text-emerald-600">
@@ -241,11 +241,11 @@ export function GenerateClient() {
                     <ImageIcon className="h-4 w-4" /> 建议用 AI 生成
                   </span>
                 )}
-                <span className="pill bg-stone-100 text-stone-500">建议类别：{plan.category}</span>
+                <span className="pill bg-[#ecedf2] text-[#717a94]">建议类别：{plan.category}</span>
               </div>
-              <p className="mt-2 text-xs text-stone-500">{plan.reason}</p>
+              <p className="mt-2 text-xs text-[#717a94]">{plan.reason}</p>
               {plan.prompt && (
-                <p className="mt-2 rounded-lg bg-white p-2 text-xs text-stone-600">{plan.prompt}</p>
+                <p className="mt-2 rounded-lg bg-white p-2 text-xs text-[#43394c]">{plan.prompt}</p>
               )}
             </div>
           )}
@@ -281,7 +281,7 @@ export function GenerateClient() {
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 rows={4}
-                className="w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-sm focus:outline-none"
+                className="w-full rounded-xl border border-[#e4e0e6] bg-white px-3 py-2 text-sm focus:outline-none"
                 placeholder={kind === "image" ? "如：韩国医院无菌层流手术室俯拍，暖光，真实医疗场景" : "如：发际线种植术后 180 天恢复过程快剪，自然光"}
               />
             </div>
@@ -311,7 +311,7 @@ export function GenerateClient() {
           <CardHeader><CardTitle>预览</CardTitle></CardHeader>
           <CardContent>
             {gen || genFromContent ? (
-              <div className="flex h-64 items-center justify-center rounded-xl bg-stone-50 text-sm text-zinc-400">
+              <div className="flex h-64 items-center justify-center rounded-xl bg-[#f6f4f5] text-sm text-zinc-400">
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 模型生成中…
               </div>
             ) : result ? (
@@ -322,7 +322,7 @@ export function GenerateClient() {
                 <img src={result.url} alt="生成结果" className="h-64 w-full rounded-xl object-contain" />
               )
             ) : (
-              <div className="flex h-64 items-center justify-center rounded-xl bg-stone-50 text-sm text-zinc-400">
+              <div className="flex h-64 items-center justify-center rounded-xl bg-[#f6f4f5] text-sm text-zinc-400">
                 生成后在此预览，并自动进入素材库
               </div>
             )}

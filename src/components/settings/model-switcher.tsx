@@ -84,7 +84,7 @@ export function ModelSwitcher({
       {models.length === 0 && (
         <a href="/settings/models" className="text-xs text-rose-500 hover:underline">去添加→</a>
       )}
-      {busy && <Loader2 className="h-4 w-4 animate-spin text-stone-400" />}
+      {busy && <Loader2 className="h-4 w-4 animate-spin text-[#89828d]" />}
     </div>
   );
 }

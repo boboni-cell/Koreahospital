@@ -74,8 +74,8 @@ export function TopicResearch() {
     <div className="space-y-5">
       <div className="flex items-center gap-2">
         <Lightbulb className="h-5 w-5 text-rose-400" />
-        <h2 className="text-xl font-semibold tracking-tight text-stone-900">选题研究</h2>
-        {!modelPowered && <span className="pill bg-stone-100 text-stone-500">模板模式</span>}
+        <h2 className="text-xl font-semibold tracking-tight text-[#01011b]">选题研究</h2>
+        {!modelPowered && <span className="pill bg-[#ecedf2] text-[#717a94]">模板模式</span>}
         {modelPowered && engine && (
           <span className="pill bg-emerald-50 text-emerald-600">{engine} 检索</span>
         )}
@@ -134,11 +134,11 @@ export function TopicResearch() {
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
                 <div>
-                  <span className="text-stone-400">切入点：</span>
+                  <span className="text-[#89828d]">切入点：</span>
                   {t.angle}
                 </div>
                 <div>
-                  <span className="text-stone-400">推荐理由：</span>
+                  <span className="text-[#89828d]">推荐理由：</span>
                   {t.why}
                 </div>
                 <div className="pt-1">

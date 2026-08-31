@@ -42,10 +42,10 @@ export default function AgentContractsPage() {
     <PageFrame>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight text-stone-900">六角色 Agent 合同</h2>
-          <p className="text-sm text-stone-500">每个角色的输入 / 输出 / 允许 / 禁止 / 交接字段 / 失败条件。相同任务可重放；缺前置数据时停止并给出原因。</p>
+          <h2 className="text-xl font-semibold tracking-tight text-[#01011b]">六角色 Agent 合同</h2>
+          <p className="text-sm text-[#717a94]">每个角色的输入 / 输出 / 允许 / 禁止 / 交接字段 / 失败条件。相同任务可重放；缺前置数据时停止并给出原因。</p>
         </div>
-        <Link href="/workbench" className="inline-flex items-center gap-1 text-xs font-medium text-stone-500 hover:text-stone-800"><ArrowLeft className="h-3.5 w-3.5" /> 回工作区</Link>
+        <Link href="/workbench" className="inline-flex items-center gap-1 text-xs font-medium text-[#717a94] hover:text-[#01011b]"><ArrowLeft className="h-3.5 w-3.5" /> 回工作区</Link>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -54,8 +54,8 @@ export default function AgentContractsPage() {
             <CardContent className="space-y-3 pt-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-semibold text-stone-800">{c.name} <span className="ml-1 text-[11px] font-normal text-stone-400">{c.role}</span></h3>
-                  <Badge className="bg-stone-100 text-stone-500 font-normal">{c.status}</Badge>
+                  <h3 className="text-sm font-semibold text-[#01011b]">{c.name} <span className="ml-1 text-[11px] font-normal text-[#89828d]">{c.role}</span></h3>
+                  <Badge className="bg-[#ecedf2] text-[#717a94] font-normal">{c.status}</Badge>
                 </div>
                 <Button size="sm" variant="outline" onClick={() => (editId === c.id ? save(c) : setEditId(c.id))}>
                   {editId === c.id ? <><Save className="h-3.5 w-3.5" /> 保存</> : "编辑"}
@@ -65,18 +65,18 @@ export default function AgentContractsPage() {
               <div className="space-y-2">
                 {fields.map((f) => (
                   <div key={f.key}>
-                    <label className="text-[11px] font-medium text-stone-400">{f.label}</label>
+                    <label className="text-[11px] font-medium text-[#89828d]">{f.label}</label>
                     {editId === c.id ? (
                       <Textarea className="min-h-12" value={c[f.key] ?? ""} onChange={(e) => setContracts((list) => list.map((x) => x.id === c.id ? { ...x, [f.key]: e.target.value } : x))} placeholder={f.ph} />
                     ) : (
-                      <p className="text-sm text-stone-600">{c[f.key] || "—"}</p>
+                      <p className="text-sm text-[#43394c]">{c[f.key] || "—"}</p>
                     )}
                   </div>
                 ))}
               </div>
 
-              <div className="flex items-start gap-1.5 rounded-lg bg-stone-50 px-2.5 py-1.5 text-[11px] text-stone-500">
-                <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-stone-400" />
+              <div className="flex items-start gap-1.5 rounded-lg bg-[#f6f4f5] px-2.5 py-1.5 text-[11px] text-[#717a94]">
+                <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#89828d]" />
                 医疗合规优先于增长建议；AI 不自动发布、不改正式知识库。
               </div>
             </CardContent>

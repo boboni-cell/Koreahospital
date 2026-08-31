@@ -58,8 +58,8 @@ export function OperatorsPanel() {
     <Card>
       <CardContent className="space-y-4 pt-4">
         <div>
-          <h3 className="font-medium text-stone-800">运营人员</h3>
-          <p className="text-xs text-stone-400">首版单人运营；后续共享工作台时再启用登录与只读权限。</p>
+          <h3 className="font-medium text-[#01011b]">运营人员</h3>
+          <p className="text-xs text-[#89828d]">首版单人运营；后续共享工作台时再启用登录与只读权限。</p>
         </div>
         <div className="flex flex-wrap items-end gap-2">
           <Input className="w-32" value={name} onChange={(e) => setName(e.target.value)} placeholder="姓名" />
@@ -73,25 +73,25 @@ export function OperatorsPanel() {
         </div>
         <div className="flex flex-wrap gap-2">
           {operators.map((o) => (
-            <Badge key={o.id} className="border border-stone-200 bg-white">
+            <Badge key={o.id} className="border border-[#e4e0e6] bg-white">
               {o.name}
               {o.responsibility ? ` · ${o.responsibility}` : ""}
             </Badge>
           ))}
         </div>
         <div>
-          <h4 className="mb-1 text-xs font-medium text-stone-500">近期操作</h4>
+          <h4 className="mb-1 text-xs font-medium text-[#717a94]">近期操作</h4>
           {actions.length === 0 ? (
-            <p className="text-xs text-stone-300">暂无操作记录</p>
+            <p className="text-xs text-[#a9a4ad]">暂无操作记录</p>
           ) : (
-            <ul className="space-y-1 text-xs text-stone-500">
+            <ul className="space-y-1 text-xs text-[#717a94]">
               {actions.map((a) => (
                 <li key={a.id} className="flex justify-between gap-2">
                   <span>
                     {a.actor_name ?? "系统"} · {a.action}
                     {a.detail ? `（${a.detail}）` : ""}
                   </span>
-                  <span className="text-stone-300">{a.created_at}</span>
+                  <span className="text-[#a9a4ad]">{a.created_at}</span>
                 </li>
               ))}
             </ul>

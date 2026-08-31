@@ -157,8 +157,8 @@ export default function AccountsPage() {
 
   return (
     <PageFrame>
-      <h2 className="mb-1 text-xl font-semibold tracking-tight text-stone-900">账号矩阵</h2>
-      <p className="mb-4 text-xs text-stone-400">{project ? `当前项目：${project}` : "当前项目：加载中…"}</p>
+      <h2 className="mb-1 text-xl font-semibold tracking-tight text-[#01011b]">账号矩阵</h2>
+      <p className="mb-4 text-xs text-[#89828d]">{project ? `当前项目：${project}` : "当前项目：加载中…"}</p>
 
       <Card className="mb-5">
         <CardContent className="flex flex-wrap items-end gap-2 pt-4">
@@ -223,31 +223,31 @@ export default function AccountsPage() {
             <Card key={a.id}>
               <CardContent className="space-y-2 pt-4">
                 <div className="flex items-center justify-between">
-                  <span className="font-medium text-stone-800">{a.handle}</span>
+                  <span className="font-medium text-[#01011b]">{a.handle}</span>
                   <div className="flex items-center gap-2">
                     <Badge>{PLATFORM_NAME[a.platform] ?? a.platform}</Badge>
                     <button
                       onClick={() => del(a.id)}
-                      className="text-stone-300 transition hover:text-rose-500"
+                      className="text-[#a9a4ad] transition hover:text-rose-500"
                       aria-label="删除"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
                 </div>
-                <div className="text-xs text-stone-400">
+                <div className="text-xs text-[#89828d]">
                   {ROLE_NAMES[a.role] ?? a.role} · 粉丝 {(a.followers ?? 0).toLocaleString()}
                 </div>
                 <div className="flex flex-wrap gap-1 text-xs">
-                  {a.positioning && <Badge className="border border-stone-200 bg-white">{a.positioning}</Badge>}
-                  <Badge className="border border-stone-200 bg-white">{ACCOUNT_ENVIRONMENT_NAME[a.environment_status ?? "configuring"] ?? a.environment_status}</Badge>
-                  {a.operator_name && <Badge className="border border-stone-200 bg-white">{a.operator_name}</Badge>}
+                  {a.positioning && <Badge className="border border-[#e4e0e6] bg-white">{a.positioning}</Badge>}
+                  <Badge className="border border-[#e4e0e6] bg-white">{ACCOUNT_ENVIRONMENT_NAME[a.environment_status ?? "configuring"] ?? a.environment_status}</Badge>
+                  {a.operator_name && <Badge className="border border-[#e4e0e6] bg-white">{a.operator_name}</Badge>}
                 </div>
 
                 {ap.length > 0 && editingFor !== a.id && (
                   <div className="flex flex-wrap gap-1">
                     {ap.map((p) => (
-                      <span key={p.pillar_id} className="rounded-full bg-stone-100 px-2 py-0.5 text-[11px] text-stone-600">
+                      <span key={p.pillar_id} className="rounded-full bg-[#ecedf2] px-2 py-0.5 text-[11px] text-[#43394c]">
                         {p.name} {p.target_ratio > 0 ? `${p.target_ratio}%` : ""}
                       </span>
                     ))}
@@ -255,13 +255,13 @@ export default function AccountsPage() {
                 )}
 
                 {editingFor === a.id ? (
-                  <div className="space-y-2 border-t border-stone-100 pt-2">
-                    <p className="text-xs font-medium text-stone-500">内容支柱与占比</p>
-                    {pillars.length === 0 && <p className="text-xs text-stone-300">暂无支柱（可到“内容支柱”配置）</p>}
+                  <div className="space-y-2 border-t border-[#ecedf2] pt-2">
+                    <p className="text-xs font-medium text-[#717a94]">内容支柱与占比</p>
+                    {pillars.length === 0 && <p className="text-xs text-[#a9a4ad]">暂无支柱（可到“内容支柱”配置）</p>}
                     <div className="space-y-1">
                       {pillars.map((p) => (
                         <div key={p.id} className="flex items-center gap-2">
-                          <span className="flex-1 text-xs text-stone-600">{p.name}</span>
+                          <span className="flex-1 text-xs text-[#43394c]">{p.name}</span>
                           <Input
                             type="number"
                             min={0}
@@ -270,7 +270,7 @@ export default function AccountsPage() {
                             value={draft[p.id] ?? 0}
                             onChange={(e) => setDraft((s) => ({ ...s, [p.id]: Number(e.target.value) || 0 }))}
                           />
-                          <span className="text-xs text-stone-400">%</span>
+                          <span className="text-xs text-[#89828d]">%</span>
                         </div>
                       ))}
                     </div>

@@ -103,17 +103,17 @@ export default function CalendarPage() {
           <span className="text-sm text-zinc-400">{rangeLabel}</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex overflow-hidden rounded-lg border border-stone-200">
-            <button onClick={() => setView("week")} className={`flex items-center gap-1 px-2.5 py-1.5 text-xs ${view === "week" ? "bg-stone-900 text-white" : "bg-white text-stone-600"}`}>
+          <div className="flex overflow-hidden rounded-lg border border-[#e4e0e6]">
+            <button onClick={() => setView("week")} className={`flex items-center gap-1 px-2.5 py-1.5 text-xs ${view === "week" ? "bg-[#01011b] text-white" : "bg-white text-[#43394c]"}`}>
               <LayoutGrid className="h-3.5 w-3.5" /> 周
             </button>
-            <button onClick={() => setView("month")} className={`flex items-center gap-1 px-2.5 py-1.5 text-xs ${view === "month" ? "bg-stone-900 text-white" : "bg-white text-stone-600"}`}>
+            <button onClick={() => setView("month")} className={`flex items-center gap-1 px-2.5 py-1.5 text-xs ${view === "month" ? "bg-[#01011b] text-white" : "bg-white text-[#43394c]"}`}>
               <CalendarDays className="h-3.5 w-3.5" /> 月
             </button>
           </div>
-          <button onClick={() => shift(-1)} className="rounded-lg border border-stone-200 p-1.5 text-stone-500 hover:bg-stone-50"><ChevronLeft className="h-4 w-4" /></button>
-          <button onClick={() => setAnchor(fmt(new Date()))} className="rounded-lg border border-stone-200 px-2 py-1.5 text-xs text-stone-600 hover:bg-stone-50">今天</button>
-          <button onClick={() => shift(1)} className="rounded-lg border border-stone-200 p-1.5 text-stone-500 hover:bg-stone-50"><ChevronRight className="h-4 w-4" /></button>
+          <button onClick={() => shift(-1)} className="rounded-lg border border-[#e4e0e6] p-1.5 text-[#717a94] hover:bg-[#f6f4f5]"><ChevronLeft className="h-4 w-4" /></button>
+          <button onClick={() => setAnchor(fmt(new Date()))} className="rounded-lg border border-[#e4e0e6] px-2 py-1.5 text-xs text-[#43394c] hover:bg-[#f6f4f5]">今天</button>
+          <button onClick={() => shift(1)} className="rounded-lg border border-[#e4e0e6] p-1.5 text-[#717a94] hover:bg-[#f6f4f5]"><ChevronRight className="h-4 w-4" /></button>
           <Button variant="outline" onClick={exportCsv}><Download className="h-3.5 w-3.5" /> 导出{view === "week" ? "周" : "月"}</Button>
         </div>
       </div>
@@ -128,14 +128,14 @@ export default function CalendarPage() {
           const inMonth = dt.getMonth() === anchorDate.getMonth();
           const isToday = ds === todayStr;
           return (
-            <div key={ds} className={`min-h-[96px] rounded-xl border p-1.5 transition ${isToday ? "border-rose-300 bg-rose-50/40" : "border-stone-100"} ${!inMonth && view === "month" ? "opacity-40" : ""}`}>
+            <div key={ds} className={`min-h-[96px] rounded-xl border p-1.5 transition ${isToday ? "border-rose-300 bg-rose-50/40" : "border-[#ecedf2]"} ${!inMonth && view === "month" ? "opacity-40" : ""}`}>
               <div className={`mb-1 text-right text-xs ${isToday ? "font-bold text-rose-500" : "text-zinc-400"}`}>{dt.getDate()}</div>
               <div className="space-y-1">
                 {list.map((it) => {
                   const c = contents.find((x) => x.id === it.content_id);
                   const published = c?.status === "published";
                   return (
-                    <div key={it.id} className="group rounded-md bg-stone-50 p-1 text-[10px] leading-tight">
+                    <div key={it.id} className="group rounded-md bg-[#f6f4f5] p-1 text-[10px] leading-tight">
                       <div className="flex items-center gap-1">
                         <span className={`h-1.5 w-1.5 rounded-full ${published ? "bg-emerald-400" : "bg-amber-400"}`} />
                         <span className="text-[9px] text-zinc-400">{(it.slot_time || "").slice(11, 16)}</span>

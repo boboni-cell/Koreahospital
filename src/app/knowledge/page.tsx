@@ -61,18 +61,18 @@ export default function KnowledgePage() {
     <PageFrame>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight text-stone-900">竞品与内容知识库</h2>
-          <p className="text-sm text-stone-500">每个知识条目须有来源或人工创建记录；AI 不能直接写入。</p>
+          <h2 className="text-xl font-semibold tracking-tight text-[#01011b]">竞品与内容知识库</h2>
+          <p className="text-sm text-[#717a94]">每个知识条目须有来源或人工创建记录；AI 不能直接写入。</p>
         </div>
         <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+          <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#89828d]" />
           <Input className="w-48 pl-8" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="搜索知识" />
         </div>
       </div>
 
       <div className="mb-4 flex flex-wrap gap-2">
         {KINDS.map((k) => (
-          <button key={k.id} onClick={() => setKind(k.id)} className={"rounded-full px-3.5 py-1.5 text-xs font-medium transition " + (kind === k.id ? "bg-stone-800 text-white" : "bg-stone-100 text-stone-500 hover:bg-stone-200")}>
+          <button key={k.id} onClick={() => setKind(k.id)} className={"rounded-full px-3.5 py-1.5 text-xs font-medium transition " + (kind === k.id ? "bg-[#31263b] text-white" : "bg-[#ecedf2] text-[#717a94] hover:bg-[#ecedf2]")}>
             {k.label}
           </button>
         ))}
@@ -91,20 +91,20 @@ export default function KnowledgePage() {
       </Card>
 
       <div className="space-y-2">
-        {list.length === 0 ? <p className="py-8 text-center text-xs text-stone-300">暂无条目</p> : list.map((it) => (
-          <div key={it.id} className="flex items-start gap-3 rounded-xl border border-stone-200 bg-white px-4 py-3">
+        {list.length === 0 ? <p className="py-8 text-center text-xs text-[#a9a4ad]">暂无条目</p> : list.map((it) => (
+          <div key={it.id} className="flex items-start gap-3 rounded-xl border border-[#e4e0e6] bg-white px-4 py-3">
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-stone-800">{it.title}</span>
-                <Badge className={it.status === "archived" ? "bg-stone-100 text-stone-500" : "bg-emerald-50 text-emerald-600"}>{it.status === "archived" ? "已归档" : "启用"}</Badge>
-                <span className="text-[11px] text-stone-400">{PLATFORM_NAME[it.platform ?? ""] ?? it.platform ?? "-"}</span>
+                <span className="text-sm font-medium text-[#01011b]">{it.title}</span>
+                <Badge className={it.status === "archived" ? "bg-[#ecedf2] text-[#717a94]" : "bg-emerald-50 text-emerald-600"}>{it.status === "archived" ? "已归档" : "启用"}</Badge>
+                <span className="text-[11px] text-[#89828d]">{PLATFORM_NAME[it.platform ?? ""] ?? it.platform ?? "-"}</span>
               </div>
-              {it.content && <p className="mt-1 text-sm text-stone-600">{it.content}</p>}
-              {it.evidence && <p className="mt-0.5 text-[11px] text-stone-400">来源：{it.evidence}</p>}
+              {it.content && <p className="mt-1 text-sm text-[#43394c]">{it.content}</p>}
+              {it.evidence && <p className="mt-0.5 text-[11px] text-[#89828d]">来源：{it.evidence}</p>}
             </div>
             <div className="flex items-center gap-1.5">
-              <Button size="sm" variant="ghost" onClick={() => setStatus(it.id, it.status === "active" ? "archived" : "active")} title={it.status === "active" ? "归档" : "启用"}><Archive className="h-4 w-4 text-stone-400" /></Button>
-              <Button size="sm" variant="ghost" onClick={() => del(it.id)} title="删除"><Trash2 className="h-4 w-4 text-stone-400" /></Button>
+              <Button size="sm" variant="ghost" onClick={() => setStatus(it.id, it.status === "active" ? "archived" : "active")} title={it.status === "active" ? "归档" : "启用"}><Archive className="h-4 w-4 text-[#89828d]" /></Button>
+              <Button size="sm" variant="ghost" onClick={() => del(it.id)} title="删除"><Trash2 className="h-4 w-4 text-[#89828d]" /></Button>
             </div>
           </div>
         ))}
@@ -115,7 +115,7 @@ export default function KnowledgePage() {
 
 function SelectWrap({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
-    <select value={value} onChange={(e) => onChange(e.target.value)} className="rounded-lg border border-stone-200 bg-white px-2 py-1.5 text-sm text-stone-600">
+    <select value={value} onChange={(e) => onChange(e.target.value)} className="rounded-lg border border-[#e4e0e6] bg-white px-2 py-1.5 text-sm text-[#43394c]">
       {PLATFORMS.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
     </select>
   );
