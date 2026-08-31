@@ -170,6 +170,7 @@ export default function WorkbenchPage() {
             <Input className="w-56 pl-8" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="搜索内容" />
           </div>
           <Button variant="outline" size="sm" onClick={refresh} disabled={loading}><RefreshCw className="h-4 w-4" /> 刷新</Button>
+          <Link href="/project"><Button size="sm" variant="outline"><Sparkles className="h-4 w-4" /> 项目简报</Button></Link>
           <Link href="/contents/new"><Button size="sm"><Plus className="h-4 w-4" /> 新建内容</Button></Link>
         </div>
       </div>

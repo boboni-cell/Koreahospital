@@ -52,3 +52,26 @@ export function setCurrentProject(id: number) {
     "INSERT INTO app_state (key, value) VALUES ('current_project_id', ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value"
   ).run(String(id));
 }
+
+/** 更新项目营销简报（Task 04）。 */
+export function updateProjectBrief(
+  id: number,
+  fields: {
+    marketing_brief?: string | null;
+    audience?: string | null;
+    voice?: string | null;
+    conversion_goal?: string | null;
+    banned_terms?: string | null;
+  }
+) {
+  db.prepare(
+    "UPDATE projects SET marketing_brief=?, audience=?, voice=?, conversion_goal=?, banned_terms=?, updated_at=CURRENT_TIMESTAMP WHERE id=?"
+  ).run(
+    fields.marketing_brief ?? null,
+    fields.audience ?? null,
+    fields.voice ?? null,
+    fields.conversion_goal ?? null,
+    fields.banned_terms ?? null,
+    id
+  );
+}
