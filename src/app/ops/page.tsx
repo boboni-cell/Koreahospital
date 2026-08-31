@@ -22,6 +22,7 @@ export default function OpsHub() {
   const [tab, setTab] = useState("today");
   const [projects, setProjects] = useState<ProjectOption[]>([]);
   const [current, setCurrent] = useState<ProjectOption | null>(null);
+  const [overview, setOverview] = useState<Record<string, number> | null>(null);
 
   useEffect(() => {
     fetch("/api/projects")
@@ -31,6 +32,7 @@ export default function OpsHub() {
         setCurrent(d.current ?? null);
       })
       .catch(() => {});
+    fetch("/api/overview").then((r) => r.json()).then(setOverview).catch(() => {});
   }, []);
 
   function switchProject(id: string) {
@@ -73,6 +75,23 @@ export default function OpsHub() {
           )}
         </div>
       </div>
+
+      <div className="mb-5 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+        {[
+          { key: "pendingContents", label: "待处理内容", href: "/contents", tone: "text-[#43394c]" },
+          { key: "pendingReview", label: "待人工审核", href: "/production", tone: "text-[#473982]" },
+          { key: "pendingPublish", label: "待发布包", href: "/production", tone: "text-[#473982]" },
+          { key: "pendingBackfill", label: "待回填", href: "/review", tone: "text-[#473982]" },
+          { key: "riskFlags", label: "风险异常", href: "/signals", tone: "text-[#b04848]" },
+          { key: "pendingWriteback", label: "待确认回写", href: "/review", tone: "text-[#473982]" },
+        ].map((c) => (
+          <Link key={c.key} href={c.href} className="surface px-3 py-2.5 transition hover:-translate-y-0.5">
+            <div className="text-[11px] text-[#89828d]">{c.label}</div>
+            <div className={"mt-1 text-2xl font-semibold " + c.tone}>{overview ? (overview[c.key] ?? 0) : "…"}</div>
+          </Link>
+        ))}
+      </div>
+
       <Tabs.Root value={tab} onValueChange={setTab}>
         <TabsList className="mb-4 flex flex-wrap gap-1">
           {TABS.map((t) => (
