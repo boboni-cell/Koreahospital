@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 import { getCurrentProjectId } from "@/lib/projects";
+import { recordAction } from "@/lib/workflow-actions";
 
 export async function GET() {
   const pid = getCurrentProjectId();
@@ -31,5 +32,12 @@ export async function POST(req: NextRequest) {
       opId,
       b.environment_status ?? "configuring"
     );
+  recordAction({
+    objectType: "account",
+    objectId: Number(info.lastInsertRowid),
+    action: "account.create",
+    toStatus: b.status ?? "active",
+    detail: `新增账号 ${b.handle ?? "新账号"} (platform=${b.platform ?? "xiaohongshu"})`,
+  });
   return NextResponse.json({ id: info.lastInsertRowid });
 }

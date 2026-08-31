@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
+import { recordAction } from "@/lib/workflow-actions";
 
 export async function PUT(
   req: NextRequest,
@@ -20,6 +21,12 @@ export async function PUT(
     b.environment_status ?? "configuring",
     id
   );
+  recordAction({
+    objectType: "account",
+    objectId: Number(id),
+    action: "account.update",
+    detail: `更新账号 #${id} 环境配置`,
+  });
   return NextResponse.json({ ok: true, id });
 }
 
@@ -30,5 +37,11 @@ export async function DELETE(
   const { id } = await params;
   db.prepare("DELETE FROM account_pillars WHERE account_id=?").run(id);
   db.prepare("DELETE FROM accounts WHERE id=?").run(id);
+  recordAction({
+    objectType: "account",
+    objectId: Number(id),
+    action: "account.delete",
+    detail: `删除账号 #${id}`,
+  });
   return NextResponse.json({ ok: true, id });
 }

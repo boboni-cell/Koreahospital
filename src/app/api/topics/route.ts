@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 import { getCurrentProjectId } from "@/lib/projects";
+import { recordAction } from "@/lib/workflow-actions";
 
 export async function GET() {
   const pid = getCurrentProjectId();
@@ -15,6 +16,7 @@ export function DELETE(req: NextRequest) {
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "缺 id" }, { status: 400 });
   db.prepare("DELETE FROM topics WHERE id=?").run(id);
+  recordAction({ objectType: "topic", objectId: Number(id), action: "topic.delete", detail: `删除选题 #${id}` });
   return NextResponse.json({ ok: true, id });
 }
 
@@ -33,5 +35,11 @@ export async function POST(req: NextRequest) {
       body.target_accounts ?? null,
       pid
     );
+  recordAction({
+    objectType: "topic",
+    objectId: Number(info.lastInsertRowid),
+    action: "topic.create",
+    detail: `新建选题 ${body.title ?? ""}`,
+  });
   return NextResponse.json({ id: info.lastInsertRowid });
 }

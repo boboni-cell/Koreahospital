@@ -539,4 +539,23 @@ if (accPillarCount === 0) {
   }
 }
 
+
+// ---- Task 03：操作记录（增量、幂等） ----
+db.exec(`
+CREATE TABLE IF NOT EXISTS workflow_actions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  object_type TEXT,
+  object_id INTEGER,
+  actor_type TEXT DEFAULT 'operator',
+  actor_id INTEGER,
+  actor_name TEXT,
+  action TEXT,
+  from_status TEXT,
+  to_status TEXT,
+  detail TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_workflow_actions_obj ON workflow_actions(object_type, object_id);
+`);
+
 export default db;

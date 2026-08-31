@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
+import { recordAction } from "@/lib/workflow-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -29,5 +30,11 @@ export async function PUT(req: NextRequest) {
     }
   });
   tx();
+  recordAction({
+    objectType: "account",
+    objectId: accId,
+    action: "account_pillars.update",
+    detail: `更新账号 #${accId} 的内容支柱与占比（${items.length} 项）`,
+  });
   return NextResponse.json({ ok: true, accountId: accId });
 }

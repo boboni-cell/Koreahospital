@@ -2,6 +2,7 @@ import { PageFrame } from "@/components/layout/page-frame";
 import { ModelConfigForm } from "@/components/settings/model-config-form";
 import { R2ConfigForm } from "@/components/settings/r2-config-form";
 import { AgentConfigForm } from "@/components/settings/agent-config-form";
+import { OperatorsPanel } from "@/components/settings/operators-panel";
 
 export default function SettingsPage() {
   return (
@@ -13,6 +14,7 @@ export default function SettingsPage() {
         </p>
       </div>
       <div className="space-y-6">
+        <OperatorsPanel />
         <ModelConfigForm />
         <R2ConfigForm />
         <AgentConfigForm />

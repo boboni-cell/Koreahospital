@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 import { getCurrentProjectId } from "@/lib/projects";
+import { recordAction } from "@/lib/workflow-actions";
 
 export async function GET(req: NextRequest) {
   const date = req.nextUrl.searchParams.get("date");
@@ -34,5 +35,12 @@ export async function POST(req: NextRequest) {
       body.scheduled_for ?? null,
       pid
     );
+  recordAction({
+    objectType: "content",
+    objectId: Number(info.lastInsertRowid),
+    action: "content.create",
+    toStatus: body.status ?? "draft",
+    detail: `新建内容 ${body.title ?? "未命名"}`,
+  });
   return NextResponse.json({ id: info.lastInsertRowid });
 }
