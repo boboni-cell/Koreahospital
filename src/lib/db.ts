@@ -375,4 +375,71 @@ try {
   db.exec("ALTER TABLE contents ADD COLUMN data_filled INTEGER DEFAULT 0");
 }
 
+
+// ---- Task 01：项目上下文（增量、幂等，禁止重建库） ----
+// 多项目底座，首版默认 Koreahospital。
+db.exec(`
+CREATE TABLE IF NOT EXISTS projects (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  slug TEXT,
+  status TEXT DEFAULT 'active',
+  is_default INTEGER DEFAULT 0,
+  marketing_brief TEXT,
+  audience TEXT,
+  voice TEXT,
+  conversion_goal TEXT,
+  banned_terms TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE IF NOT EXISTS app_state (
+  key TEXT PRIMARY KEY,
+  value TEXT
+);
+`);
+
+const projCount = (db.prepare("SELECT COUNT(*) AS n FROM projects").get() as { n: number }).n;
+let defaultProjectId = 1;
+if (projCount === 0) {
+  const info = db
+    .prepare(
+      "INSERT INTO projects (name, slug, status, is_default, created_at, updated_at) VALUES (?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)"
+    )
+    .run("Koreahospital", "koreahospital", "active");
+  defaultProjectId = Number(info.lastInsertRowid);
+  db.prepare("INSERT OR REPLACE INTO app_state (key, value) VALUES ('current_project_id', ?)").run(String(defaultProjectId));
+} else {
+  const def = db.prepare("SELECT id FROM projects WHERE is_default=1 ORDER BY id LIMIT 1").get() as { id: number } | undefined;
+  defaultProjectId = def ? def.id : (db.prepare("SELECT id FROM projects ORDER BY id LIMIT 1").get() as { id: number }).id;
+  const cur = db.prepare("SELECT value FROM app_state WHERE key='current_project_id'").get() as { value: string } | undefined;
+  if (!cur) db.prepare("INSERT OR REPLACE INTO app_state (key, value) VALUES ('current_project_id', ?)").run(String(defaultProjectId));
+}
+
+// 给业务实体补充 project_id（幂等），并把既有数据归入默认项目
+const projectScopedTables = [
+  "accounts",
+  "contents",
+  "assets",
+  "topics",
+  "metrics",
+  "post_metrics",
+  "schedules",
+  "sop_docs",
+  "notes",
+  "tasks",
+  "metrics_uploads",
+];
+function ensureProjectColumn(table: string) {
+  try {
+    db.prepare(`SELECT project_id FROM ${table} LIMIT 1`).get();
+  } catch {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN project_id INTEGER`);
+  }
+}
+for (const t of projectScopedTables) ensureProjectColumn(t);
+for (const t of projectScopedTables) {
+  db.prepare(`UPDATE ${t} SET project_id=? WHERE project_id IS NULL`).run(defaultProjectId);
+}
+
 export default db;

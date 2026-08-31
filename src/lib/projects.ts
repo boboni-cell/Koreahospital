@@ -1,0 +1,54 @@
+import db from "@/lib/db";
+
+export interface Project {
+  id: number;
+  name: string;
+  slug: string | null;
+  status: string;
+  is_default: number;
+  marketing_brief: string | null;
+  audience: string | null;
+  voice: string | null;
+  conversion_goal: string | null;
+  banned_terms: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** 当前项目 id：取 app_state.current_project_id，缺省回退默认项目。 */
+export function getCurrentProjectId(): number {
+  const cur = db
+    .prepare("SELECT value FROM app_state WHERE key='current_project_id'")
+    .get() as { value: string } | undefined;
+  if (cur) {
+    const id = Number(cur.value);
+    if (id > 0) return id;
+  }
+  const def = db
+    .prepare("SELECT id FROM projects WHERE is_default=1 ORDER BY id LIMIT 1")
+    .get() as { id: number } | undefined;
+  return def ? def.id : 1;
+}
+
+/** 当前项目对象；找不到时返回第一个项目。 */
+export function getCurrentProject(): Project | null {
+  const id = getCurrentProjectId();
+  const p = db.prepare("SELECT * FROM projects WHERE id=?").get(id) as Project | undefined;
+  if (p) return p;
+  const first = db.prepare("SELECT * FROM projects ORDER BY id LIMIT 1").get() as Project | undefined;
+  return first ?? null;
+}
+
+/** 列出全部项目，默认项目置顶。 */
+export function listProjects(): Project[] {
+  return db
+    .prepare("SELECT * FROM projects ORDER BY is_default DESC, id ASC")
+    .all() as Project[];
+}
+
+/** 设置当前项目。 */
+export function setCurrentProject(id: number) {
+  db.prepare(
+    "INSERT INTO app_state (key, value) VALUES ('current_project_id', ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value"
+  ).run(String(id));
+}

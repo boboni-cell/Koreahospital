@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
+import { getCurrentProjectId } from "@/lib/projects";
 
 export async function GET() {
-  const rows = db.prepare("SELECT * FROM topics ORDER BY id DESC LIMIT 100").all();
+  const pid = getCurrentProjectId();
+  const rows = db
+    .prepare("SELECT * FROM topics WHERE project_id=? ORDER BY id DESC LIMIT 100")
+    .all(pid);
   return NextResponse.json(rows);
 }
 
@@ -16,16 +20,18 @@ export function DELETE(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
+  const pid = getCurrentProjectId();
   const info = db
     .prepare(
-      "INSERT INTO topics (title, description, source, heat_score, target_accounts) VALUES (?, ?, ?, ?, ?)"
+      "INSERT INTO topics (title, description, source, heat_score, target_accounts, project_id) VALUES (?, ?, ?, ?, ?, ?)"
     )
     .run(
       body.title ?? "",
       body.description ?? null,
       body.source ?? "manual",
       body.heat_score ?? 5,
-      body.target_accounts ?? null
+      body.target_accounts ?? null,
+      pid
     );
   return NextResponse.json({ id: info.lastInsertRowid });
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PageFrame } from "@/components/layout/page-frame";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import TodayList from "@/components/ops/today-list";
@@ -15,13 +15,57 @@ const TABS = [
   { id: "research", label: "选题研究" },
 ];
 
+interface ProjectOption { id: number; name: string }
+
 export default function OpsHub() {
   const [tab, setTab] = useState("today");
+  const [projects, setProjects] = useState<ProjectOption[]>([]);
+  const [current, setCurrent] = useState<ProjectOption | null>(null);
+
+  useEffect(() => {
+    fetch("/api/projects")
+      .then((r) => r.json())
+      .then((d) => {
+        setProjects(d.projects ?? []);
+        setCurrent(d.current ?? null);
+      })
+      .catch(() => {});
+  }, []);
+
+  function switchProject(id: string) {
+    fetch("/api/projects", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ projectId: Number(id) }),
+    })
+      .then((r) => r.json())
+      .then((d) => setCurrent(d.current ?? null))
+      .catch(() => {});
+  }
+
   return (
     <PageFrame>
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-xl font-semibold tracking-tight text-stone-900">运营中心</h2>
-        <span className="text-xs text-stone-400">所有运营动作都在这里完成</span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-stone-400">所有运营动作都在这里完成</span>
+          {current && (
+            <span className="text-xs text-stone-500">
+              当前项目 · <span className="font-medium text-stone-700">{current.name}</span>
+            </span>
+          )}
+          {projects.length > 1 && (
+            <select
+              value={current?.id ?? ""}
+              onChange={(e) => switchProject(e.target.value)}
+              className="rounded-lg border border-stone-200 bg-white px-2 py-1 text-xs text-stone-600"
+            >
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+          )}
+        </div>
       </div>
       <Tabs.Root value={tab} onValueChange={setTab}>
         <TabsList className="mb-4 flex flex-wrap gap-1">

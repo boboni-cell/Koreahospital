@@ -40,8 +40,15 @@ export default function AccountsPage() {
   const [handle, setHandle] = useState("");
   const [role, setRole] = useState("director");
 
+  const [project, setProject] = useState<string>("");
   const load = () => fetch("/api/accounts").then((r) => r.json()).then((d: Account[]) => setAccounts(d));
   useEffect(() => { load(); }, []);
+  useEffect(() => {
+    fetch("/api/projects")
+      .then((r) => r.json())
+      .then((d) => setProject(d?.current?.name ?? ""))
+      .catch(() => {});
+  }, []);
 
   function add() {
     if (!handle.trim()) return toast.error("请填写账号名");
@@ -62,7 +69,8 @@ export default function AccountsPage() {
 
   return (
     <PageFrame>
-      <h2 className="mb-4 text-xl font-semibold tracking-tight text-stone-900">账号矩阵</h2>
+      <h2 className="mb-1 text-xl font-semibold tracking-tight text-stone-900">账号矩阵</h2>
+      <p className="mb-4 text-xs text-stone-400">{project ? `当前项目：${project}` : "当前项目：加载中…"}</p>
 
       <Card className="mb-5">
         <CardContent className="flex flex-wrap items-end gap-2 pt-4">
