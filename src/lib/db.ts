@@ -134,6 +134,9 @@ CREATE TABLE IF NOT EXISTS notes (
 );
 `);
 
+// 幂等约束：同一账号同一天一条（支持 CSV 重复上传不重复累计）
+db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_metrics_acc_date ON metrics(account_id, date)");
+
 // 首次启动种子（用文件锁避免构建期多 worker 并发重复播种）
 const SEED_LOCK = path.join(dataDir, ".seed.lock");
 if (!fs.existsSync(SEED_LOCK)) {
@@ -304,34 +307,6 @@ if (!fs.existsSync(SEED_LOCK)) {
   });
   insertSops(sops);
   }
-
-  // 演示数据：近 14 天各账号指标
-  const insMetric = db.prepare(
-    `INSERT INTO metrics (account_id, date, followers, likes, saves, comments, shares, views)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-  );
-  const seedMetrics = db.transaction(() => {
-    const today = new Date();
-    for (let d = 13; d >= 0; d--) {
-      const dt = new Date(today);
-      dt.setDate(dt.getDate() - d);
-      const date = dt.toISOString().slice(0, 10);
-      for (let acc = 1; acc <= 10; acc++) {
-        const base = acc * 1200 + (13 - d) * 40;
-        insMetric.run(
-          acc,
-          date,
-          base,
-          Math.round(base * 0.06 + Math.random() * 20),
-          Math.round(base * 0.03 + Math.random() * 10),
-          Math.round(base * 0.01 + Math.random() * 5),
-          Math.round(base * 0.008 + Math.random() * 4),
-          Math.round(base * 1.4 + Math.random() * 200)
-        );
-      }
-    }
-  });
-  seedMetrics();
 
   // 演示日程与沟通记录
   db.prepare("INSERT OR IGNORE INTO schedules (account_id, slot_time, content_id) VALUES (1, ?, NULL)"
