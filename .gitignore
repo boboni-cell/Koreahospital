@@ -6,6 +6,7 @@ data/ai-config.json
 data/r2-config.json
 data/models.json
 data/.seed.lock
+data/backups/
 public/uploads/
 *.log
 .DS_Store
