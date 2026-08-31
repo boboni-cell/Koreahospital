@@ -33,6 +33,19 @@
 
   --font-heading: var(--font-sans);
 
+  /* DESIGN.md Hex — 数据工作台设计令牌 */
+  --color-ink-violet: #01011b;
+  --color-plum-charcoal: #31263b;
+  --color-storm-mauve: #43394c;
+  --color-slate-iris: #717a94;
+  --color-ash-lavender: #89828d;
+  --color-parchment: #fffcfc;
+  --color-bone-mist: #ecedf2;
+  --color-fog-border: #dbd7da;
+  --color-twilight-plum: #473982;
+  --color-amethyst: #6f63b7;
+  --color-wisteria: #9e91d6;
+
   --color-sidebar-ring: var(--sidebar-ring);
 
   --color-sidebar-border: var(--sidebar-border);
@@ -71,31 +84,31 @@
 
   /* 暖色系（奶油粉 / 蜜桃 / 薰衣草），参考设计稿 */
 
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card: #fffcfc;
+  --card-foreground: #01011b;
 
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
+  --popover: #fffcfc;
+  --popover-foreground: #01011b;
 
-  --primary: oklch(0.205 0 0); /* rose-400 */
-  --primary-foreground: oklch(0.985 0 0);
+  --primary: #31263b; /* plum charcoal（描边按钮主色） */
+  --primary-foreground: #01011b;
 
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
+  --secondary: #ecedf2;
+  --secondary-foreground: #31263b;
 
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
+  --muted: #ecedf2;
+  --muted-foreground: #717a94;
 
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --accent: #ecedf2;
+  --accent-foreground: #01011b;
 
-  --destructive: oklch(0.577 0.245 27.325);
+  --destructive: #b04848;
 
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --border: #dbd7da;
+  --input: #dbd7da;
+  --ring: #473982;
+  --background: #fffcfc;
+  --foreground: #01011b;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -117,38 +130,36 @@
 
 body {
   background:
-    radial-gradient(circle at 15% 10%, rgba(203, 213, 225, 0.55) 0%, transparent 42%),
-    radial-gradient(circle at 88% 12%, rgba(199, 210, 254, 0.5) 0%, transparent 40%),
-    radial-gradient(circle at 82% 88%, rgba(254, 226, 226, 0.35) 0%, transparent 42%),
-    linear-gradient(135deg, #f7f8fa 0%, #eef1f5 48%, #e9edf3 100%) fixed;
+    radial-gradient(circle at 12% 8%, rgba(158, 145, 214, 0.12) 0%, transparent 42%),
+    radial-gradient(circle at 92% 12%, rgba(111, 99, 183, 0.09) 0%, transparent 40%),
+    #fffcfc;
+  color: #01011b;
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
 }
 
-/* 磨砂玻璃卡片 */
+/* 羊皮纸笔记本卡片（DESIGN.md Hex） */
 .surface {
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(22px) saturate(160%);
-  -webkit-backdrop-filter: blur(22px) saturate(160%);
-  border: 1px solid rgba(255, 255, 255, 0.75);
-  border-radius: 1.25rem;
+  background: #fffcfc;
+  border: 1px solid #e4e0e6;
+  border-radius: 6px;
   box-shadow:
-    0 1px 2px rgba(50, 50, 60, 0.05),
-    0 18px 40px -24px rgba(50, 50, 60, 0.28);
+    rgba(49, 38, 59, 0.22) 0 0 0 1px,
+    rgba(49, 38, 59, 0.08) 0 14px 34px -12px,
+    inset rgba(71, 57, 130, 0.06) 0 0 0 1px;
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 .surface:hover {
   box-shadow:
-    0 1px 2px rgba(50, 50, 60, 0.05),
-    0 24px 50px -24px rgba(50, 50, 60, 0.32);
+    rgba(49, 38, 59, 0.24) 0 0 0 1px,
+    rgba(49, 38, 59, 0.12) 0 22px 44px -12px,
+    inset rgba(71, 57, 130, 0.08) 0 0 0 1px;
 }
 
 .glass {
-  background: rgba(255, 255, 255, 0.55);
-  backdrop-filter: blur(22px) saturate(160%);
-  -webkit-backdrop-filter: blur(22px) saturate(160%);
-  border: 1px solid rgba(255, 255, 255, 0.75);
+  background: #fdfbfb;
+  border: 1px solid #e4e0e6;
 }
 
 /* 设计稿玻璃卡片（sidebar / 概览容器） */

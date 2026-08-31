@@ -5,7 +5,7 @@ function Badge({ className, ...props }: React.HTMLAttributes<HTMLSpanElement>) {
   return (
     <span
       className={cn(
-        "pill glass text-stone-600",
+        "pill bg-transparent text-[#43394c]",
         className
       )}
       {...props}
