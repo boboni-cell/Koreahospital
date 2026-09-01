@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readAiConfig } from "@/lib/ai-config";
-import { getActiveTextConfig } from "@/lib/models";
-import { chatComplete, parseJsonBlock } from "@/lib/ai-client";
+import { parseJsonBlock } from "@/lib/ai-client";
 import { PLATFORM_SKILL } from "@/lib/constants";
 import { selectSkillIds, resolveContents } from "@/lib/skills";
+import { chatCompleteForAgent } from "@/lib/agent-llm";
+import { requireAgentPreconditions } from "@/lib/agent-contracts";
 import {
   buildCopySystem,
   buildSingleRoleUser,
@@ -16,32 +16,28 @@ import {
 async function genOne(
   p: CopyInput,
   role: string,
-  cfg: Awaited<ReturnType<typeof readAiConfig>>,
   skillContent: string,
   roles: string[]
 ) {
-  const text = await chatComplete(
+  const text = await chatCompleteForAgent(
+    "writer",
     [
       { role: "system", content: buildCopySystem(skillContent) },
       { role: "user", content: buildSingleRoleUser(p, role, roles) },
     ],
-    cfg,
     { maxTokens: 2000, timeoutMs: 110000 }
   );
   const j = parseJsonBlock<{ title: string; body: string; tags: string[] }>(text);
   return { role, title: j.title || "", body: j.body || "", tags: j.tags || [] };
 }
 
-async function scoreOne(
-  v: { role: string; title: string; body: string },
-  cfg: Awaited<ReturnType<typeof readAiConfig>>
-) {
-  const stext = await chatComplete(
+async function scoreOne(v: { role: string; title: string; body: string }) {
+  const stext = await chatCompleteForAgent(
+    "writer",
     [
       { role: "system", content: buildScoreSystem() },
       { role: "user", content: buildScoreUser(v.role, v.title, v.body) },
     ],
-    cfg,
     { maxTokens: 2000, timeoutMs: 110000 }
   );
   const sj = parseJsonBlock<{
@@ -56,13 +52,12 @@ async function scoreOne(
 }
 
 export async function POST(req: NextRequest) {
-  const input: CopyInput = await req.json();
-  const cfg = (await getActiveTextConfig()) ?? (await readAiConfig());
+  const pre = requireAgentPreconditions("writer");
+  if (!pre.ok) return NextResponse.json({ error: pre.reason }, { status: 412 });
 
-  // 用户可自选角色（多选）；未选则默认全部
+  const input: CopyInput = await req.json();
   const roles = input.roles && input.roles.length ? input.roles : ROLE_ORDER;
 
-  // Q2=a：生成前用 agent 混合选择本次需要的 skill（高频静态 + 平台skill优先 + 模型动态挑）
   let skillContent = "";
   try {
     const prefer = input.platform ? PLATFORM_SKILL[input.platform] ?? [] : [];
@@ -76,12 +71,9 @@ export async function POST(req: NextRequest) {
     console.warn("[agent] skill 注入跳过", e);
   }
 
-  if (!cfg.enabled) {
-    return NextResponse.json(templateCopy(input));
-  }
   try {
-    const variants = await Promise.all(roles.map((r) => genOne(input, r, cfg, skillContent, roles)));
-    const scored = await Promise.all(variants.map((v) => scoreOne(v, cfg)));
+    const variants = await Promise.all(roles.map((r) => genOne(input, r, skillContent, roles)));
+    const scored = await Promise.all(variants.map((v) => scoreOne(v)));
     const merged = variants.map((v, i) => ({ ...v, score: scored[i] }));
     return NextResponse.json({ variants: merged, roles, modelPowered: true });
   } catch (e) {

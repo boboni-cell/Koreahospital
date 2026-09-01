@@ -1,8 +1,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { readAiConfig } from "./ai-config";
-import { getActiveTextConfig } from "./models";
-import { chatComplete, parseJsonBlock } from "./ai-client";
+import { parseJsonBlock } from "./ai-client";
+import { chatCompleteForAgent } from "./agent-llm";
+import { getAgentModel } from "./agent-models";
 
 /** 一个 skill 的来源：本地 skills/ 目录（SKILL.md 或 .md，支持 YAML frontmatter） */
 export interface SkillEntry {
@@ -125,15 +125,16 @@ export async function selectSkillIds(
   );
   if (dynamic.length === 0) return { ids: alwaysIds, modelPowered: true };
 
-  const cfg = (await getActiveTextConfig()) ?? (await readAiConfig());
-  if (!cfg.enabled) {
-    // 未接模型：全部 dynamic 直接返回（保守，宁多勿漏）
+  // 由 strategist Agent 决策；该角色为 mock 时直接全量 dynamic 兜底（保守）
+  const strategist = getAgentModel("strategist");
+  if (strategist.is_mock || !strategist.api_key || !strategist.base_url || strategist.base_url.startsWith("mock://")) {
     return { ids: Array.from(new Set([...alwaysIds, ...dynamic.map((s) => s.id)])), modelPowered: false };
   }
 
   try {
     const catText = dynamic.map((s, i) => `${i}. [${s.id}] ${s.name}：${s.description}`).join("\n");
-    const text = await chatComplete(
+    const text = await chatCompleteForAgent(
+      "strategist",
       [
         {
           role: "system",
@@ -145,7 +146,6 @@ export async function selectSkillIds(
           content: `任务：${task}\n额外信息：${JSON.stringify(input)}\n\n可用动态 skill：\n${catText}\n\n输出形如 ["0","3"]`,
         },
       ],
-      cfg,
       { maxTokens: 200, timeoutMs: 45000 }
     );
     const idx = parseJsonBlock<string[]>(text);

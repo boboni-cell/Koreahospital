@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readAiConfig } from "@/lib/ai-config";
-import { getActiveTextConfig } from "@/lib/models";
-import { chatComplete, parseJsonBlock } from "@/lib/ai-client";
+import { parseJsonBlock } from "@/lib/ai-client";
+import { chatCompleteForAgent } from "@/lib/agent-llm";
+import { requireAgentPreconditions } from "@/lib/agent-contracts";
 import { selectSkillIds, resolveContents } from "@/lib/skills";
 
 const ACCOUNTS = [
@@ -29,10 +29,8 @@ export async function POST(req: NextRequest) {
   const role = content.role || "";
   const platform = content.platform || "xiaohongshu";
 
-  const cfg = (await getActiveTextConfig()) ?? (await readAiConfig());
-  if (!cfg.enabled) {
-    return NextResponse.json({ accounts: role ? [ROLE_ACCOUNTS[role]].filter(Boolean) : [], modelPowered: false });
-  }
+  const pre = requireAgentPreconditions("strategist");
+  if (!pre.ok) return NextResponse.json({ error: pre.reason }, { status: 412 });
 
   let skillContent = "";
   try {
@@ -58,12 +56,12 @@ export async function POST(req: NextRequest) {
       "",
       '输出 JSON：{"accounts":["小红书·科普号"],"reason":"一句话理由"}',
     ].join("\n");
-    const text = await chatComplete(
+    const text = await chatCompleteForAgent(
+      "strategist",
       [
         { role: "system", content: sys + (skillContent ? `\n\n参考 skill：\n${skillContent.slice(0, 2000)}` : "") },
         { role: "user", content: user },
       ],
-      cfg,
       { maxTokens: 300, timeoutMs: 45000 }
     );
     const d = parseJsonBlock<{ accounts: string[]; reason: string }>(text);

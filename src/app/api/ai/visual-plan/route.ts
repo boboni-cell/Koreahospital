@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readAiConfig } from "@/lib/ai-config";
-import { getActiveTextConfig } from "@/lib/models";
-import { chatComplete, parseJsonBlock } from "@/lib/ai-client";
+import { parseJsonBlock } from "@/lib/ai-client";
+import { chatCompleteForAgent } from "@/lib/agent-llm";
+import { requireAgentPreconditions } from "@/lib/agent-contracts";
 import { selectSkillIds, resolveContents } from "@/lib/skills";
 
 /**
@@ -17,16 +17,8 @@ export async function POST(req: NextRequest) {
   const role = content.role || "";
   const platform = content.platform || "xiaohongshu";
 
-  const cfg = (await getActiveTextConfig()) ?? (await readAiConfig());
-  if (!cfg.enabled) {
-    return NextResponse.json({
-      prompt: "",
-      shouldUseReal: true,
-      reason: "未接入模型，默认建议使用真实拍摄照片（医疗类更稳妥）",
-      category: "科普图示",
-      modelPowered: false,
-    });
-  }
+  const pre = requireAgentPreconditions("designer");
+  if (!pre.ok) return NextResponse.json({ error: pre.reason }, { status: 412 });
 
   // agent 选 skill：视觉/封面类
   let skillContent = "";
@@ -53,12 +45,12 @@ export async function POST(req: NextRequest) {
       "输出 JSON：",
       '{"shouldUseReal":true/false,"reason":"一句话理由","prompt":"若AI生成，放可直接跑图的提示词(3:4竖版/风格/主体/构图/文字)；若用真实照片则留空","category":"建议素材类别"}',
     ].join("\n");
-    const text = await chatComplete(
+    const text = await chatCompleteForAgent(
+      "designer",
       [
         { role: "system", content: sys + (skillContent ? `\n\n参考 skill：\n${skillContent.slice(0, 3000)}` : "") },
         { role: "user", content: user },
       ],
-      cfg,
       { maxTokens: 1200, timeoutMs: 60000 }
     );
     const d = parseJsonBlock<{

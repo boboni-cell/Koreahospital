@@ -8,16 +8,22 @@ export interface ChatOptions {
   timeoutMs?: number;
 }
 
+export interface AiConfig {
+  baseUrl: string;
+  apiKey: string;
+  model: string;
+  enabled: boolean;
+}
+
 /**
  * 通用 OpenAI 兼容 chat 调用。
  * 兼容推理模型（如 kimi-k3）：reasoning_content 有内容时回退读取。
  */
 export async function chatComplete(
   messages: ChatMessage[],
-  cfg?: AiConfig,
+  config: AiConfig,
   opts: ChatOptions = {}
 ): Promise<string> {
-  const config = cfg ?? (await readAiConfig());
   if (!config.enabled) throw new Error("AI 未启用");
   if (!config.apiKey || !config.baseUrl) throw new Error("模型未配置");
 
@@ -52,8 +58,6 @@ export async function chatComplete(
     clearTimeout(timer);
   }
 }
-
-import { readAiConfig, type AiConfig } from "./ai-config";
 
 /**
  * 从文本中稳健提取 JSON 对象/数组（兼容模型附带解释、思考过程、markdown 围栏）。

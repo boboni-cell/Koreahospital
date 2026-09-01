@@ -627,6 +627,59 @@ if (contractCount === 0) {
 }
 
 
+// ---- 每个 Agent 独立模型配置（PRD §10 + 用户：每 Agent 接口+key+自动拉取） ----
+db.exec(`
+CREATE TABLE IF NOT EXISTS agent_models (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  role TEXT UNIQUE NOT NULL,
+  provider TEXT DEFAULT 'mock',
+  base_url TEXT NOT NULL,
+  api_key TEXT,
+  model TEXT NOT NULL,
+  kind TEXT DEFAULT 'text',
+  is_mock INTEGER DEFAULT 0,
+  last_tested_at TEXT,
+  last_test_status INTEGER,
+  last_test_error TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+`);
+// 缺位即建 mock 占位（用户后续在 /settings/agent-models 配置真实 key）
+const ROLES = ["researcher", "strategist", "writer", "designer", "publisher", "analyst"];
+const insModel = db.prepare("INSERT OR IGNORE INTO agent_models (role, provider, base_url, api_key, model, kind, is_mock) VALUES (?, ?, ?, ?, ?, ?, ?)");
+for (const r of ROLES) insModel.run(r, "mock", "mock://local", "", "mock-1", "text", 1);
+// 兼容旧库：补 provider 列
+try {
+  db.prepare("SELECT provider FROM agent_models LIMIT 1").get();
+} catch {
+  db.exec("ALTER TABLE agent_models ADD COLUMN provider TEXT DEFAULT 'mock'");
+  db.exec("UPDATE agent_models SET provider='mock' WHERE is_mock=1");
+  db.exec("UPDATE agent_models SET provider='custom' WHERE is_mock=0 AND (provider IS NULL OR provider='')");
+}
+
+
+// ---- 图像/视频模型配置（独立表，因为一个项目可有 1 图像 + 1 视频，按 kind 唯一） ----
+db.exec(`
+CREATE TABLE IF NOT EXISTS media_models (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  kind TEXT UNIQUE NOT NULL,
+  provider TEXT DEFAULT 'mock',
+  base_url TEXT NOT NULL,
+  api_key TEXT,
+  model TEXT NOT NULL,
+  is_mock INTEGER DEFAULT 0,
+  last_tested_at TEXT,
+  last_test_status INTEGER,
+  last_test_error TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+`);
+db.prepare("INSERT OR IGNORE INTO media_models (kind, provider, base_url, api_key, model, is_mock) VALUES (?, ?, ?, ?, ?, ?)").run("image", "mock", "mock://local", "", "mock-1", 1);
+db.prepare("INSERT OR IGNORE INTO media_models (kind, provider, base_url, api_key, model, is_mock) VALUES (?, ?, ?, ?, ?, ?)").run("video", "mock", "mock://local", "", "mock-1", 1);
+
+
 // ---- Task 09：母版简报与平台版本（增量、幂等） ----
 db.exec(`
 CREATE TABLE IF NOT EXISTS content_briefs (

@@ -16,7 +16,6 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { SURGERY_TYPE_OPTIONS } from "@/lib/constants";
-import { ModelSwitcher } from "@/components/settings/model-switcher";
 
 type GenKind = "image" | "video";
 
@@ -26,6 +25,12 @@ interface Content {
   body: string;
   role: string;
   platform: string;
+}
+
+interface MediaModel {
+  kind: GenKind;
+  model: string;
+  is_mock: number;
 }
 
 export function GenerateClient() {
@@ -47,10 +52,11 @@ export function GenerateClient() {
   const [syncedId, setSyncedId] = useState<number | null>(null);
 
   async function reloadModels() {
-    const list: any[] = await fetch("/api/models").then((r) => r.json());
+    const data = await fetch("/api/media-models").then((r) => r.json());
+    const list: MediaModel[] = data.models || [];
     setActiveModels({
-      image: list.find((m) => m.kind === "image" && m.isActive)?.name,
-      video: list.find((m) => m.kind === "video" && m.isActive)?.name,
+      image: list.find((m) => m.kind === "image")?.model,
+      video: list.find((m) => m.kind === "video")?.model,
     });
   }
 
@@ -77,9 +83,9 @@ export function GenerateClient() {
   async function run() {
     if (!prompt.trim()) return toast.error("请填写生成提示词");
     if (kind === "image" && !activeModels.image)
-      return toast.error("没有启用中的图像模型，请先在「模型管理」添加并启用");
+      return toast.error("请先在「图像/视频」中配置图像模型");
     if (kind === "video" && !activeModels.video)
-      return toast.error("没有启用中的视频模型，请先在「模型管理」添加并启用");
+      return toast.error("请先在「图像/视频」中配置视频模型");
     setGen(true);
     setResult(null);
     try {
@@ -262,8 +268,13 @@ export function GenerateClient() {
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="space-y-1">
-              <Label>生成模型（{kind === "image" ? "图像" : "视频"}，一键切换）</Label>
-              <ModelSwitcher kind={kind} activeName={activeModels[kind as "image" | "video"]} onChange={() => reloadModels()} />
+              <Label>当前{kind === "image" ? "图像" : "视频"}模型</Label>
+              <div className="flex items-center justify-between rounded-xl border border-[#e4e0e6] bg-white px-3 py-2 text-sm">
+                <span>{activeModels[kind] || "未配置"}</span>
+                <a href="/settings/media-models" className="text-xs text-rose-500 hover:underline">
+                  配置图像/视频模型 →
+                </a>
+              </div>
             </div>
             <div className="space-y-1">
               <Label>类型</Label>

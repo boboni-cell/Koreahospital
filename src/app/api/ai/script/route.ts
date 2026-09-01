@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readAiConfig } from "@/lib/ai-config";
-import { getActiveTextConfig } from "@/lib/models";
-import { chatComplete } from "@/lib/ai-client";
+import { chatCompleteForAgent } from "@/lib/agent-llm";
+import { requireAgentPreconditions } from "@/lib/agent-contracts";
 import { selectSkillIds, resolveContents } from "@/lib/skills";
 import { VIDEO_SCRIPT_TYPES } from "@/lib/constants";
 
@@ -25,12 +24,10 @@ export async function POST(req: NextRequest) {
   const description = topic.description || "";
   const role = topic.role || "viral";
   const platform = topic.platform || "douyin";
-  const type = topic.type || "doctor"; // 视频脚本类型
+  const pre = requireAgentPreconditions("writer");
+  if (!pre.ok) return NextResponse.json({ error: pre.reason }, { status: 412 });
 
-  const cfg = (await getActiveTextConfig()) ?? (await readAiConfig());
-  if (!cfg.enabled) {
-    return NextResponse.json({ script: "", modelPowered: false, note: "未接入模型，无法生成脚本。" });
-  }
+  const type = topic.type || "doctor"; // 视频脚本类型
 
   let skillContent = "";
   try {
@@ -64,12 +61,12 @@ export async function POST(req: NextRequest) {
       "5. 结尾行动引导",
       "6. 拍摄注意事项（灯光/收音/合规，植发内容尤其注意患者隐私与医疗合规）",
     ].join("\n");
-    const script = await chatComplete(
+    const script = await chatCompleteForAgent(
+      "writer",
       [
         { role: "system", content: sys + (skillContent ? `\n\n参考 skill：\n${skillContent.slice(0, 3500)}` : "") },
         { role: "user", content: user },
       ],
-      cfg,
       { maxTokens: 2800, timeoutMs: 90000 }
     );
     return NextResponse.json({ script, type, typeName, modelPowered: true });

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readAiConfig } from "@/lib/ai-config";
-import { getActiveTextConfig } from "@/lib/models";
-import { chatComplete, parseJsonBlock } from "@/lib/ai-client";
+import { parseJsonBlock } from "@/lib/ai-client";
 import { selectSkillIds, resolveContents } from "@/lib/skills";
+import { chatCompleteForAgent } from "@/lib/agent-llm";
+import { requireAgentPreconditions } from "@/lib/agent-contracts";
 import db from "@/lib/db";
 
 interface ResearchInput {
@@ -31,8 +31,10 @@ function localTrends(niche: string, platform: string): string[] {
 }
 
 export async function POST(req: NextRequest) {
+  const pre = requireAgentPreconditions("researcher");
+  if (!pre.ok) return NextResponse.json({ error: pre.reason }, { status: 412 });
+
   const input: ResearchInput = await req.json();
-  const cfg = (await getActiveTextConfig()) ?? (await readAiConfig());
 
   // Q2=a：agent 混合选择并注入本次需要的 skill（如起号方法论 / 合规红线）
   let skillContent = "";
@@ -43,13 +45,9 @@ export async function POST(req: NextRequest) {
     console.warn("[agent] skill 注入跳过", e);
   }
 
-  // 联网检索：不再用第三方平台（DuckDuckGo），改用你自配的模型（火山方舟/DeepSeek 等）
-  // 由模型基于自身知识 + skill + 本地情报产出选题灵感
+  // 由 researcher Agent 模型基于自身知识 + skill + 本地情报产出选题灵感
   const local = localTrends(input.niche || "毛发移植", input.platform || "xiaohongshu");
 
-  if (!cfg.enabled) {
-    return NextResponse.json(templateResearch(input));
-  }
   try {
     const sys = [
       "你是矩阵运营选题研究员，参考多平台信源 + 你掌握的近期平台内容趋势做选题发现与热度评估。",
@@ -75,12 +73,12 @@ export async function POST(req: NextRequest) {
       '输出 JSON：{"sources":["信源1"],"topics":[{"title":"选题","heat":8,"angle":"切入点","why":"推荐理由","contentType":"image"}],"note":"合规提示"}',
       "其中 contentType 用 \"image\"（适合图文）或 \"video\"（适合视频/口播），每个选题都要给。",
     ].join("\n");
-    const text = await chatComplete(
+    const text = await chatCompleteForAgent(
+      "researcher",
       [
         { role: "system", content: sys.join("\n") },
         { role: "user", content: user },
       ],
-      cfg,
       { maxTokens: 3000, timeoutMs: 110000 }
     );
     const data = parseJsonBlock<{
@@ -88,9 +86,7 @@ export async function POST(req: NextRequest) {
       topics: { title: string; heat: number; angle: string; why: string; contentType?: "image" | "video" }[];
       note: string;
     }>(text);
-    // 用配置的模型名作为来源标识（火山方舟/DeepSeek 等）
-    const engine = cfg.model || "自配模型";
-    return NextResponse.json({ ...data, modelPowered: true, engine });
+    return NextResponse.json({ ...data, modelPowered: true, engine: "researcher-agent" });
   } catch (e) {
     console.error("AI research failed:", e);
     return NextResponse.json(templateResearch(input));

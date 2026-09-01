@@ -17,7 +17,6 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { SURGERY_TYPE_OPTIONS, PLATFORMS, NORWOOD_OPTIONS } from "@/lib/constants";
-import { ModelSwitcher } from "@/components/settings/model-switcher";
 
 interface Variant {
   role: string;
@@ -152,9 +151,8 @@ export function AiWorkshop() {
 
       <Card>
         <CardContent className="grid gap-3 pt-4 md:grid-cols-3">
-          <div className="space-y-1 md:col-span-3">
-            <Label>文案模型（一键切换）</Label>
-            <ModelSwitcher kind="text" onChange={() => {}} />
+          <div className="space-y-1 md:col-span-3 rounded-md border border-border bg-[#faf8f4] px-3 py-2 text-xs text-[#5f5953]">
+            文案模型在「<a href="/settings/agent-models" className="underline">系统设置 → Agent 模型</a>」中按 Agent 单独配置（writer 控制文案）。
           </div>
           <div className="space-y-1">
             <Label>患者编号</Label>

@@ -1,25 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
-import { getActive } from "@/lib/models";
+import { getCurrentProjectId } from "@/lib/projects";
 import { generateImage, generateVideo } from "@/lib/image-gen";
+import { getMediaModel } from "@/lib/media-models";
+
+export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
+  const projectId = getCurrentProjectId();
   const body = await req.json();
   const kind = body.kind === "video" ? "video" : "image";
-  const m = await getActive(kind);
-  if (!m) {
-    return NextResponse.json(
-      { error: `没有启用中的${kind === "video" ? "视频" : "图像"}模型，请先在「模型管理」添加并激活` },
-      { status: 400 }
-    );
-  }
+  // 检查 media_model 配置；mock 也允许（生成占位）
+  getMediaModel(kind);
   try {
     const res = kind === "video"
-      ? await generateVideo(m, body.prompt)
-      : await generateImage(m, body.prompt);
+      ? await generateVideo(body.prompt)
+      : await generateImage(body.prompt);
     const info = db
       .prepare(
-        "INSERT INTO assets (filename, file_url, r2_key, file_type, category, surgery_type, patient_code, license) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+        "INSERT INTO assets (filename, file_url, r2_key, file_type, category, surgery_type, patient_code, license, project_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
       )
       .run(
         body.filename || `${kind === "video" ? "视频" : "配图"}-${Date.now()}`,
@@ -29,7 +28,8 @@ export async function POST(req: NextRequest) {
         body.category || (kind === "video" ? "宣传物料" : "科普图示"),
         body.surgery_type || null,
         body.patient_code || null,
-        "pending"
+        "pending",
+        projectId
       );
     const row = db.prepare("SELECT * FROM assets WHERE id=?").get(info.lastInsertRowid);
     return NextResponse.json({ ok: true, asset: row });

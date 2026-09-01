@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readAiConfig } from "@/lib/ai-config";
-import { getActiveTextConfig } from "@/lib/models";
-import { chatComplete, parseJsonBlock } from "@/lib/ai-client";
+import { parseJsonBlock } from "@/lib/ai-client";
+import { chatCompleteForAgent } from "@/lib/agent-llm";
+import { requireAgentPreconditions } from "@/lib/agent-contracts";
 
 /**
  * 配图/视频计划：生成文案时同步给出「这条内容适合配什么」。
@@ -15,10 +15,8 @@ export async function POST(req: NextRequest) {
   const content = body.content || {};
   const platform = content.platform || "xiaohongshu";
 
-  const cfg = (await getActiveTextConfig()) ?? (await readAiConfig());
-  if (!cfg.enabled) {
-    return NextResponse.json({ ...fallback(content), modelPowered: false });
-  }
+  const pre = requireAgentPreconditions("writer");
+  if (!pre.ok) return NextResponse.json({ error: pre.reason }, { status: 412 });
 
   try {
     const sys = [
@@ -41,9 +39,9 @@ export async function POST(req: NextRequest) {
 }`,
       "当 mediaType 为 video 时，storyboard 给一个 3-6 镜头的分镜数组：[{no, duration, shot, scene, voiceover}]",
     ].join("\n");
-    const text = await chatComplete(
+    const text = await chatCompleteForAgent(
+      "writer",
       [{ role: "system", content: sys.join("\n") }, { role: "user", content: user }],
-      cfg,
       { maxTokens: 800, timeoutMs: 60000 }
     );
     const d = parseJsonBlock<{ mediaType: "image" | "video"; shouldUseReal: boolean; desc: string; storyboard: { no: number; duration: string; shot: string; scene: string; voiceover: string }[] | null }>(text);

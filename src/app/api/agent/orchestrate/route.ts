@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readAiConfig } from "@/lib/ai-config";
-import { getActiveTextConfig } from "@/lib/models";
-import { chatComplete, parseJsonBlock } from "@/lib/ai-client";
+import { parseJsonBlock } from "@/lib/ai-client";
+import { chatCompleteForAgent } from "@/lib/agent-llm";
 import { catalog, listSkills, resolveContents } from "@/lib/skills";
 import { getAgentConfig } from "@/lib/agent";
 import { getProjectContext } from "@/lib/project-context";
@@ -26,23 +25,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ids: [], content: "", catalog: [], modelPowered: true, plan: null });
   }
 
-  const cfg = (await getActiveTextConfig()) ?? (await readAiConfig());
+  // strategist mock/未配置 → 不调真实模型，让前端走退化
+  const strategistPre = requireAgentPreconditions("strategist");
 
-  // 未接模型：退化，把 skill 目录回给前端，让下一步生成仍可正常走
-  if (!cfg.enabled) {
-    return NextResponse.json({ ids: [], content: "", catalog: cat, modelPowered: false, plan: null });
+  if (!strategistPre.ok) {
+    return NextResponse.json({ ids: [], content: "", catalog: cat, modelPowered: false, plan: null, stopped: true, reason: strategistPre.reason });
   }
 
   try {
     const projectCtx = getProjectContext();
-    const pre = requireAgentPreconditions("strategist");
-    if (!pre.ok) {
-      return NextResponse.json({ ids: [], content: "", catalog: cat, modelPowered: false, plan: null, stopped: true, reason: pre.reason });
-    }
     const user = `任务：${task}\n附加信息：${JSON.stringify(input)}\n\n${projectCtx}\n\n可用 skill 列表：\n${cat.map((s) => `- [${s.id}] ${s.name}：${s.description}`).join("\n")}\n\n请按你的 system prompt 输出决策。`;
-    const text = await chatComplete(
+    const text = await chatCompleteForAgent(
+      "strategist",
       [{ role: "system", content: systemPrompt }, { role: "user", content: user }],
-      cfg,
       { maxTokens: 900, timeoutMs: 60000 }
     );
     const plan = parseJsonBlock<{

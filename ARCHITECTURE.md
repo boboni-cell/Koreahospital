@@ -3,7 +3,7 @@
 > 仓库: github.com/boboni-cell/Koreahospital
 > 技术栈: Next.js 16 (App Router, Turbopack) + React 19 + TypeScript 5.7 + Tailwind v4 + SQLite (better-sqlite3) + Base UI rc.0 + lucide-react + sonner + shadcn cva
 > 形态: 单机/单仓 单进程, Next 路由即 API, 不分离前后端
-> 数据: `data/clinic.db` (SQLite) + `data/models.json` + `data/ai-config.json` + `data/agent-config.json` + `data/r2-config.json` (均 gitignore)
+> 数据: `data/clinic.db` (SQLite，含 Agent/媒体模型配置) + `data/agent-config.json` + `data/r2-config.json` (均 gitignore)
 > 资源: `public/uploads/` (gitignore)
 > Skills: `skills/<slug>/SKILL.md` (YAML frontmatter + 正文), 共 15 个 curated
 > 部署: `npm run dev` 启动 :3000; `next build` 出 prod
@@ -28,11 +28,11 @@
                        │
         ┌──────────────┼──────────────┬──────────────┬──────────────┐
         ▼              ▼              ▼              ▼              ▼
-    lib/db.ts    lib/models.ts   lib/skills.ts  lib/agent.ts   lib/storage.ts
-    SQLite 单例  models.json     skills/ 目录  agent-config    R2+本地盘
+    lib/db.ts   agent/media-models  lib/skills.ts  lib/agent.ts   lib/storage.ts
+    SQLite 单例   按角色/类型配置   skills/ 目录  agent-config    R2+本地盘
                        │              │              │
                        ▼              ▼              ▼
-                  多模型客户端    Skill 选择器   Agent 总控
+                  Agent/媒体模型    Skill 选择器   Agent 总控
                   (text/img/vid) (always+动态)  (LLM 调度)
                        │              │              │
                        └────── lib/ai-client.ts ────┘
@@ -65,14 +65,15 @@ src/
 │   ├── contents/                 # 业务组件 (ai-workshop, topic-research)
 │   ├── assets/                   # (asset-grid, asset-uploader, generate-client)
 │   ├── ops/                      # (today-list)
-│   ├── settings/                 # (model-switcher, agent-config-form, r2-config-form)
+│   ├── settings/                 # (agent-config-form, r2-config-form)
 │   ├── charts/charts.tsx         # Recharts 包装
 │   └── data-upload-records.tsx   # 上传记录表
 ├── lib/                          # 业务核心 (无 React 依赖)
 │   ├── db.ts                     # SQLite 单例 + schema + 种子
-│   ├── models.ts                 # 多模型管理 (text/image/video)
+│   ├── agent-models.ts           # 按 Agent 角色配置文本模型
+│   ├── media-models.ts           # 按 image/video 配置媒体模型
 │   ├── ai-client.ts              # OpenAI 兼容 chatComplete + JSON 解析
-│   ├── ai-config.ts              # 单实例 AI 配置 (历史/兼容)
+│   ├── agent-llm.ts              # 按角色调用文本模型，失败回退 Mock
 │   ├── ai-prompts.ts             # 各类任务 prompt 模板
 │   ├── skills.ts                 # Skill 加载/选择/注入
 │   ├── agent.ts                  # Agent 总控配置 (system prompt 持久化)
@@ -119,7 +120,7 @@ src/
 [选题研究 /contents/research]
    │ user picks platform + niche
    │ POST /api/ai/research
-   │   ├─ getActiveTextConfig()       (lib/models.ts, 读 data/models.json)
+   │   ├─ chatCompleteForAgent("researcher") (读 SQLite agent_models)
    │   ├─ selectSkillIds("选题", {platform})
    │   │     ├─ always skill 必注入
    │   │     ├─ PLATFORM_SKILL[platform] 优先注入
@@ -139,7 +140,7 @@ src/
    │       │
    │       ├──→ [AI 生成配图 /assets/generate]
    │       │       │ POST /api/assets/generate
-   │       │       │   ├─ 取 active image/video model
+   │       │       │   ├─ 读取 SQLite media_models 中的 image/video 配置
    │       │       │   ├─ chatComplete (出 prompt) + image gen API
    │       │       │   └─ 写 assets 表 (file_url, r2_key)
    │       │
@@ -248,13 +249,14 @@ selectSkillIds(task, input, preferIds) → {ids, modelPowered}
   - 模型选择失败 → 降级全量 dynamic, 永不抛 500
 ```
 
-### 5.2 模型管理 (`lib/models.ts` + `data/models.json`)
+### 5.2 模型管理 (`lib/agent-models.ts` + `lib/media-models.ts`)
 
 ```
-ModelEntry { id, name, kind: text|image|video, baseUrl, apiKey, model, isActive }
-  - kind 决定 getActiveTextConfig / getActiveImageConfig / ...
-  - ModelSwitcher 组件: 文案工坊/生成配图页内下拉切, 写 isActive=true
-  - 切换不重填 key (持久化)
+agent_models: researcher / strategist / writer / designer / publisher / analyst 各自独立配置
+media_models: image / video 各一条配置
+  - 文本业务统一通过 chatCompleteForAgent(role) 调用
+  - 图像/视频生成统一读取 media_models
+  - 管理页面为 /settings/agent-models 和 /settings/media-models
 ```
 
 ### 5.3 Agent 总控 (`lib/agent.ts` + `app/api/agent/orchestrate`)
@@ -385,12 +387,14 @@ config: env vars + data/r2-config.json (gitignore)
 │                            ├─→ SQLite (clinic.db)     │
 │                            │     12 表                │
 │                            │                          │
+│                            ├─→ SQLite 模型配置     │
+│                            │     agent_models        │
+│                            │     media_models        │
 │                            ├─→ data/*.json 配置        │
-│                            │     models / ai-config   │
 │                            │     agent-config / r2    │
 │                            │                          │
 │                            ├─→ lib/ai-client.ts        │
-│                            │     text/image/video     │
+│                            │     text via Agent 配置   │
 │                            │     via OpenAI 兼容 API  │
 │                            │                          │
 │                            ├─→ lib/skills.ts           │

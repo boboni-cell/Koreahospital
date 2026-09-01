@@ -60,7 +60,7 @@ export function AgentConfigForm() {
           />
         </div>
         <div className="flex items-center justify-between">
-          <a href="/settings/models" className="text-xs text-rose-500 hover:underline">
+          <a href="/settings/agent-models" className="text-xs text-rose-500 hover:underline">
             前往配置模型 →
           </a>
           <Button onClick={save} disabled={saving || loading}>
