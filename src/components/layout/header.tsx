@@ -1,36 +1,71 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { NAV_ITEMS } from "@/lib/nav";
+import { CalendarClock, ChevronRight, FolderKanban, LayoutPanelTop, Plus } from "lucide-react";
+import { ROUTE_TITLES } from "@/lib/nav";
 
-const TITLES: Record<string, string> = {
-  "/": "首页仪表盘",
-  "/today": "今日待发",
-  "/calendar": "内容排期",
-  "/contents": "内容管理",
-  "/contents/ai": "AI 文案工坊",
-  "/contents/research": "选题研究",
-  "/assets": "素材库",
-  "/data": "数据看板",
-  "/hospital": "医院管理",
-  "/accounts": "账号矩阵",
-  "/sop": "SOP 中心",
-  "/settings": "系统设置",
-};
+function currentTitle(pathname: string) {
+  return ROUTE_TITLES[pathname]
+    ?? Object.entries(ROUTE_TITLES)
+      .filter(([route]) => route !== "/" && pathname.startsWith(route + "/"))
+      .sort(([a], [b]) => b.length - a.length)[0]?.[1]
+    ?? "运营工作台";
+}
+
+function currentArea(pathname: string) {
+  if (pathname.startsWith("/assets") || pathname === "/topics") return "素材运营";
+  if (pathname.startsWith("/data") || pathname === "/review") return "数据增长";
+  if (pathname.startsWith("/hospital") || pathname.startsWith("/sop")) return "医院协作";
+  if (pathname.startsWith("/settings") || pathname.startsWith("/accounts") || pathname === "/project") return "系统管理";
+  if (pathname.startsWith("/contents") || pathname === "/production" || pathname === "/signals" || pathname === "/knowledge") return "内容运营";
+  return "运营总览";
+}
 
 export function Header() {
   const pathname = usePathname();
-  const title =
-    TITLES[pathname] ||
-    NAV_ITEMS.find((i) => pathname.startsWith(i.href))?.label ||
-    "工作台";
+  const title = currentTitle(pathname);
+  const area = currentArea(pathname);
+  const [projectName, setProjectName] = useState("Koreahospital");
+
+  useEffect(() => {
+    fetch("/api/projects")
+      .then((response) => response.json())
+      .then((data) => setProjectName(data.current?.name ?? "Koreahospital"))
+      .catch(() => {});
+  }, []);
+
   return (
-    <header className="sticky top-0 z-30 ml-[68px] flex h-14 items-center border-b border-zinc-200 bg-white/80 px-5 backdrop-blur">
-      <h1 className="text-base font-semibold tracking-tight text-zinc-800">
-        {title}
-      </h1>
-      <div className="ml-auto flex items-center gap-2 text-xs text-zinc-400">
-        <span className="pill bg-zinc-100 text-zinc-500">演示模式</span>
+    <header className="sticky top-0 z-30 px-4 py-3 lg:ml-[256px] lg:px-8">
+      <div className="mx-auto flex min-h-[64px] max-w-[1476px] items-center gap-3 rounded-[18px] border border-[#e2dcd5] bg-[#fffefa] px-3.5 shadow-[0_1px_0_rgba(255,255,255,.9)_inset,0_10px_30px_rgba(38,33,29,.055)] sm:px-4">
+        <span className="hidden h-10 w-10 shrink-0 place-items-center rounded-[12px] bg-[#d9d2f5] text-[#514884] sm:grid">
+          <LayoutPanelTop className="h-[18px] w-[18px]" />
+        </span>
+
+        <div className="min-w-0">
+          <div className="flex items-center gap-1 text-[9px] font-semibold uppercase tracking-[0.16em] text-[#9b948d]">
+            <span>{area}</span><ChevronRight className="h-3 w-3" /><span className="truncate">{projectName}</span>
+          </div>
+          <h1 className="truncate text-[17px] font-semibold tracking-[-0.025em] text-[#171619]">{title}</h1>
+        </div>
+
+        <Link href="/project" className="ml-auto hidden items-center gap-2 rounded-[12px] border border-[#e5dfd8] bg-[#f8f6f2] px-3 py-2 transition hover:border-[#cfc7be] md:flex">
+          <span className="grid h-7 w-7 place-items-center rounded-[9px] bg-white text-[#6b625c]"><FolderKanban className="h-3.5 w-3.5" /></span>
+          <span>
+            <span className="block text-[9px] font-medium text-[#99918a]">当前项目</span>
+            <span className="block max-w-32 truncate text-[11px] font-semibold text-[#49443f]">{projectName}</span>
+          </span>
+        </Link>
+
+        <div className="flex items-center gap-2">
+          <Link href="/calendar" className="hidden h-10 items-center gap-2 rounded-full border border-[#dfdad4] bg-white px-3.5 text-xs font-semibold text-[#57524d] transition hover:border-[#b8b0a8] xl:inline-flex">
+            <CalendarClock className="h-4 w-4" /> 查看排期
+          </Link>
+          <Link href="/contents/new" className="inline-flex h-10 items-center gap-2 rounded-full bg-[#151517] px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-[#2a282c]">
+            <Plus className="h-4 w-4" /> <span className="hidden sm:inline">新建内容</span><span className="sm:hidden">新建</span>
+          </Link>
+        </div>
       </div>
     </header>
   );
