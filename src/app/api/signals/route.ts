@@ -9,10 +9,10 @@ export async function GET(req: NextRequest) {
   const pid = getCurrentProjectId();
   const status = req.nextUrl.searchParams.get("status");
   if (status) {
-    const rows = db.prepare("SELECT * FROM signals WHERE project_id=? AND status=? ORDER BY id DESC").all(pid, status);
+    const rows = db.prepare("SELECT s.*, src.name AS source_name FROM signals s LEFT JOIN signal_sources src ON src.id=s.source_id WHERE s.project_id=? AND s.status=? ORDER BY s.id DESC").all(pid, status);
     return NextResponse.json(rows);
   }
-  const rows = db.prepare("SELECT * FROM signals WHERE project_id=? ORDER BY id DESC").all(pid);
+  const rows = db.prepare("SELECT s.*, src.name AS source_name FROM signals s LEFT JOIN signal_sources src ON src.id=s.source_id WHERE s.project_id=? ORDER BY s.id DESC").all(pid);
   return NextResponse.json(rows);
 }
 
@@ -20,8 +20,8 @@ export async function POST(req: NextRequest) {
   const b = await req.json();
   const pid = getCurrentProjectId();
   const info = db
-    .prepare("INSERT INTO signals (project_id, platform, source_url, title, evidence, status) VALUES (?, ?, ?, ?, ?, 'pending')")
-    .run(pid, b.platform ?? null, b.source_url ?? null, b.title ?? "", b.evidence ?? null);
+    .prepare("INSERT INTO signals (project_id, platform, source_url, title, evidence, source_id, status) VALUES (?, ?, ?, ?, ?, ?, 'pending')")
+    .run(pid, b.platform ?? null, b.source_url ?? null, b.title ?? "", b.evidence ?? null, Number(b.source_id) || null);
   recordAction({
     objectType: "signal",
     objectId: Number(info.lastInsertRowid),

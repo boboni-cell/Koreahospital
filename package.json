@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:model-config": "node --no-warnings --experimental-strip-types --test scripts/model-config.test.mts",
+    "test:data-import": "node --no-warnings --experimental-strip-types --test scripts/data-import.test.mts",
+    "test:agent-system": "node --no-warnings --experimental-strip-types --test scripts/agent-system.test.mts",
+    "test:post-analytics": "node --no-warnings --experimental-strip-types --test scripts/post-analytics.test.mts"
   },
   "dependencies": {
     "@base-ui-components/react": "^1.0.0-beta.1",
@@ -22,6 +26,7 @@
     "react-dom": "19.0.0",
     "react-dropzone": "^14.3.5",
     "react-markdown": "^9.0.1",
+    "read-excel-file": "^5.8.0",
     "shadcn": "^4.19.1",
     "sonner": "^1.7.4",
     "tailwind-merge": "^2.6.0"

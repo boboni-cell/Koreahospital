@@ -1,74 +1,156 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
-import { NAV_ITEMS, NAV_GROUPS } from "@/lib/nav";
+import { Building2, ChevronDown } from "lucide-react";
+import { NAV_ITEMS, SETTINGS_ITEM, type NavChild, type NavItem } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 
-export function Sidebar() {
-  const pathname = usePathname();
-  const [hover, setHover] = useState(false);
+const INDEX_ROUTES = new Set(["/production", "/contents", "/assets", "/review", "/data", "/settings"]);
+
+function routeMatches(pathname: string, href: string, exact = false) {
+  if (href === "/") return pathname === "/";
+  if (exact) return pathname === href;
+  return pathname === href || pathname.startsWith(href + "/");
+}
+
+function childActive(pathname: string, child: NavChild) {
+  return routeMatches(pathname, child.href, INDEX_ROUTES.has(child.href));
+}
+
+function sectionActive(pathname: string, item: NavItem) {
+  if (item.children?.some((child) => childActive(pathname, child))) return true;
+  if (item.href === "/workbench") return pathname === "/" || pathname === "/ops" || pathname === "/workbench";
+  return routeMatches(pathname, item.href, item.exact);
+}
+
+function Section({ item, pathname, open, onToggle }: { item: NavItem; pathname: string; open: boolean; onToggle: () => void }) {
+  const active = sectionActive(pathname, item);
+  const Icon = item.icon;
+  const hasChildren = Boolean(item.children?.length);
 
   return (
-    <aside
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-      className={cn(
-        "fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-zinc-200 bg-zinc-50 py-3 transition-[width] duration-200",
-        hover ? "w-[228px]" : "w-[68px]"
-      )}
-    >
-      <div className="mb-4 flex items-center gap-2 px-3">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-rose-400 text-sm font-bold text-white">
-          H
-        </div>
-        {hover && (
-          <span className="truncate text-sm font-semibold text-zinc-800">
-            毛发矩阵工作台
+    <div>
+      <div className={cn(
+        "group flex items-center rounded-[13px] transition",
+        active ? "bg-white text-[#111116] shadow-[0_8px_24px_rgba(20,18,16,.09)]" : "text-white/62 hover:bg-white/8 hover:text-white"
+      )}>
+        <Link href={item.href} className="flex min-w-0 flex-1 items-center gap-2.5 px-2.5 py-2">
+          <span className={cn("grid h-8 w-8 shrink-0 place-items-center rounded-[10px] transition", active ? "bg-[#151517] text-white" : "bg-white/8 text-white/72 group-hover:bg-white/12")}>
+            <Icon className="h-4 w-4" />
           </span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-[12px] font-semibold">{item.label}</span>
+            <span className={cn("block truncate text-[9px]", active ? "text-[#7d766f]" : "text-white/32")}>{item.description}</span>
+          </span>
+        </Link>
+        {hasChildren && (
+          <button
+            type="button"
+            onClick={onToggle}
+            className={cn("mr-1.5 grid h-8 w-8 shrink-0 place-items-center rounded-[9px] transition", active ? "text-[#77716b] hover:bg-[#eee9e3]" : "text-white/38 hover:bg-white/10 hover:text-white")}
+            aria-expanded={open}
+            aria-label={`${open ? "收起" : "展开"}${item.label}`}
+          >
+            <ChevronDown className={cn("h-3.5 w-3.5 transition-transform duration-200", open && "rotate-180")} />
+          </button>
         )}
       </div>
 
-      <nav className="flex-1 space-y-4 overflow-y-auto px-2">
-        {NAV_GROUPS.map((group) => {
-          const items = NAV_ITEMS.filter((i) => i.group === group);
-          if (!items.length) return null;
-          return (
-            <div key={group} className="space-y-1">
-              {hover && (
-                <div className="px-2 text-[10px] font-medium uppercase tracking-wider text-zinc-400">
-                  {group}
-                </div>
-              )}
-              {items.map((item) => {
-                const active = item.exact
-                  ? pathname === item.href
-                  : pathname.startsWith(item.href);
-                const Icon = item.icon;
+      {hasChildren && (
+        <div className={cn("grid transition-[grid-template-rows,opacity] duration-200", open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0")}>
+          <div className="overflow-hidden">
+            <div className="ml-6 border-l border-white/10 py-1 pl-3">
+              {item.children!.map((child) => {
+                const ChildIcon = child.icon;
+                const selected = childActive(pathname, child);
                 return (
                   <Link
-                    key={item.href}
-                    href={item.href}
+                    key={child.href}
+                    href={child.href}
                     className={cn(
-                      "group relative flex items-center gap-3 rounded-xl px-2.5 py-2 text-sm transition-all duration-200",
-                      active
-                        ? "bg-white text-zinc-900 shadow-sm"
-                        : "text-zinc-500 hover:bg-white/60 hover:text-zinc-800"
+                      "flex items-center gap-2 rounded-[9px] px-2 py-1.5 text-[11px] transition",
+                      selected ? "bg-[#c8b8ff] font-semibold text-[#211c31]" : "text-white/43 hover:bg-white/7 hover:text-white/80"
                     )}
                   >
-                    {active && (
-                      <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r bg-rose-400" />
-                    )}
-                    <Icon className="h-5 w-5 shrink-0" />
-                    {hover && <span className="truncate">{item.label}</span>}
+                    <ChildIcon className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">{child.label}</span>
                   </Link>
                 );
               })}
             </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function Sidebar() {
+  const pathname = usePathname();
+  const allSections = [...NAV_ITEMS, SETTINGS_ITEM];
+  const [expanded, setExpanded] = useState<Record<string, boolean>>(() => Object.fromEntries(
+    allSections.filter((item) => item.children?.length && sectionActive(pathname, item)).map((item) => [item.href, true])
+  ));
+
+  useEffect(() => {
+    const active = allSections.find((item) => item.children?.length && sectionActive(pathname, item));
+    if (active) setExpanded((current) => ({ ...current, [active.href]: true }));
+  }, [pathname]);
+
+  const projectActive = pathname === "/project" || pathname.startsWith("/accounts");
+
+  return (
+    <>
+      <aside className="fixed inset-y-3 left-3 z-40 hidden w-[232px] flex-col overflow-hidden rounded-[22px] bg-[#121214] p-3 text-white shadow-[0_24px_60px_rgba(18,18,20,.18)] lg:flex">
+        <Link href="/workbench" className="mb-5 flex items-center gap-3 px-2 pt-2">
+          <span className="grid h-10 w-10 place-items-center rounded-[13px] bg-[#c8b8ff] text-sm font-black text-[#17151a]">KH</span>
+          <span className="min-w-0">
+            <span className="block truncate text-sm font-bold tracking-[-0.02em]">Korea Hospital</span>
+            <span className="block text-[9px] tracking-[0.08em] text-white/36">SOCIAL WORKSPACE</span>
+          </span>
+        </Link>
+
+        <div className="mb-2 px-2.5 text-[9px] font-semibold uppercase tracking-[0.17em] text-white/28">全部工作模块</div>
+        <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto pr-1 [scrollbar-color:rgba(255,255,255,.16)_transparent] [scrollbar-width:thin]">
+          {NAV_ITEMS.map((item) => (
+            <Section
+              key={item.href}
+              item={item}
+              pathname={pathname}
+              open={Boolean(expanded[item.href])}
+              onToggle={() => setExpanded((current) => ({ ...current, [item.href]: !current[item.href] }))}
+            />
+          ))}
+        </nav>
+
+        <div className="mt-2 space-y-1 border-t border-white/10 pt-2">
+          <Link href="/project" className={cn("flex items-center gap-2.5 rounded-[13px] px-2.5 py-2 transition", projectActive ? "bg-white text-[#111116]" : "text-white/58 hover:bg-white/8 hover:text-white")}>
+            <span className={cn("grid h-8 w-8 place-items-center rounded-[10px]", projectActive ? "bg-[#151517] text-white" : "bg-white/8")}><Building2 className="h-4 w-4" /></span>
+            <span className="text-[12px] font-semibold">项目与账号</span>
+          </Link>
+          <Section
+            item={SETTINGS_ITEM}
+            pathname={pathname}
+            open={Boolean(expanded[SETTINGS_ITEM.href])}
+            onToggle={() => setExpanded((current) => ({ ...current, [SETTINGS_ITEM.href]: !current[SETTINGS_ITEM.href] }))}
+          />
+        </div>
+      </aside>
+
+      <nav className="fixed inset-x-3 bottom-3 z-50 flex items-center justify-around rounded-[20px] bg-[#121214] px-2 py-2 text-white shadow-[0_18px_50px_rgba(18,18,20,.28)] lg:hidden">
+        {NAV_ITEMS.filter((item) => ["/workbench", "/production", "/contents", "/assets", "/data/posts"].includes(item.href)).map((item) => {
+          const active = sectionActive(pathname, item);
+          const Icon = item.icon;
+          return (
+            <Link key={item.href} href={item.href} className={cn("flex min-w-14 flex-col items-center gap-1 rounded-[13px] px-2 py-1.5 text-[10px]", active ? "bg-white text-[#111116]" : "text-white/55")}>
+              <Icon className="h-[17px] w-[17px]" />
+              {item.shortLabel}
+            </Link>
           );
         })}
       </nav>
-    </aside>
+    </>
   );
 }

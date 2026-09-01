@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
-import { UploadCloud } from "lucide-react";
+import { FileText, Play, UploadCloud, X } from "lucide-react";
 import { PageFrame } from "@/components/layout/page-frame";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,9 +27,26 @@ export function AssetUploader() {
   const [patientCode, setPatientCode] = useState("");
   const [license, setLicense] = useState("pending");
   const [uploading, setUploading] = useState(false);
+  const [previews, setPreviews] = useState<{ file: File; url: string | null }[]>([]);
 
   const onDrop = useCallback((accepted: File[]) => setFiles(accepted), []);
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: { "image/*": [], "video/*": [], "application/pdf": [] },
+  });
+
+  useEffect(() => {
+    const next = files.map((file) => ({
+      file,
+      url: file.type.startsWith("image/") || file.type.startsWith("video/") ? URL.createObjectURL(file) : null,
+    }));
+    setPreviews(next);
+    return () => next.forEach((item) => item.url && URL.revokeObjectURL(item.url));
+  }, [files]);
+
+  function removeFile(name: string, lastModified: number) {
+    setFiles((current) => current.filter((file) => file.name !== name || file.lastModified !== lastModified));
+  }
 
   async function upload() {
     if (!files.length) return toast.error("请选择文件");
@@ -67,16 +84,50 @@ export function AssetUploader() {
           <p className="mt-2 text-sm text-zinc-500">
             {isDragActive ? "放开以上传" : "拖拽图片 / 视频 / 文档到此处，或点击选择"}
           </p>
-          {files.length > 0 && (
-            <p className="mt-2 text-xs text-zinc-700">已选 {files.length} 个文件</p>
-          )}
+          <p className="mt-2 text-xs text-zinc-700">
+            {files.length > 0 ? `已选 ${files.length} 个文件，可在下方确认预览` : "未接入 R2 时会保存为本地占位素材"}
+          </p>
         </div>
+
+        {previews.length > 0 && (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" aria-label="待上传素材预览">
+            {previews.map(({ file, url }) => (
+              <div key={`${file.name}-${file.lastModified}`} className="overflow-hidden rounded-[16px] border border-[#e3ddd6] bg-[#f7f3ee]">
+                <div className="relative h-32 overflow-hidden bg-[#ebe6df]">
+                  {file.type.startsWith("image/") && url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={url} alt={file.name} className="h-full w-full object-cover" />
+                  ) : file.type.startsWith("video/") && url ? (
+                    <div className="relative h-full w-full">
+                      <video src={url} muted playsInline className="h-full w-full object-cover" />
+                      <Play className="absolute left-1/2 top-1/2 h-8 w-8 -translate-x-1/2 -translate-y-1/2 text-white drop-shadow" />
+                    </div>
+                  ) : (
+                    <div className="grid h-full place-items-center text-[#827a73]"><FileText className="h-8 w-8" /></div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={(event) => { event.stopPropagation(); removeFile(file.name, file.lastModified); }}
+                    className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-full bg-[#171619]/80 text-white backdrop-blur"
+                    aria-label={`移除 ${file.name}`}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+                <div className="px-3 py-2">
+                  <p className="truncate text-xs font-semibold text-[#2d2926]">{file.name}</p>
+                  <p className="mt-0.5 text-[10px] text-[#918981]">{(file.size / 1024 / 1024).toFixed(2)} MB · 等待登记</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         <div className="grid grid-cols-3 gap-3">
           <div className="space-y-1">
             <Label>素材类别</Label>
             <Select value={category} onValueChange={(v) => setCategory(v ?? "术前案例")}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger><SelectValue>{category}</SelectValue></SelectTrigger>
               <SelectContent>
                 {ASSET_CATEGORY_OPTIONS.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
               </SelectContent>
@@ -85,7 +136,7 @@ export function AssetUploader() {
           <div className="space-y-1">
             <Label>手术类型</Label>
             <Select value={surgery} onValueChange={(v) => setSurgery(v ?? "FUE")}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger><SelectValue>{surgery}</SelectValue></SelectTrigger>
               <SelectContent>
                 {SURGERY_TYPE_OPTIONS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
               </SelectContent>
@@ -98,7 +149,7 @@ export function AssetUploader() {
           <div className="space-y-1">
             <Label>授权状态</Label>
             <Select value={license} onValueChange={(v) => setLicense(v ?? "pending")}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger><SelectValue>{license === "authorized" ? "已授权" : license === "expired" ? "已过期" : "待授权"}</SelectValue></SelectTrigger>
               <SelectContent>
                 <SelectItem value="pending">待授权</SelectItem>
                 <SelectItem value="authorized">已授权</SelectItem>

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
+import { getCurrentProjectId } from "@/lib/projects";
 
 export async function GET() {
   const totalFollowers = (
@@ -48,10 +49,13 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const b = await req.json();
+  const projectId = getCurrentProjectId();
   const info = db
     .prepare(
-      `INSERT INTO metrics (account_id, date, followers, likes, saves, comments, shares, views)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO metrics (account_id, date, followers, likes, saves, comments, shares, views, project_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(account_id, date) DO UPDATE SET followers=excluded.followers, likes=excluded.likes,
+       saves=excluded.saves, comments=excluded.comments, shares=excluded.shares, views=excluded.views, project_id=excluded.project_id`
     )
     .run(
       b.account_id ?? null,
@@ -61,7 +65,9 @@ export async function POST(req: NextRequest) {
       b.saves ?? 0,
       b.comments ?? 0,
       b.shares ?? 0,
-      b.views ?? 0
+      b.views ?? 0,
+      projectId
     );
+  db.prepare("UPDATE accounts SET followers=? WHERE id=? AND project_id=?").run(b.followers ?? 0, b.account_id ?? null, projectId);
   return NextResponse.json({ id: info.lastInsertRowid });
 }

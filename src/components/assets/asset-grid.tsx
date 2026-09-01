@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Download, FileText, ChevronLeft, ChevronRight, Trash2, Play } from "lucide-react";
+import { AlertTriangle, Download, FileText, ChevronLeft, ChevronRight, Trash2, Play, Image as ImageIcon, X } from "lucide-react";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { ASSET_CATEGORY_OPTIONS } from "@/lib/constants";
 import { toast } from "sonner";
 import {
   DialogRoot,
@@ -32,7 +34,7 @@ export interface Asset {
   ai_editable?: number;
 }
 
-function Thumb({ asset, className }: { asset: Asset; className?: string }) {
+function Thumb({ asset, className, controls = false }: { asset: Asset; className?: string; controls?: boolean }) {
   if (asset.file_url) {
     if (asset.file_type === "image") {
       // eslint-disable-next-line @next/next/no-img-element
@@ -41,17 +43,26 @@ function Thumb({ asset, className }: { asset: Asset; className?: string }) {
     if (asset.file_type === "video") {
       return (
         <div className={`relative ${className}`}>
-          <video src={asset.file_url} muted playsInline preload="metadata" className="h-full w-full object-cover" />
-          <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-            <Play className="h-10 w-10 text-white drop-shadow" />
-          </div>
+          <video
+            src={asset.file_url}
+            muted={!controls}
+            playsInline
+            controls={controls}
+            preload="metadata"
+            className="h-full w-full object-cover"
+          />
+          {!controls && (
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/20">
+              <Play className="h-10 w-10 text-white drop-shadow" />
+            </div>
+          )}
         </div>
       );
     }
   }
   return (
-    <div className={`flex items-center justify-center bg-gradient-to-br from-stone-800/90 to-stone-900/90 text-white ${className}`}>
-      {asset.file_type === "video" ? <Play className="h-8 w-8" /> : asset.file_type === "image" ? <span className="text-3xl">🖼️</span> : <FileText className="h-8 w-8" />}
+    <div className={`flex items-center justify-center bg-[#262321] text-[#d7d0c9] ${className}`}>
+      {asset.file_type === "video" ? <Play className="h-8 w-8" /> : asset.file_type === "image" ? <ImageIcon className="h-8 w-8" /> : <FileText className="h-8 w-8" />}
     </div>
   );
 }
@@ -64,6 +75,10 @@ function dateLabel(d?: string): string {
   const yest = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
   if (date === yest) return "昨天";
   return date;
+}
+
+function licenseLabel(value: string) {
+  return value === "authorized" ? "已授权" : value === "expired" ? "已过期" : "待授权";
 }
 
 export function AssetGrid({ assets, onDeleted }: { assets: Asset[]; onDeleted?: () => void }) {
@@ -177,7 +192,7 @@ export function AssetGrid({ assets, onDeleted }: { assets: Asset[]; onDeleted?: 
                           <div className="truncate text-sm font-medium text-[#01011b]">{a.filename}</div>
                           <div className="mt-1 flex flex-wrap items-center gap-2">
                             <Badge className={a.sensitivity === "sensitive" ? "bg-rose-50 text-rose-600" : "bg-[#ecedf2] text-[#717a94]"}>{a.sensitivity === "sensitive" ? "敏感" : "普通"}</Badge>
-                            <Badge>{a.license}</Badge>
+                            <Badge>{licenseLabel(a.license)}</Badge>
                             <span className="text-xs text-[#89828d]">用 {a.usage_count}</span>
                           </div>
                         </div>
@@ -198,7 +213,7 @@ export function AssetGrid({ assets, onDeleted }: { assets: Asset[]; onDeleted?: 
         <DialogRoot open onOpenChange={(o) => !o && setOpenIndex(null)}>
           <DialogContentComp className="max-w-3xl overflow-hidden p-0">
             <div className="relative flex flex-col">
-              <div className="relative flex h-[42vh] items-center justify-center bg-gradient-to-br from-stone-900 to-stone-800 p-6">
+              <div className="relative flex h-[42vh] items-center justify-center bg-[#1f1d1b] p-6">
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={openIndex}
@@ -208,7 +223,7 @@ export function AssetGrid({ assets, onDeleted }: { assets: Asset[]; onDeleted?: 
                     transition={{ duration: 0.18 }}
                     className="flex h-full items-center justify-center"
                   >
-                    <Thumb asset={current} className="h-full w-full rounded-lg object-contain" />
+                    <Thumb asset={current} controls className="h-full w-full rounded-lg object-contain" />
                   </motion.div>
                 </AnimatePresence>
 
@@ -220,7 +235,7 @@ export function AssetGrid({ assets, onDeleted }: { assets: Asset[]; onDeleted?: 
                 </button>
 
                 <DialogClose>
-                  <button className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur transition hover:bg-white/40">✕</button>
+                  <button className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur transition hover:bg-white/40" aria-label="关闭"><X className="h-4 w-4" /></button>
                 </DialogClose>
 
                 <span className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-black/40 px-3 py-1 text-xs text-white backdrop-blur">
@@ -231,7 +246,7 @@ export function AssetGrid({ assets, onDeleted }: { assets: Asset[]; onDeleted?: 
               <div className="space-y-4 p-5">
                 <div className="glass flex flex-wrap items-center gap-2 rounded-xl px-3 py-2">
                   <span className="text-sm font-medium text-[#01011b]">{current.filename}</span>
-                  <Badge>{current.license}</Badge>
+                  <Badge>{licenseLabel(current.license)}</Badge>
                   <Badge>{current.category}</Badge>
                   <span className="text-xs text-[#89828d]">使用 {current.usage_count} 次</span>
                 </div>
@@ -241,13 +256,13 @@ export function AssetGrid({ assets, onDeleted }: { assets: Asset[]; onDeleted?: 
                   <Field label="类别" value={current.category} />
                   <Field label="手术类型" value={current.surgery_type} />
                   <Field label="患者编号" value={current.patient_code} />
-                  <Field label="授权" value={current.license} />
+                  <Field label="授权" value={licenseLabel(current.license)} />
                   <Field label="大小" value={current.file_size ? `${(current.file_size / 1024).toFixed(0)} KB` : "—"} />
                 </div>
 
                 <div className={"rounded-xl px-3 py-2 text-xs " + (current.sensitivity === "sensitive" && current.license !== "authorized" ? "bg-rose-50 text-rose-600" : "bg-[#f6f4f5] text-[#43394c]")}>
                   {current.sensitivity === "sensitive" && current.license !== "authorized"
-                    ? "⚠️ 敏感医疗素材且未授权，禁止进入待发布；请补授权或改用普通素材。"
+                    ? <span className="inline-flex items-center gap-1.5"><AlertTriangle className="h-3.5 w-3.5" />敏感医疗素材且未授权，禁止进入待发布；请补授权或改用普通素材。</span>
                     : current.sensitivity === "sensitive"
                     ? "已授权敏感素材：可用于授权平台的发布。"
                     : "普通素材：可直接用于发布。"}
@@ -257,9 +272,20 @@ export function AssetGrid({ assets, onDeleted }: { assets: Asset[]; onDeleted?: 
                   <Button size="sm" variant="outline" onClick={() => updateGate(current, { sensitivity: current.sensitivity === "sensitive" ? "normal" : "sensitive" })}>
                     {current.sensitivity === "sensitive" ? "标记为普通" : "标记为敏感"}
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => updateGate(current, { license: current.license === "authorized" ? "pending" : "authorized" })}>
-                    授权状态：{current.license}
+                  <Button size="sm" variant="outline" onClick={() => updateGate(current, { license: current.license === "authorized" ? "pending" : current.license === "expired" ? "authorized" : "authorized" })}>
+                    授权状态：{licenseLabel(current.license)}
                   </Button>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs text-[#89828d]">分类</span>
+                    <Select value={current.category || "未分类"} onValueChange={(v) => v && updateGate(current, { category: v })}>
+                      <SelectTrigger className="h-8 w-36"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {["未分类", ...ASSET_CATEGORY_OPTIONS].map((c) => (
+                          <SelectItem key={c} value={c}>{c}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
                 <div className="flex gap-2">

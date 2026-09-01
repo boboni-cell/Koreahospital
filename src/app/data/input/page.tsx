@@ -57,6 +57,7 @@ export default function DataInputPage() {
   const [mapping, setMapping] = useState<Record<string, number>>({});
   const [uploading, setUploading] = useState(false);
   const [uploadMsg, setUploadMsg] = useState("");
+  const [recordsVersion, setRecordsVersion] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
   const taRef = useRef<HTMLTextAreaElement>(null);
 
@@ -70,6 +71,8 @@ export default function DataInputPage() {
   function set(k: keyof typeof form, v: string) {
     setForm((p) => ({ ...p, [k]: Number(v) || 0 }));
   }
+
+  const selectedAccount = accounts.find((a) => String(a.id) === accountId);
 
   async function save() {
     setSaving(true);
@@ -115,6 +118,11 @@ export default function DataInputPage() {
   function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     if (!f) return;
+    if (!/\.(csv|txt)$/i.test(f.name)) {
+      toast.error("文件上传仅支持 CSV/TXT；Excel 请复制表格后粘贴");
+      e.target.value = "";
+      return;
+    }
     const reader = new FileReader();
     reader.onload = () => ingest(String(reader.result || ""));
     reader.readAsText(f, "utf-8");
@@ -153,6 +161,7 @@ export default function DataInputPage() {
             setUploadMsg(`成功录入 ${res.inserted} 行，跳过 ${res.skipped} 行（无匹配账号/无日期）`);
             toast.success(`已分析并录入 ${res.inserted} 行`);
             setRawText(""); setParsed(null); setMapping({});
+            setRecordsVersion((v) => v + 1);
           } else toast.error(res.error || "上传失败");
         })
         .catch((e) => toast.error("上传失败：" + (e?.message || "")))
@@ -194,7 +203,13 @@ export default function DataInputPage() {
               <div className="space-y-1">
                 <Label>账号</Label>
                 <Select value={accountId} onValueChange={(v) => setAccountId(v ?? "1")}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue>
+                      {selectedAccount
+                        ? `${PLATFORM_NAME[selectedAccount.platform] ?? selectedAccount.platform} · ${selectedAccount.handle}`
+                        : "请选择账号"}
+                    </SelectValue>
+                  </SelectTrigger>
                   <SelectContent>
                     {accounts.map((a) => (
                       <SelectItem key={a.id} value={String(a.id)}>
@@ -248,7 +263,7 @@ export default function DataInputPage() {
               <input
                 ref={fileRef}
                 type="file"
-                accept=".csv,.txt,.xlsx"
+                accept=".csv,.txt"
                 onChange={onFile}
                 className="block w-full text-sm text-zinc-500 file:mr-3 file:rounded-full file:border-0 file:bg-zinc-900 file:px-4 file:py-2 file:text-xs file:text-white hover:file:bg-zinc-700"
               />
@@ -310,7 +325,7 @@ export default function DataInputPage() {
 
       {/* 已上传记录 */}
       <div className="mt-6">
-        <DataUploadRecords />
+        <DataUploadRecords refreshKey={recordsVersion} />
       </div>
     </PageFrame>
   );

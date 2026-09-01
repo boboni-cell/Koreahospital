@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Trash2, Loader2, MessageSquarePlus, Image as ImageIcon, Clapperboard } from "lucide-react";
+import { Trash2, Loader2, MessageSquarePlus, Image as ImageIcon, Clapperboard, FileText, Sparkles } from "lucide-react";
 import { PageFrame } from "@/components/layout/page-frame";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +20,8 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { VIDEO_SCRIPT_TYPES } from "@/lib/constants";
 
 interface Topic {
@@ -36,6 +38,10 @@ export default function TopicsPage() {
   const [scriptType, setScriptType] = useState("doctor");
   const [script, setScript] = useState("");
   const [scriptLoading, setScriptLoading] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkTheme, setBulkTheme] = useState("");
+  const [bulkCount, setBulkCount] = useState(5);
+  const [bulkLoading, setBulkLoading] = useState(false);
   const router = useRouter();
 
   const load = () =>
@@ -47,8 +53,16 @@ export default function TopicsPage() {
   function genCopy(t: Topic) {
     router.push(`/contents/ai?topic=${t.id}`);
   }
-  function genImage(t: Topic) {
-    router.push(`/assets/generate?topic=${t.id}`);
+  function genImageText(t: Topic) {
+    // 图文生成：跳到 AI 生成页,默认 image 模式
+    router.push(`/assets/generate?topic=${t.id}&kind=image`);
+  }
+  function genVideo(t: Topic) {
+    router.push(`/assets/generate?topic=${t.id}&kind=video`);
+  }
+  function genText(t: Topic) {
+    // 文本生成：用 AI 视频脚本 skill 生成纯文字稿（可复制当文案）
+    router.push(`/contents/ai?topic=${t.id}&mode=text`);
   }
 
   async function genScript(t?: Topic) {
@@ -86,10 +100,66 @@ export default function TopicsPage() {
 
   return (
     <PageFrame>
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex items-center justify-between gap-2">
         <h2 className="text-xl font-semibold tracking-tight text-[#01011b]">选题池</h2>
-        <Badge className="bg-rose-100 text-rose-600">{topics.length} 个</Badge>
+        <div className="flex items-center gap-2">
+          <Badge className="bg-rose-100 text-rose-600">{topics.length} 个</Badge>
+          <Button size="sm" onClick={() => setBulkOpen(true)}>
+            <Sparkles className="h-4 w-4" /> 从热点批量生成
+          </Button>
+        </div>
       </div>
+
+      {/* 从热点批量生成对话框 */}
+      {bulkOpen && (
+        <DialogRoot open onOpenChange={(o) => !o && setBulkOpen(false)}>
+          <DialogContentComp className="max-w-md">
+            <DialogClose>
+              <button className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-[#ecedf2] text-[#717a94]">✕</button>
+            </DialogClose>
+            <div className="space-y-3 p-5">
+              <h3 className="text-base font-semibold text-[#01011b]">从热点批量生成选题</h3>
+              <div className="space-y-1">
+                <Label>热点主题（如「夏季脱发」「发际线种植」）</Label>
+                <Input value={bulkTheme} onChange={(e) => setBulkTheme(e.target.value)} placeholder="例如：FUE 术后护理" />
+              </div>
+              <div className="space-y-1">
+                <Label>生成条数（1-20）</Label>
+                <Input type="number" min={1} max={20} value={bulkCount} onChange={(e) => setBulkCount(Number(e.target.value || 1))} />
+              </div>
+              <div className="flex justify-end gap-2 pt-1">
+                <Button variant="outline" onClick={() => setBulkOpen(false)}>取消</Button>
+                <Button
+                  disabled={bulkLoading || !bulkTheme.trim()}
+                  onClick={async () => {
+                    setBulkLoading(true);
+                    try {
+                      const r = await fetch("/api/topics/bulk", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ theme: bulkTheme, count: bulkCount }),
+                      });
+                      const d = await r.json();
+                      if (!r.ok) throw new Error(d.error || "生成失败");
+                      toast.success(`已生成 ${d.count} 条选题`);
+                      setBulkOpen(false);
+                      setBulkTheme("");
+                      load();
+                    } catch (e: any) {
+                      toast.error(e.message || "生成失败");
+                    } finally {
+                      setBulkLoading(false);
+                    }
+                  }}
+                >
+                  {bulkLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                  {bulkLoading ? "生成中…" : "生成"}
+                </Button>
+              </div>
+            </div>
+          </DialogContentComp>
+        </DialogRoot>
+      )}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {topics.map((t) => (
           <Card key={t.id}>
@@ -104,16 +174,19 @@ export default function TopicsPage() {
               {t.description && (
                 <p className="line-clamp-2 text-xs text-[#717a94]">{t.description}</p>
               )}
-              {/* 生成链路：文案 / 配图 / 视频脚本 */}
-              <div className="grid grid-cols-3 gap-1.5 pt-1">
-                <Button size="sm" variant="outline" onClick={() => genCopy(t)}>
+              {/* 生成链路：文案 / 图文 / 视频 / 文本 */}
+              <div className="grid grid-cols-4 gap-1.5 pt-1">
+                <Button size="sm" variant="outline" onClick={() => genCopy(t)} title="生成文案">
                   <MessageSquarePlus className="h-3.5 w-3.5" /> 文案
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => genImage(t)}>
-                  <ImageIcon className="h-3.5 w-3.5" /> 配图
+                <Button size="sm" variant="outline" onClick={() => genImageText(t)} title="图文生成">
+                  <ImageIcon className="h-3.5 w-3.5" /> 图文
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => genScript(t)}>
-                  <Clapperboard className="h-3.5 w-3.5" /> 脚本
+                <Button size="sm" variant="outline" onClick={() => genVideo(t)} title="视频生成">
+                  <Clapperboard className="h-3.5 w-3.5" /> 视频
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => genText(t)} title="文本生成">
+                  <FileText className="h-3.5 w-3.5" /> 文本
                 </Button>
               </div>
               <button

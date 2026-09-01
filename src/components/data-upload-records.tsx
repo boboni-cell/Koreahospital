@@ -3,15 +3,9 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Trash2, RefreshCw, Download } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
+import { toCsv } from "@/lib/csv";
 
 interface UploadRecord {
   id: number;
@@ -21,24 +15,34 @@ interface UploadRecord {
   created_at: string;
 }
 
-export function DataUploadRecords() {
+export function DataUploadRecords({ refreshKey = 0 }: { refreshKey?: number }) {
   const [records, setRecords] = useState<UploadRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const downloadHref = `data:text/csv;charset=utf-8,${encodeURIComponent(
+    "\uFEFF" +
+      toCsv(
+        ["时间", "总行数", "成功", "跳过"],
+        records.map((r) => [r.created_at, r.rows_count, r.inserted, r.skipped])
+      )
+  )}`;
 
   useEffect(() => {
+    setLoading(true);
     fetch("/api/metrics/uploads")
-      .then((r) => r.json())
-      .then((d: UploadRecord[]) => {
-        setRecords(d);
+      .then(async (r) => {
+        if (!r.ok) throw new Error("加载失败");
+        setRecords(await r.json());
       })
+      .catch(() => toast.error("上传记录加载失败"))
       .finally(() => setLoading(false));
-  }, []);
+  }, [refreshKey]);
 
   async function deleteRecord(id: number) {
-    if (!confirm("确定删除这条上传记录吗？")) return;
+    if (!confirm("确定删除这条上传记录吗？这不会删除已录入的运营数据。")) return;
     try {
-      await fetch(`/api/metrics/uploads?id=${id}`, { method: "DELETE" });
-      toast.success("已删除");
+      const response = await fetch(`/api/metrics/uploads?id=${id}`, { method: "DELETE" });
+      if (!response.ok) throw new Error("删除失败");
+      toast.success("上传记录已删除");
       setRecords((r) => r.filter((x) => x.id !== id));
     } catch {
       toast.error("删除失败");
@@ -47,16 +51,22 @@ export function DataUploadRecords() {
 
   async function refresh() {
     setLoading(true);
-    const d = await fetch("/api/metrics/uploads").then((r) => r.json());
-    setRecords(d);
-    setLoading(false);
+    try {
+      const response = await fetch("/api/metrics/uploads");
+      if (!response.ok) throw new Error("刷新失败");
+      setRecords(await response.json());
+    } catch {
+      toast.error("刷新失败");
+    } finally {
+      setLoading(false);
+    }
   }
 
   if (!loading && records.length === 0) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-base font-semibold text-stone-900">已上传记录</CardTitle>
+          <CardTitle className="text-base font-semibold text-[#01011b]">已上传记录</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="py-8 text-center text-zinc-400">
@@ -71,16 +81,29 @@ export function DataUploadRecords() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base font-semibold text-stone-900">
+        <CardTitle className="text-base font-semibold text-[#01011b]">
           <div className="flex items-center justify-between">
             <span>已上传记录</span>
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" onClick={refresh}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={refresh}
+                disabled={loading}
+                title="刷新上传记录"
+                aria-label="刷新上传记录"
+              >
                 <RefreshCw className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="sm">
+              <a
+                href={downloadHref}
+                download="数据上传记录.csv"
+                className={buttonVariants({ variant: "ghost", size: "sm" })}
+                title="导出上传记录"
+                aria-label="导出上传记录"
+              >
                 <Download className="h-4 w-4" />
-              </Button>
+              </a>
             </div>
           </div>
         </CardTitle>
@@ -113,6 +136,8 @@ export function DataUploadRecords() {
                         size="sm"
                         onClick={() => deleteRecord(r.id)}
                         className="text-rose-500 hover:text-rose-600"
+                        title="删除上传记录"
+                        aria-label="删除上传记录"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>

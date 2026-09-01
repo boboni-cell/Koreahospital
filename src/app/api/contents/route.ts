@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
   const pid = getCurrentProjectId();
   const info = db
     .prepare(
-      "INSERT INTO contents (title, body, platform, role, status, scheduled_for, project_id) VALUES (?, ?, ?, ?, ?, ?, ?)"
+      "INSERT INTO contents (title, body, platform, role, status, scheduled_for, cover_url, project_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
     )
     .run(
       body.title ?? "未命名",
@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
       body.role ?? null,
       body.status ?? "draft",
       body.scheduled_for ?? null,
+      body.cover_url ?? null,
       pid
     );
   recordAction({

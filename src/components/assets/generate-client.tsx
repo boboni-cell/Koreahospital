@@ -68,6 +68,8 @@ export function GenerateClient() {
       .catch(() => {});
     // 从选题池【配图】进入：预填提示词为导向
     const tid = sp.get("topic");
+    const k = sp.get("kind");
+    if (k === "image" || k === "video") setKind(k);
     if (tid) {
       fetch("/api/topics")
         .then((r) => r.json())
@@ -159,13 +161,18 @@ export function GenerateClient() {
           surgery_type: null,
           patient_code: null,
           filename: `${c.title.slice(0, 20)}-配图-${Date.now()}`,
+          content_id: c.id,
         }),
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || "生成失败");
       setResult({ url: d.asset.file_url, file_type: d.asset.file_type });
       setSyncedId(d.asset.id);
-      toast.success(`已生成并自动进入素材库「${d.asset.category}」`);
+      toast.success(
+        d.attachedContentId
+          ? `已生成并自动设为「${c.title}」的封面`
+          : `已生成并自动进入素材库「${d.asset.category}」`
+      );
     } catch (e: any) {
       toast.error(e.message || "生成失败");
     } finally {

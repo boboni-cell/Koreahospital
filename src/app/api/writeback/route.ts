@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 import { getCurrentProjectId } from "@/lib/projects";
 import { recordAction } from "@/lib/workflow-actions";
+import { requireAgentPreconditions } from "@/lib/agent-contracts";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +13,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const pre = requireAgentPreconditions("analyst");
+  if (!pre.ok) return NextResponse.json({ error: pre.reason }, { status: 412 });
+
   const b = await req.json();
   const id = Number(b.proposal_id);
   if (!id) return NextResponse.json({ error: "缺 proposal_id" }, { status: 400 });

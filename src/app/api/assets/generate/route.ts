@@ -32,7 +32,15 @@ export async function POST(req: NextRequest) {
         projectId
       );
     const row = db.prepare("SELECT * FROM assets WHERE id=?").get(info.lastInsertRowid);
-    return NextResponse.json({ ok: true, asset: row });
+    let attachedContentId: number | null = null;
+    if (body.content_id) {
+      const cid = Number(body.content_id);
+      if (Number.isFinite(cid) && cid > 0) {
+        db.prepare("UPDATE contents SET cover_url=? WHERE id=?").run(res.url, cid);
+        attachedContentId = cid;
+      }
+    }
+    return NextResponse.json({ ok: true, asset: row, attachedContentId });
   } catch (e) {
     return NextResponse.json({ error: String(e).slice(0, 300) }, { status: 502 });
   }

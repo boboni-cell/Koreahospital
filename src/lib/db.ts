@@ -680,6 +680,45 @@ db.prepare("INSERT OR IGNORE INTO media_models (kind, provider, base_url, api_ke
 db.prepare("INSERT OR IGNORE INTO media_models (kind, provider, base_url, api_key, model, is_mock) VALUES (?, ?, ?, ?, ?, ?)").run("video", "mock", "mock://local", "", "mock-1", 1);
 
 
+// ---- Task 07：内容知识库（PRD §11） ----
+db.exec(`
+CREATE TABLE IF NOT EXISTS competitors (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  project_id INTEGER,
+  platform TEXT NOT NULL,
+  account TEXT NOT NULL,
+  positioning TEXT,
+  evidence TEXT,
+  observed_at TEXT,
+  status TEXT DEFAULT 'active',
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE IF NOT EXISTS structures (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  project_id INTEGER,
+  platform TEXT NOT NULL,
+  hook_type TEXT,
+  structure TEXT NOT NULL,
+  source_signal_id INTEGER,
+  status TEXT DEFAULT 'active',
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE IF NOT EXISTS cta_items (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  project_id INTEGER,
+  platform TEXT NOT NULL,
+  funnel_stage TEXT,
+  text TEXT NOT NULL,
+  restricted_scenarios TEXT,
+  status TEXT DEFAULT 'active',
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_competitors_project ON competitors(project_id);
+CREATE INDEX IF NOT EXISTS idx_structures_project ON structures(project_id);
+CREATE INDEX IF NOT EXISTS idx_cta_items_project ON cta_items(project_id);
+`);
+
+
 // ---- Task 09：母版简报与平台版本（增量、幂等） ----
 db.exec(`
 CREATE TABLE IF NOT EXISTS content_briefs (
@@ -731,6 +770,16 @@ ensureAssetColumn("authorization_scope", "authorization_scope TEXT");
 ensureAssetColumn("expires_at", "expires_at TEXT");
 ensureAssetColumn("allowed_platforms", "allowed_platforms TEXT");
 ensureAssetColumn("ai_editable", "ai_editable INTEGER DEFAULT 1");
+// contents 同名幂等 helper（用于 PRD §13.2 审计标记）
+function ensureContentsColumn(name: string, ddl: string) {
+  try {
+    db.prepare(`SELECT ${name} FROM contents LIMIT 1`).get();
+  } catch {
+    db.exec(`ALTER TABLE contents ADD COLUMN ${ddl}`);
+  }
+}
+ensureContentsColumn("needs_human_review", "needs_human_review INTEGER DEFAULT 0");
+ensureContentsColumn("last_agent_role", "last_agent_role TEXT");
 db.exec(`UPDATE assets SET sensitivity='sensitive' WHERE sensitivity IS NULL AND patient_code IS NOT NULL AND patient_code != ''`);
 db.exec(`UPDATE assets SET sensitivity='normal' WHERE sensitivity IS NULL`);
 
@@ -844,6 +893,179 @@ if (auditCount === 0) {
   const insA = db.prepare("INSERT INTO skill_audits (repo, url, commit_ref, license, skill_id, status, notes) VALUES (?, ?, ?, ?, ?, 'suggested', ?)");
   for (const s of subs) {
     insA.run("coreyhaines31/marketingskills", "https://github.com/coreyhaines31/marketingskills", "待核对", "MIT", s, "候选子 Skill；引入前须逐份审核、去重，确认无自动脚本/未经验证医疗结论；medical-compliance 优先级不变");
+  }
+}
+
+// ---- 数据中心 V2：官方导入、帖子分析、定位版本与信息源 ----
+db.exec(`
+CREATE TABLE IF NOT EXISTS data_import_batches (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  project_id INTEGER NOT NULL,
+  kind TEXT DEFAULT 'post',
+  platform TEXT,
+  account_id INTEGER,
+  filename TEXT NOT NULL,
+  stored_path TEXT,
+  file_hash TEXT,
+  rows_count INTEGER DEFAULT 0,
+  inserted INTEGER DEFAULT 0,
+  updated INTEGER DEFAULT 0,
+  skipped INTEGER DEFAULT 0,
+  mapping_json TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_data_import_project ON data_import_batches(project_id, created_at);
+
+CREATE TABLE IF NOT EXISTS post_analytics (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  project_id INTEGER NOT NULL,
+  platform TEXT NOT NULL,
+  account_id INTEGER,
+  external_post_id TEXT NOT NULL,
+  post_url TEXT,
+  title TEXT,
+  content TEXT,
+  tags TEXT,
+  pillar_id INTEGER,
+  published_at TEXT,
+  source_batch_id INTEGER,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(project_id, platform, external_post_id)
+);
+CREATE INDEX IF NOT EXISTS idx_post_analytics_filter ON post_analytics(project_id, platform, account_id, published_at);
+
+CREATE TABLE IF NOT EXISTS post_metric_windows (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  post_id INTEGER NOT NULL,
+  window TEXT NOT NULL,
+  views INTEGER DEFAULT 0,
+  likes INTEGER DEFAULT 0,
+  saves INTEGER DEFAULT 0,
+  comments INTEGER DEFAULT 0,
+  shares INTEGER DEFAULT 0,
+  follower_gain INTEGER,
+  insufficient_data INTEGER DEFAULT 0,
+  observed_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  source_batch_id INTEGER,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(post_id, window)
+);
+CREATE INDEX IF NOT EXISTS idx_post_metric_window ON post_metric_windows(post_id, window);
+
+CREATE TABLE IF NOT EXISTS account_positioning_versions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  account_id INTEGER NOT NULL,
+  version INTEGER NOT NULL,
+  positioning TEXT,
+  audience TEXT,
+  voice TEXT,
+  cta TEXT,
+  banned_terms TEXT,
+  frequency TEXT,
+  notes TEXT,
+  status TEXT DEFAULT 'draft',
+  evidence TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  activated_at TEXT,
+  UNIQUE(account_id, version)
+);
+CREATE INDEX IF NOT EXISTS idx_positioning_account ON account_positioning_versions(account_id, version DESC);
+
+CREATE TABLE IF NOT EXISTS signal_sources (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  project_id INTEGER NOT NULL,
+  name TEXT NOT NULL,
+  kind TEXT NOT NULL,
+  platform TEXT,
+  url TEXT,
+  keywords TEXT,
+  category TEXT,
+  credibility TEXT DEFAULT 'medium',
+  last_checked_at TEXT,
+  status TEXT DEFAULT 'active',
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_signal_sources_project ON signal_sources(project_id, status);
+
+CREATE TABLE IF NOT EXISTS report_drafts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  project_id INTEGER NOT NULL,
+  scope TEXT NOT NULL,
+  account_id INTEGER,
+  period_start TEXT,
+  period_end TEXT,
+  summary_json TEXT,
+  diagnosis TEXT,
+  evidence TEXT,
+  actions_json TEXT,
+  model_powered INTEGER DEFAULT 0,
+  status TEXT DEFAULT 'draft',
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  confirmed_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_report_drafts_project ON report_drafts(project_id, created_at DESC);
+`);
+
+function ensureDataCenterColumn(table: string, name: string, ddl: string) {
+  try {
+    db.prepare(`SELECT ${name} FROM ${table} LIMIT 1`).get();
+  } catch {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${ddl}`);
+  }
+}
+ensureDataCenterColumn("signals", "source_id", "source_id INTEGER");
+ensureDataCenterColumn("tasks", "source_type", "source_type TEXT");
+ensureDataCenterColumn("tasks", "source_id", "source_id INTEGER");
+
+// 把既有发布快照纳入统一帖子视图；旧记录只补数据，不覆盖官方导入。
+const legacyPublishes = db.prepare(`
+  SELECT ps.id, ps.platform, ps.published_at, ps.content, cv.account_id, cb.title
+  FROM publish_snapshots ps
+  LEFT JOIN content_variants cv ON cv.id=ps.variant_id
+  LEFT JOIN content_briefs cb ON cb.id=cv.brief_id
+`).all() as { id: number; platform: string | null; published_at: string | null; content: string | null; account_id: number | null; title: string | null }[];
+const insLegacyPost = db.prepare(`
+  INSERT OR IGNORE INTO post_analytics
+  (project_id, platform, account_id, external_post_id, title, content, tags, published_at)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+`);
+const insLegacyWindow = db.prepare(`
+  INSERT OR IGNORE INTO post_metric_windows
+  (post_id, window, views, likes, saves, comments, shares, follower_gain, insufficient_data, observed_at)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+`);
+for (const post of legacyPublishes) {
+  insLegacyPost.run(
+    defaultProjectId,
+    post.platform ?? "xiaohongshu",
+    post.account_id,
+    `snapshot-${post.id}`,
+    post.title,
+    post.content,
+    JSON.stringify(Array.from(new Set((post.content?.match(/#[^\s#]+/g) ?? []).map((tag) => tag.slice(1))))),
+    post.published_at
+  );
+  const postRow = db.prepare("SELECT id FROM post_analytics WHERE project_id=? AND platform=? AND external_post_id=?")
+    .get(defaultProjectId, post.platform ?? "xiaohongshu", `snapshot-${post.id}`) as { id: number } | undefined;
+  if (!postRow) continue;
+  const windows = db.prepare("SELECT * FROM publish_metric_snapshots WHERE publish_id=?").all(post.id) as any[];
+  for (const win of windows) {
+    let platformMetrics: Record<string, number> = {};
+    try { platformMetrics = JSON.parse(win.platform_metrics || "{}"); } catch {}
+    insLegacyWindow.run(
+      postRow.id,
+      win.window,
+      Number(platformMetrics.views) || 0,
+      Number(platformMetrics.likes) || 0,
+      Number(platformMetrics.saves) || 0,
+      Number(platformMetrics.comments) || 0,
+      Number(platformMetrics.shares) || 0,
+      platformMetrics.follower_gain == null ? null : Number(platformMetrics.follower_gain) || 0,
+      win.insufficient_data ? 1 : 0,
+      win.observed_at
+    );
   }
 }
 

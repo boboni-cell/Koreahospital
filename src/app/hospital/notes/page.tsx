@@ -2,12 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { Trash2 } from "lucide-react";
 import { PageFrame } from "@/components/layout/page-frame";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
+
+const CHANNEL_HINT = "微信 / 抖音 / 小红书 / 邮件 / 电话 / Instagram / TikTok / YouTube / Kakao / 官网 / 其他";
 
 interface Note {
   id: number;
@@ -49,6 +52,15 @@ export default function NotesPage() {
     }
   }
 
+  async function del(id: number) {
+    if (!confirm("确认删除这条沟通记录？")) return;
+    const r = await fetch(`/api/notes/${id}`, { method: "DELETE" });
+    if (r.ok) {
+      toast.success("已删除");
+      load();
+    } else toast.error("删除失败");
+  }
+
   return (
     <PageFrame>
       <h2 className="mb-4 text-xl font-semibold tracking-tight text-zinc-900">沟通记录</h2>
@@ -61,7 +73,25 @@ export default function NotesPage() {
             </div>
             <div className="space-y-1">
               <Label>渠道</Label>
-              <Input value={channel} onChange={(e) => setChannel(e.target.value)} placeholder="微信 / 电话 / 面诊" />
+              <Input
+                value={channel}
+                onChange={(e) => setChannel(e.target.value)}
+                placeholder={CHANNEL_HINT}
+                list="channel-suggest"
+              />
+              <datalist id="channel-suggest">
+                <option value="微信" />
+                <option value="抖音" />
+                <option value="小红书" />
+                <option value="邮件" />
+                <option value="电话" />
+                <option value="Instagram" />
+                <option value="TikTok" />
+                <option value="YouTube" />
+                <option value="Kakao" />
+                <option value="官网" />
+                <option value="其他" />
+              </datalist>
             </div>
             <div className="space-y-1">
               <Label>沟通内容</Label>
@@ -85,7 +115,16 @@ export default function NotesPage() {
                   <span className="font-medium text-zinc-800">
                     {n.patient_name || "匿名"} · {n.channel}
                   </span>
-                  <span className="text-xs text-zinc-400">{n.created_at?.slice(0, 10)}</span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-zinc-400">{n.created_at?.slice(0, 10)}</span>
+                    <button
+                      onClick={() => del(n.id)}
+                      aria-label="删除"
+                      className="flex items-center gap-1 text-xs text-red-400 hover:text-red-600"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" /> 删除
+                    </button>
+                  </div>
                 </div>
                 <p className="text-sm text-zinc-600">{n.content}</p>
                 {n.summary && <p className="text-xs text-zinc-400">摘要：{n.summary}</p>}

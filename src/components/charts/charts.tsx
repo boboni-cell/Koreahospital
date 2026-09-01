@@ -9,7 +9,7 @@ interface SeriesPoint {
 }
 
 function fmtDate(d: string) {
-  return d.slice(5); // MM-DD
+  return /^\d{4}-\d{2}-\d{2}/.test(d) ? d.slice(5, 10) : d;
 }
 
 export function LineChart({

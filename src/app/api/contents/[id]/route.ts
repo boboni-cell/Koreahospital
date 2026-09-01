@@ -19,6 +19,13 @@ export async function PATCH(
     body.cover_url ?? null,
     id
   );
+  // 标记：由 Agent/mock 保存的内容需要人工二次编辑；人工编辑/确认后清除
+  if (body.from_agent) {
+    db.prepare("UPDATE contents SET needs_human_review=1, last_agent_role=? WHERE id=?").run(body.from_agent, id);
+  }
+  if (body.cleared_review) {
+    db.prepare("UPDATE contents SET needs_human_review=0 WHERE id=?").run(id);
+  }
   // 同步到内容排期：scheduled_for 更新时覆盖/新建对应排期
   if (body.scheduled_for) {
     const existing = db

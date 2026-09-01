@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "node:fs/promises";
 import db from "@/lib/db";
+import { getCurrentProjectId } from "@/lib/projects";
 import {
   ensureUploadDir,
   localPublicPath,
@@ -10,6 +11,7 @@ import {
 } from "@/lib/storage";
 
 export async function POST(req: NextRequest) {
+  const projectId = getCurrentProjectId();
   await ensureUploadDir();
   const form = await req.formData();
   const file = form.get("file");
@@ -40,7 +42,7 @@ export async function POST(req: NextRequest) {
 
   const info = db
     .prepare(
-      "INSERT INTO assets (filename, file_url, r2_key, file_type, category, file_size, surgery_type, patient_code, license) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+      "INSERT INTO assets (filename, file_url, r2_key, file_type, category, file_size, surgery_type, patient_code, license, project_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     )
     .run(
       original,
@@ -51,7 +53,8 @@ export async function POST(req: NextRequest) {
       file.size,
       surgeryType,
       patientCode,
-      license
+      license,
+      projectId
     );
 
   const row = db.prepare("SELECT * FROM assets WHERE id=?").get(info.lastInsertRowid);
