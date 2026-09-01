@@ -43,6 +43,7 @@ export const NAV_ITEMS: NavItem[] = [
   {
     label: "内容生产", shortLabel: "生产", description: "信号、选题与创作", href: "/production", icon: Sparkles,
     children: [
+      { label: "选题池", href: "/topics", icon: Lightbulb },
       { label: "选题研究", href: "/contents/research", icon: Lightbulb },
       { label: "AI 文案工坊", href: "/contents/ai", icon: MessageSquare },
       { label: "单篇生产", href: "/production", icon: WandSparkles },
@@ -67,7 +68,6 @@ export const NAV_ITEMS: NavItem[] = [
     ],
   },
   { label: "排期发布", shortLabel: "排期", description: "日历与待发布", href: "/calendar", icon: CalendarDays },
-  { label: "选题池", shortLabel: "选题", description: "选题批量生成与归档", href: "/topics", icon: Lightbulb },
   {
     label: "数据中心", shortLabel: "数据", description: "帖子、账号与复盘", href: "/data/posts", icon: BarChart3,
     children: [

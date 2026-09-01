@@ -95,8 +95,17 @@ export function Sidebar() {
   ));
 
   useEffect(() => {
-    const active = allSections.find((item) => item.children?.length && sectionActive(pathname, item));
-    if (active) setExpanded((current) => ({ ...current, [active.href]: true }));
+    // pathname 变化：只展开当前 active section；其它收起
+    // 用户手动点开的非 active section 也保持展开（粘性偏好）
+    setExpanded((current) => {
+      const next: Record<string, boolean> = {};
+      for (const item of allSections) {
+        const isActive = item.children?.length && sectionActive(pathname, item);
+        const sticky = current[item.href] === true && !isActive; // 用户手动展开过
+        next[item.href] = isActive || sticky;
+      }
+      return next;
+    });
   }, [pathname]);
 
   const projectActive = pathname === "/project" || pathname.startsWith("/accounts");
