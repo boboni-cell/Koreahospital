@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Copy, Check, Pencil, ShieldAlert } from "lucide-react";
+import { Copy, Check, Pencil, ShieldAlert, ExternalLink } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ContentDetailDialog } from "@/components/content-detail-dialog";
 
 interface Content {
   id: number;
@@ -64,6 +65,7 @@ export default function TodayList() {
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const [complianceChecked, setComplianceChecked] = useState<Set<number>>(new Set());
   const [confirmPublish, setConfirmPublish] = useState<number | null>(null);
+  const [detailId, setDetailId] = useState<number | null>(null);
   const [metrics, setMetrics] = useState<{ [id: number]: { likes: string; saves: string; comments: string; shares: string; views: string } }>({});
 
   const load = useCallback(() => {
@@ -162,7 +164,14 @@ export default function TodayList() {
                 <Badge>{PLATFORM[c.platform] ?? c.platform}</Badge>
                 <span className="text-xs text-[#89828d]">{ROLE[c.role] ?? c.role}</span>
               </div>
-              <div className="text-sm font-semibold text-[#01011b]">{c.title}</div>
+              <button
+                onClick={() => setDetailId(c.id)}
+                className="text-left text-sm font-semibold text-[#01011b] hover:underline"
+                title="查看完整帖子"
+              >
+                {c.title}
+                <ExternalLink className="ml-1 inline h-3 w-3 text-[#89828d]" />
+              </button>
               <p className={`flex-1 text-xs leading-relaxed text-[#717a94] ${expanded.has(c.id) ? "" : "line-clamp-4"}`}>
                 {c.body}
               </p>
@@ -258,7 +267,10 @@ export default function TodayList() {
                         {c.data_filled ? "已回填" : "待回填"}
                       </Badge>
                     </div>
-                    <div className="truncate text-sm font-medium text-[#01011b]">{c.title}</div>
+                    <button onClick={() => setDetailId(c.id)} className="truncate text-left text-sm font-medium text-[#01011b] hover:underline" title="查看完整帖子">
+                      {c.title}
+                      <ExternalLink className="ml-1 inline h-3 w-3 text-[#89828d]" />
+                    </button>
                     {!c.data_filled ? (
                       <div className="grid grid-cols-5 gap-1.5 text-xs">
                         <Field label="赞" value={m.likes} onChange={(v) => setM(c.id, "likes", v)} />
@@ -289,6 +301,13 @@ export default function TodayList() {
           </div>
         </div>
       )}
+
+      <ContentDetailDialog
+        contentId={detailId}
+        open={detailId != null}
+        onClose={() => setDetailId(null)}
+        onChanged={load}
+      />
     </div>
   );
 }

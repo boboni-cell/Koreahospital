@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { Trash2 } from "lucide-react";
 import { PageFrame } from "@/components/layout/page-frame";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,6 +58,15 @@ export default function SchedulePage() {
     }
   }
 
+  async function del(id: number) {
+    if (!confirm("确认删除该日程？")) return;
+    const r = await fetch(`/api/schedules/${id}`, { method: "DELETE" });
+    if (r.ok) {
+      toast.success("已删除");
+      load();
+    } else toast.error("删除失败");
+  }
+
   return (
     <PageFrame>
       <h2 className="mb-4 text-xl font-semibold tracking-tight text-zinc-900">日程管理</h2>
@@ -92,9 +102,18 @@ export default function SchedulePage() {
             <Card key={it.id}>
               <CardContent className="flex items-center justify-between pt-4">
                 <span className="text-sm font-medium text-zinc-800">{it.slot_time?.replace("T", " ")}</span>
-                <span className="text-xs text-zinc-400">
-                  {acc ? `${PLATFORM_NAME[acc.platform] ?? acc.platform} · ${acc.handle}` : "—"}
-                </span>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-zinc-400">
+                    {acc ? `${PLATFORM_NAME[acc.platform] ?? acc.platform} · ${acc.handle}` : "—"}
+                  </span>
+                  <button
+                    onClick={() => del(it.id)}
+                    aria-label="删除"
+                    className="flex items-center gap-1 text-xs text-red-400 hover:text-red-600"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" /> 删除
+                  </button>
+                </div>
               </CardContent>
             </Card>
           );

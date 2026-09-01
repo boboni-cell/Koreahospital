@@ -780,6 +780,17 @@ function ensureContentsColumn(name: string, ddl: string) {
 }
 ensureContentsColumn("needs_human_review", "needs_human_review INTEGER DEFAULT 0");
 ensureContentsColumn("last_agent_role", "last_agent_role TEXT");
+ensureContentsColumn("media_urls", "media_urls TEXT DEFAULT '[]'");
+
+// 通用幂等列 helper：表名动态，比 ensureContentsColumn 复用更广
+function ensureColumn(table: string, name: string, ddl: string) {
+  try {
+    db.prepare(`SELECT ${name} FROM ${table} LIMIT 1`).get();
+  } catch {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${ddl}`);
+  }
+}
+ensureColumn("knowledge_items", "media_urls", "media_urls TEXT DEFAULT '[]'");
 db.exec(`UPDATE assets SET sensitivity='sensitive' WHERE sensitivity IS NULL AND patient_code IS NOT NULL AND patient_code != ''`);
 db.exec(`UPDATE assets SET sensitivity='normal' WHERE sensitivity IS NULL`);
 

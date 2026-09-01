@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
 import { Plus, Trash2, Archive, Search } from "lucide-react";
 import { PageFrame } from "@/components/layout/page-frame";
@@ -94,13 +95,15 @@ export default function KnowledgePage() {
         {list.length === 0 ? <p className="py-8 text-center text-xs text-[#a9a4ad]">暂无条目</p> : list.map((it) => (
           <div key={it.id} className="flex items-start gap-3 rounded-xl border border-[#e4e0e6] bg-white px-4 py-3">
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-[#01011b]">{it.title}</span>
-                <Badge className={it.status === "archived" ? "bg-[#ecedf2] text-[#717a94]" : "bg-emerald-50 text-emerald-600"}>{it.status === "archived" ? "已归档" : "启用"}</Badge>
-                <span className="text-[11px] text-[#89828d]">{PLATFORM_NAME[it.platform ?? ""] ?? it.platform ?? "-"}</span>
-              </div>
-              {it.content && <p className="mt-1 text-sm text-[#43394c]">{it.content}</p>}
-              {it.evidence && <p className="mt-0.5 text-[11px] text-[#89828d]">来源：{it.evidence}</p>}
+              <Link href={`/knowledge/${it.id}`} className="block">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-[#01011b] hover:underline">{it.title}</span>
+                  <Badge className={it.status === "archived" ? "bg-[#ecedf2] text-[#717a94]" : "bg-emerald-50 text-emerald-600"}>{it.status === "archived" ? "已归档" : "启用"}</Badge>
+                  <span className="text-[11px] text-[#89828d]">{PLATFORM_NAME[it.platform ?? ""] ?? it.platform ?? "-"}</span>
+                </div>
+                {it.content && <p className="mt-1 text-sm text-[#43394c]">{it.content}</p>}
+                {it.evidence && <p className="mt-0.5 text-[11px] text-[#89828d]">来源：{it.evidence}</p>}
+              </Link>
             </div>
             <div className="flex items-center gap-1.5">
               <Button size="sm" variant="ghost" onClick={() => setStatus(it.id, it.status === "active" ? "archived" : "active")} title={it.status === "active" ? "归档" : "启用"}><Archive className="h-4 w-4 text-[#89828d]" /></Button>

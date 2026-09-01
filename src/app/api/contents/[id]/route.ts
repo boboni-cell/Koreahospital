@@ -1,14 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const row = db.prepare("SELECT * FROM contents WHERE id=?").get(id);
+  if (!row) return NextResponse.json({ error: "未找到" }, { status: 404 });
+  return NextResponse.json(row);
+}
+
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
   const body = await req.json();
+  const media = body.media_urls == null
+    ? null
+    : typeof body.media_urls === "string"
+      ? body.media_urls
+      : JSON.stringify(body.media_urls);
   db.prepare(
-    "UPDATE contents SET title=COALESCE(?,title), body=COALESCE(?,body), platform=COALESCE(?,platform), role=COALESCE(?,role), status=COALESCE(?,status), scheduled_for=COALESCE(?,scheduled_for), cover_url=COALESCE(?,cover_url) WHERE id=?"
+    "UPDATE contents SET title=COALESCE(?,title), body=COALESCE(?,body), platform=COALESCE(?,platform), role=COALESCE(?,role), status=COALESCE(?,status), scheduled_for=COALESCE(?,scheduled_for), cover_url=COALESCE(?,cover_url), media_urls=COALESCE(?,media_urls) WHERE id=?"
   ).run(
     body.title ?? null,
     body.body ?? null,
@@ -17,6 +29,7 @@ export async function PATCH(
     body.status ?? null,
     body.scheduled_for ?? null,
     body.cover_url ?? null,
+    media,
     id
   );
   // 标记：由 Agent/mock 保存的内容需要人工二次编辑；人工编辑/确认后清除

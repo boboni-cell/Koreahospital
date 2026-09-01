@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { CalendarClock, Trash2, CheckCircle2, Save, Pencil } from "lucide-react";
+import { CalendarClock, Trash2, CheckCircle2, Save, Pencil, ExternalLink } from "lucide-react";
 import { PageFrame } from "@/components/layout/page-frame";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { PLATFORMS, PLATFORM_NAME } from "@/lib/constants";
+import { ContentDetailDialog } from "@/components/content-detail-dialog";
 
 interface Content {
   id: number;
@@ -21,6 +22,19 @@ interface Content {
   scheduled_for: string | null;
   cover_url: string | null;
 }
+
+const STATUS_TONE: Record<string, string> = {
+  published: "bg-emerald-100 text-emerald-600",
+  scheduled: "bg-amber-100 text-amber-600",
+  draft: "bg-[#ecedf2] text-[#717a94]",
+  archived: "bg-[#ecedf2] text-[#717a94]",
+};
+const STATUS_LABEL: Record<string, string> = {
+  published: "已发布",
+  scheduled: "已排期",
+  draft: "未发布",
+  archived: "已归档",
+};
 
 const ROLE: Record<string, string> = {
   director: "院长号",
@@ -34,6 +48,7 @@ export default function ContentsPage() {
   const [items, setItems] = useState<Content[]>([]);
   const [drafts, setDrafts] = useState<{ [id: number]: string }>({});
   const [editing, setEditing] = useState<number | null>(null);
+  const [detailId, setDetailId] = useState<number | null>(null);
   const [edit, setEdit] = useState<{ title: string; body: string }>({ title: "", body: "" });
 
   const load = useCallback(() => {
@@ -110,8 +125,11 @@ export default function ContentsPage() {
             {g.items.map((c) => (
               <Card key={c.id} className="flex flex-col">
                 <CardContent className="flex flex-1 flex-col gap-2 pt-4">
-                  <div className="flex items-center justify-between">
-                    <Badge>{PLATFORM_NAME[c.platform] ?? c.platform}</Badge>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <Badge>{PLATFORM_NAME[c.platform] ?? c.platform}</Badge>
+                      <Badge className={STATUS_TONE[c.status] ?? "bg-[#ecedf2] text-[#717a94]"}>{STATUS_LABEL[c.status] ?? c.status}</Badge>
+                    </div>
                     <span className="text-xs text-[#89828d]">{ROLE[c.role] ?? c.role}</span>
                   </div>
 
@@ -126,7 +144,14 @@ export default function ContentsPage() {
                     </div>
                   ) : (
                     <>
-                      <div className="text-sm font-medium text-[#01011b]">{c.title}</div>
+                      <button
+                        onClick={() => setDetailId(c.id)}
+                        className="text-left text-sm font-medium text-[#01011b] hover:underline"
+                        title="查看完整帖子"
+                      >
+                        {c.title}
+                        <ExternalLink className="ml-1 inline h-3 w-3 text-[#89828d]" />
+                      </button>
                       <p className="line-clamp-3 text-xs leading-relaxed text-[#717a94]">{c.body}</p>
                     </>
                   )}
@@ -162,6 +187,13 @@ export default function ContentsPage() {
           </div>
         </div>
       ))}
+
+      <ContentDetailDialog
+        contentId={detailId}
+        open={detailId != null}
+        onClose={() => setDetailId(null)}
+        onChanged={load}
+      />
     </PageFrame>
   );
 }
