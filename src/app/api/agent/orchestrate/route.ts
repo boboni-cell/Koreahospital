@@ -10,6 +10,8 @@ import { contextHint, ocrSchemaHint } from "@/lib/page-context";
 import { chatUrlFor, PROVIDERS, type ProviderId } from "@/lib/providers";
 import "@/lib/page-schemas"; // side-effect: register schemas
 import { requireAgentPreconditions } from "@/lib/agent-contracts";
+import db from "@/lib/db";
+import { getCurrentProjectId } from "@/lib/projects";
 
 export const dynamic = "force-dynamic";
 
@@ -53,8 +55,17 @@ export async function POST(req: NextRequest) {
       }>(text);
       const skillIds = (plan.skills || []).map((sid) => cat.find((s) => s.id === sid)?.id).filter((x): x is string => !!x);
       const content = await resolveContents(skillIds);
-      append({ kind: "agent_msg", role: "strategist", text: `mode=orchestrate: ${task.slice(0, 80)} → skills=${skillIds.join(",")}` });
-      return NextResponse.json({ ids: skillIds, content, catalog: cat, modelPowered: true, plan });
+      // 把 step 数组展开成可执行记录，每步带 status + role。role 暂时按 modelKind 映射到已有 6 角色之一。
+      const roleForKind = plan.modelKind === "image" ? "designer" : plan.modelKind === "video" ? "designer" : "writer";
+      const steps = (plan.steps || []).map((s) => ({ text: String(s), status: "pending", role: roleForKind, result: null, error: null }));
+      // 持久化：G2 模式下 plan 可被前端逐步执行
+      const pid = getCurrentProjectId();
+      const info = db.prepare(
+        "INSERT INTO agent_plans (project_id, task, steps_json, note, status) VALUES (?, ?, ?, ?, ?)"
+      ).run(pid, task.slice(0, 500), JSON.stringify(steps), plan.note ?? null, "pending");
+      const planId = Number(info.lastInsertRowid);
+      append({ kind: "agent_msg", role: "strategist", text: `plan #${planId} created: ${steps.length} steps (${plan.modelKind})` });
+      return NextResponse.json({ ids: skillIds, content, catalog: cat, modelPowered: true, plan, planId, steps });
     } catch (e) {
       console.error("[orchestrator] 决策失败，退回 skill 目录", e);
       return NextResponse.json({ ids: [], content: "", catalog: cat, modelPowered: false, plan: null });

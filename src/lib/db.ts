@@ -1080,4 +1080,21 @@ for (const post of legacyPublishes) {
   }
 }
 
+// ---- Task G2：编排执行计划（Agent 协作 G2 模式） ----
+// ponytail: 一次决策对应一个 plan；steps 存 JSON 数组，每步带 status（pending/running/done/failed）。
+// 不加 step 表是因为 steps 不需要单独查询；它们是 plan 的子文档。
+db.exec(`
+CREATE TABLE IF NOT EXISTS agent_plans (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  project_id INTEGER,
+  task TEXT NOT NULL,
+  steps_json TEXT NOT NULL DEFAULT '[]',
+  note TEXT,
+  status TEXT DEFAULT 'pending',
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_agent_plans_project ON agent_plans(project_id, created_at DESC);
+`);
+
 export default db;

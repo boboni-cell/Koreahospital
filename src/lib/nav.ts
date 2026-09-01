@@ -87,6 +87,7 @@ export const NAV_ITEMS: NavItem[] = [
     ],
   },
   { label: "SOP 中心", shortLabel: "SOP", description: "标准流程与规范", href: "/sop", icon: BookOpen },
+  { label: "执行计划", shortLabel: "计划", description: "总 Agent 的协作 plan", href: "/plans", icon: ListTodo },
 ];
 
 export const SETTINGS_ITEM: NavItem = {
@@ -135,5 +136,6 @@ export const ROUTE_TITLES: Record<string, string> = {
   "/hospital/tasks": "任务看板",
   "/hospital/notes": "沟通记录",
   "/sop": "SOP 中心",
+  "/plans": "执行计划",
   "/settings": "系统设置",
 };
