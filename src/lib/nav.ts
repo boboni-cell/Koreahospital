@@ -64,10 +64,10 @@ export const NAV_ITEMS: NavItem[] = [
       { label: "素材库", href: "/assets", icon: Images },
       { label: "AI 生成配图", href: "/assets/generate", icon: Sparkles },
       { label: "批量上传", href: "/assets/upload", icon: Upload },
-      { label: "选题池", href: "/topics", icon: Lightbulb },
     ],
   },
   { label: "排期发布", shortLabel: "排期", description: "日历与待发布", href: "/calendar", icon: CalendarDays },
+  { label: "选题池", shortLabel: "选题", description: "选题批量生成与归档", href: "/topics", icon: Lightbulb },
   {
     label: "数据中心", shortLabel: "数据", description: "帖子、账号与复盘", href: "/data/posts", icon: BarChart3,
     children: [

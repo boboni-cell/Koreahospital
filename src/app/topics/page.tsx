@@ -42,6 +42,7 @@ export default function TopicsPage() {
   const [bulkTheme, setBulkTheme] = useState("");
   const [bulkCount, setBulkCount] = useState(5);
   const [bulkLoading, setBulkLoading] = useState(false);
+  const [sourceFilter, setSourceFilter] = useState<"all" | "trending" | "adopted" | "manual">("all");
   const router = useRouter();
 
   const load = () =>
@@ -160,8 +161,30 @@ export default function TopicsPage() {
           </DialogContentComp>
         </DialogRoot>
       )}
+
+      {/* 来源筛选：trending = AI 批量生成、adopted = 从选题研究采纳、manual = 手工录入 */}
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        {([
+          { id: "all", label: `全部 ${topics.length}` },
+          { id: "trending", label: `AI 批量 ${topics.filter((t) => t.source === "trending").length}` },
+          { id: "adopted", label: `已采纳 ${topics.filter((t) => t.source === "adopted").length}` },
+          { id: "manual", label: `手工 ${topics.filter((t) => (t.source ?? "manual") === "manual").length}` },
+        ] as const).map((opt) => (
+          <button
+            key={opt.id}
+            onClick={() => setSourceFilter(opt.id)}
+            className={
+              "rounded-full px-3.5 py-1.5 text-xs font-medium transition " +
+              (sourceFilter === opt.id ? "bg-[#31263b] text-white" : "bg-[#ecedf2] text-[#717a94] hover:bg-[#ecedf2]")
+            }
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {topics.map((t) => (
+        {(sourceFilter === "all" ? topics : topics.filter((t) => (t.source ?? "manual") === sourceFilter)).map((t) => (
           <Card key={t.id}>
             <CardContent className="space-y-2 pt-4">
               <div className="flex items-center justify-between">
