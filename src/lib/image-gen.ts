@@ -126,7 +126,7 @@ export async function generateVideo(prompt: string): Promise<GenResult> {
 }
 
 /** 火山方舟视频：POST 创建任务 → 轮询 GET 任务状态 → 提取 video_url
- *  最长轮询 60s（6 次 × 10s） */
+ *  最长轮询 360s（12 次 × 30s） */
 async function generateVideoArkTask(
   provider: ProviderId,
   m: MediaModel,
@@ -153,8 +153,8 @@ async function generateVideoArkTask(
   if (!taskId) throw new Error(`方舟视频未返回任务 id: ${JSON.stringify(created).slice(0, 200)}`);
 
   // 轮询
-  const maxAttempts = 6;
-  const intervalMs = 10_000;
+  const maxAttempts = 12;
+  const intervalMs = 30_000;
   for (let i = 0; i < maxAttempts; i++) {
     await new Promise((r) => setTimeout(r, intervalMs));
     const pollUrl = arkVideoPollUrl(provider, taskId, m.base_url);

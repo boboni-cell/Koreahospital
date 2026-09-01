@@ -5,8 +5,12 @@ data/clinic.db-*
 data/ai-config.json
 data/r2-config.json
 data/models.json
+data/agent-config.json
 data/.seed.lock
 data/backups/
+data/logs/
+data/summaries/
 public/uploads/
 *.log
 .DS_Store
+.dsh-vision-toolkit/
