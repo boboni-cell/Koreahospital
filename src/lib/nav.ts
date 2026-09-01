@@ -19,6 +19,7 @@ import {
   Stethoscope,
   Target,
   Upload,
+  Users,
   WandSparkles,
 } from "lucide-react";
 
@@ -88,6 +89,7 @@ export const NAV_ITEMS: NavItem[] = [
   },
   { label: "SOP 中心", shortLabel: "SOP", description: "标准流程与规范", href: "/sop", icon: BookOpen },
   { label: "执行计划", shortLabel: "计划", description: "总 Agent 的协作 plan", href: "/plans", icon: ListTodo },
+  { label: "账号矩阵", shortLabel: "账号", description: "管理所有平台账号与定位", href: "/accounts", icon: Users },
 ];
 
 export const SETTINGS_ITEM: NavItem = {

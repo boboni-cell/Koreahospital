@@ -25,6 +25,8 @@ import { PageFrame } from "@/components/layout/page-frame";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { CaptainPlanDialog } from "@/components/captain-plan-dialog";
 import { PLATFORM_NAME } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
@@ -80,6 +82,9 @@ export default function WorkbenchPage() {
   const [overview, setOverview] = useState<Record<string, number>>({});
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  // 总控任务：用户在 hero 输入框里写一句话，captain 拆解后弹 plan dialog
+  const [captainTask, setCaptainTask] = useState("");
+  const [captainOpen, setCaptainOpen] = useState(false);
 
   const refresh = () => {
     setLoading(true);
@@ -144,18 +149,100 @@ export default function WorkbenchPage() {
   return (
     <PageFrame>
       <div className="space-y-6">
-        <section className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-          <div>
-            <div className="mb-3 flex flex-wrap items-center gap-2">
-              <Badge className="border border-[#ded8d1] bg-white text-[#6d6761]">今日运营</Badge>
-              <span className="text-xs text-[#938c85]">当前项目 · {project?.name ?? "加载中"}</span>
+        {/* 队长总控 hero 区：dsh-agent-teams 风格的「One prompt. A working team.」 */}
+        <section
+          id="agent-task"
+          className="relative overflow-hidden rounded-[28px] border border-[#e2dcd5] bg-gradient-to-br from-[#fff7e6] via-[#fffefa] to-[#f3f0ff] p-6 shadow-[0_8px_30px_rgba(60,40,20,0.05)] sm:p-8"
+        >
+          {/* 背景装饰圆点 */}
+          <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[#f0c7cc]/40 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-24 -left-16 h-72 w-72 rounded-full bg-[#cbd8f1]/40 blur-3xl" />
+
+          <div className="relative flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
+            {/* 左侧：队长 + 队员 avatars */}
+            <div className="flex items-center gap-4">
+              {/* 队长 */}
+              <div className="relative">
+                <div className="grid h-16 w-16 place-items-center rounded-full bg-gradient-to-br from-[#31263b] to-[#1f1a25] text-white shadow-lg">
+                  <Sparkles className="h-7 w-7" />
+                </div>
+                <span className="absolute -bottom-1 -right-1 rounded-full border-2 border-white bg-[#f0c7cc] px-1.5 py-0.5 text-[9px] font-bold text-[#7a3954]">队长</span>
+              </div>
+
+              {/* 队员链 */}
+              <div className="flex items-center -space-x-2">
+                {[
+                  { name: "研究", tone: "bg-[#dff4e8] text-[#35684d]", icon: Lightbulb },
+                  { name: "文案", tone: "bg-[#eee8ff] text-[#665a86]", icon: ClipboardList },
+                  { name: "设计", tone: "bg-[#f0c7cc] text-[#7a3954]", icon: ImageIcon },
+                  { name: "发布", tone: "bg-[#fae7bf] text-[#8a6321]", icon: Send },
+                  { name: "分析", tone: "bg-[#d8cdf5] text-[#5a4a8a]", icon: BarChart3 },
+                ].map((m, i) => {
+                  const Icon = m.icon;
+                  return (
+                    <div
+                      key={m.name}
+                      title={m.name}
+                      className={cn("grid h-10 w-10 place-items-center rounded-full border-2 border-white shadow-sm", m.tone)}
+                      style={{ zIndex: 10 - i }}
+                    >
+                      <Icon className="h-4 w-4" />
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="hidden sm:block">
+                <p className="text-[10px] font-semibold uppercase tracking-[.18em] text-[#77716b]">Agent Team</p>
+                <p className="text-xs text-[#938c85]">6 个角色 · 真 key 全绿</p>
+              </div>
             </div>
-            <h2 className="max-w-3xl text-3xl font-semibold tracking-[-0.04em] text-[#171619] sm:text-4xl">从信号到复盘，按流程完成今天的内容</h2>
-            <p className="mt-2 text-sm text-[#77716b]">先看待办，再沿着 5 个步骤推进。每项能力都在它应该出现的位置。</p>
+
+            {/* 右侧：项目 + 刷新 */}
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge className="border border-[#ded8d1] bg-white text-[#6d6761]">当前项目 · {project?.name ?? "加载中"}</Badge>
+              <Button variant="outline" onClick={refresh} disabled={loading}>
+                <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} /> 刷新
+              </Button>
+              <Link href="/contents/new" className="inline-flex h-10 items-center gap-2 rounded-full bg-[#151517] px-5 text-sm font-semibold text-white transition hover:bg-[#2a282c]">
+                <Plus className="h-4 w-4" /> 新建内容
+              </Link>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={refresh} disabled={loading}><RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} /> 刷新数据</Button>
-            <Link href="/contents/new" className="inline-flex h-10 items-center gap-2 rounded-full bg-[#151517] px-5 text-sm font-semibold text-white transition hover:bg-[#2a282c]"><Plus className="h-4 w-4" /> 新建内容</Link>
+
+          {/* 大输入框 */}
+          <div className="relative mt-6">
+            <div className="rounded-2xl border-2 border-[#31263b]/10 bg-white p-1 shadow-inner transition focus-within:border-[#31263b]/40">
+              <Textarea
+                value={captainTask}
+                onChange={(e) => setCaptainTask(e.target.value)}
+                placeholder="一句话告诉队长要做什么。例如：「为植发术后 30 天护理写一篇小红书笔记 + 配图」「分析上周哪条视频涨粉最快，复制结构」「给 5 个账号各起一条夏季选题」…"
+                rows={3}
+                className="min-h-20 resize-none border-0 px-4 py-3 text-sm leading-relaxed shadow-none focus-visible:ring-0"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && captainTask.trim()) {
+                    setCaptainOpen(true);
+                  }
+                }}
+              />
+              <div className="flex items-center justify-between border-t border-[#f4eeea] px-2 py-2">
+                <div className="flex items-center gap-2 px-2 text-[11px] text-[#89828d]">
+                  <kbd className="rounded border border-[#e4e0e6] bg-[#f8f6f2] px-1.5 py-0.5 text-[10px]">⌘</kbd>
+                  <kbd className="rounded border border-[#e4e0e6] bg-[#f8f6f2] px-1.5 py-0.5 text-[10px]">Enter</kbd>
+                  <span>提交给队长</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Link href="/plans" className="text-[11px] text-[#665a86] hover:underline">查看执行计划 →</Link>
+                  <Button
+                    onClick={() => captainTask.trim() && setCaptainOpen(true)}
+                    disabled={!captainTask.trim()}
+                    className="rounded-xl bg-gradient-to-br from-[#31263b] to-[#1f1a25] px-5 hover:from-[#3f3149] hover:to-[#2a232f]"
+                  >
+                    <Sparkles className="h-4 w-4" /> 交给总控
+                  </Button>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -293,6 +380,15 @@ export default function WorkbenchPage() {
           </aside>
         </div>
       </div>
+
+      {/* 队长分发 Plan Dialog */}
+      <CaptainPlanDialog
+        open={captainOpen}
+        onClose={() => setCaptainOpen(false)}
+        task={captainTask}
+        input={{ pathname: "/workbench" }}
+        title="总控规划"
+      />
     </PageFrame>
   );
 }

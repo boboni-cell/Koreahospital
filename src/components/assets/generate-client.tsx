@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Loader2, Sparkles, ImageIcon, Video, Wand2, Link2, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CaptainPlanDialog } from "@/components/captain-plan-dialog";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -41,6 +42,9 @@ export function GenerateClient() {
   const [patientCode, setPatientCode] = useState("");
   const [surgery, setSurgery] = useState("FUE");
   const [gen, setGen] = useState(false);
+  // captain 分发：手动生成也走总控
+  const [captainOpen, setCaptainOpen] = useState(false);
+  const [captainTask, setCaptainTask] = useState("");
   const [result, setResult] = useState<{ url: string; file_type: string } | null>(null);
 
   // —— 从内容生成配图流程（feature 4）——
@@ -318,10 +322,23 @@ export function GenerateClient() {
                 <Input value={patientCode} onChange={(e) => setPatientCode(e.target.value)} placeholder="P-2026-001" />
               </div>
             </div>
-            <Button onClick={run} disabled={gen} className="w-full">
-              {gen ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-              {gen ? "生成中…" : `生成${kind === "image" ? "配图" : "视频"}`}
-            </Button>
+            <div className="grid grid-cols-2 gap-2">
+              <Button onClick={run} disabled={gen} className="w-full" variant="outline">
+                {gen ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                {gen ? "生成中…" : "直接生成"}
+              </Button>
+              <Button
+                onClick={() => {
+                  if (!prompt.trim()) return toast.error("请先填提示词");
+                  setCaptainTask(`为 Koreahospital 项目生成${kind === "image" ? "配图" : "短视频"}。提示词：「${prompt}」。请队长拉对应的设计/视频 skill 自动跑，并按平台合规要求调整。`);
+                  setCaptainOpen(true);
+                }}
+                disabled={!prompt.trim()}
+                className="w-full"
+              >
+                <Wand2 className="h-4 w-4" /> 通过总控生成
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
@@ -334,10 +351,16 @@ export function GenerateClient() {
               </div>
             ) : result ? (
               result.file_type === "video" ? (
-                <video src={result.url} controls className="h-64 w-full rounded-xl object-cover" />
+                // 视频：9:16 竖屏容器（抖音 / 小红书视频主比例），object-contain 不裁人脸
+                <div className="relative mx-auto w-full max-w-[260px] overflow-hidden rounded-xl bg-black aspect-[9/16]">
+                  <video src={result.url} controls className="absolute inset-0 h-full w-full object-contain" />
+                </div>
               ) : (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={result.url} alt="生成结果" className="h-64 w-full rounded-xl object-contain" />
+                // 配图：3:4 容器（小红书 / 公众号头图主比例）
+                <div className="relative mx-auto w-full max-w-[320px] overflow-hidden rounded-xl bg-[#f6f4f5] aspect-[3/4]">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={result.url} alt="生成结果" className="absolute inset-0 h-full w-full object-contain" />
+                </div>
               )
             ) : (
               <div className="flex h-64 items-center justify-center rounded-xl bg-[#f6f4f5] text-sm text-zinc-400">
@@ -347,6 +370,14 @@ export function GenerateClient() {
           </CardContent>
         </Card>
       </div>
+
+      <CaptainPlanDialog
+        open={captainOpen}
+        onClose={() => setCaptainOpen(false)}
+        task={captainTask}
+        input={{ pathname: "/assets/generate", kind, prompt }}
+        title="总控生成任务"
+      />
     </div>
   );
 }

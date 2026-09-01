@@ -25,6 +25,21 @@ function sectionActive(pathname: string, item: NavItem) {
   return routeMatches(pathname, item.href, item.exact);
 }
 
+/** 互斥：同 pathname 命中多个父 section 时，取「路径最长」那个作为唯一 active。
+ *  ponytail: 用 href 长度排序；children 命中的按 child.href 算（更深 = 更具体）。
+ *  单一线性扫描，O(N)；N = nav 项数量，无性能问题。 */
+function bestActiveHref(pathname: string, items: NavItem[]): string | null {
+  let best: { href: string; rank: number } | null = null;
+  for (const item of items) {
+    if (!sectionActive(pathname, item)) continue;
+    // 优先用最深 child 的 href（代表真正的当前位置）
+    const childHit = item.children?.find((c) => childActive(pathname, c));
+    const candidate = childHit?.href ?? item.href;
+    if (!best || candidate.length > best.rank) best = { href: candidate, rank: candidate.length };
+  }
+  return best?.href ?? null;
+}
+
 function Section({ item, pathname, open, onToggle }: { item: NavItem; pathname: string; open: boolean; onToggle: () => void }) {
   const active = sectionActive(pathname, item);
   const Icon = item.icon;
@@ -95,14 +110,16 @@ export function Sidebar() {
   ));
 
   useEffect(() => {
-    // pathname 变化：只展开当前 active section；其它收起
-    // 用户手动点开的非 active section 也保持展开（粘性偏好）
+    // pathname 变化：互斥 - 取「最具体」那个父 section 强制展开；其它收起。
+    // 用户手动展开过的非 active section 仍保持展开（粘性偏好）。
     setExpanded((current) => {
+      const best = bestActiveHref(pathname, allSections);
       const next: Record<string, boolean> = {};
       for (const item of allSections) {
         const isActive = item.children?.length && sectionActive(pathname, item);
-        const sticky = current[item.href] === true && !isActive; // 用户手动展开过
-        next[item.href] = isActive || sticky;
+        const isBest = best != null && item.href !== best && (item.children?.some((c) => c.href === best) || (item.href === best && bestActiveHref(pathname, allSections) === item.href));
+        const sticky = current[item.href] === true && !isActive && !isBest;
+        next[item.href] = isActive || isBest || sticky;
       }
       return next;
     });

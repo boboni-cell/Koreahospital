@@ -8,6 +8,7 @@ import { PageFrame } from "@/components/layout/page-frame";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CaptainPlanDialog } from "@/components/captain-plan-dialog";
 import {
   DialogRoot,
   DialogContentComp,
@@ -30,6 +31,7 @@ interface Topic {
   description: string | null;
   source: string;
   heat_score: number;
+  created_at?: string;
 }
 
 export default function TopicsPage() {
@@ -43,6 +45,10 @@ export default function TopicsPage() {
   const [bulkCount, setBulkCount] = useState(5);
   const [bulkLoading, setBulkLoading] = useState(false);
   const [sourceFilter, setSourceFilter] = useState<"all" | "trending" | "adopted" | "manual">("all");
+  const [detailId, setDetailId] = useState<number | null>(null);
+  // captain 任务：4 个按钮改成构造 task 字符串交给总控（统一 captain flow）
+  const [captainTask, setCaptainTask] = useState("");
+  const [captainOpen, setCaptainOpen] = useState(false);
   const router = useRouter();
 
   const load = () =>
@@ -51,20 +57,18 @@ export default function TopicsPage() {
     load();
   }, []);
 
-  function genCopy(t: Topic) {
-    router.push(`/contents/ai?topic=${t.id}`);
+  // ponytail: 4 个按钮统一走「总控 captain」—— 不让用户选 skill，
+  // 构造 task 字符串交给 strategist，它会拉对应队员 + skill 自动跑。
+  function delegate(t: Topic, intent: "copy" | "image" | "video" | "text") {
+    const labels = { copy: "写文案", image: "配图", video: "短视频脚本", text: "纯文本" };
+    const task = `为选题「${t.title}」${t.description ? "（" + t.description + "）" : ""}生成${labels[intent]}。请按平台合规要求完成，并自动选定合适的 skill。`;
+    setCaptainTask(task);
+    setCaptainOpen(true);
   }
-  function genImageText(t: Topic) {
-    // 图文生成：跳到 AI 生成页,默认 image 模式
-    router.push(`/assets/generate?topic=${t.id}&kind=image`);
-  }
-  function genVideo(t: Topic) {
-    router.push(`/assets/generate?topic=${t.id}&kind=video`);
-  }
-  function genText(t: Topic) {
-    // 文本生成：用 AI 视频脚本 skill 生成纯文字稿（可复制当文案）
-    router.push(`/contents/ai?topic=${t.id}&mode=text`);
-  }
+  function genCopy(t: Topic) { delegate(t, "copy"); }
+  function genImageText(t: Topic) { delegate(t, "image"); }
+  function genVideo(t: Topic) { delegate(t, "video"); }
+  function genText(t: Topic) { delegate(t, "text"); }
 
   async function genScript(t?: Topic) {
     const target = t ?? scriptTopic;
@@ -193,9 +197,15 @@ export default function TopicsPage() {
                   {t.source === "adopted" ? "已采纳" : "手动"}
                 </span>
               </div>
-              <div className="text-sm font-medium text-[#01011b]">{t.title}</div>
+              <button
+                onClick={() => setDetailId(t.id)}
+                className="block text-left text-sm font-medium text-[#01011b] hover:underline"
+                title="查看完整信息"
+              >
+                {t.title}
+              </button>
               {t.description && (
-                <p className="line-clamp-2 text-xs text-[#717a94]">{t.description}</p>
+                <p className="text-xs leading-relaxed text-[#717a94]">{t.description}</p>
               )}
               {/* 生成链路：文案 / 图文 / 视频 / 文本 */}
               <div className="grid grid-cols-4 gap-1.5 pt-1">
@@ -281,6 +291,54 @@ export default function TopicsPage() {
           </DialogContentComp>
         </DialogRoot>
       )}
+
+      {/* 选题详情 Dialog */}
+      {detailId != null && (() => {
+        const t = topics.find((x) => x.id === detailId);
+        if (!t) return null;
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+            <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-xl">
+              <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[#ecedf2] bg-white px-5 py-3">
+                <div className="flex items-center gap-2">
+                  <Badge>热度 {t.heat_score}</Badge>
+                  <Badge className="bg-[#ecedf2] text-[#717a94]">{t.source}</Badge>
+                  <span className="text-[11px] text-[#89828d]">{t.created_at?.slice(0, 19).replace("T", " ")}</span>
+                </div>
+                <button onClick={() => setDetailId(null)} aria-label="关闭" className="rounded p-1 hover:bg-[#f4eeea]">✕</button>
+              </div>
+              <div className="space-y-3 p-5">
+                <h3 className="text-base font-semibold text-[#01011b]">{t.title}</h3>
+                {t.description && (
+                  <p className="whitespace-pre-wrap rounded-lg bg-[#f6f4f5] p-3 text-sm leading-relaxed text-[#31263b]">{t.description}</p>
+                )}
+                <div className="grid grid-cols-2 gap-2 pt-2">
+                  <Button size="sm" variant="outline" onClick={() => { setDetailId(null); genCopy(t); }}>
+                    <MessageSquarePlus className="h-3.5 w-3.5" /> 文案
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => { setDetailId(null); genImageText(t); }}>
+                    <ImageIcon className="h-3.5 w-3.5" /> 图文
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => { setDetailId(null); genVideo(t); }}>
+                    <Clapperboard className="h-3.5 w-3.5" /> 视频
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => { setDetailId(null); genText(t); }}>
+                    <FileText className="h-3.5 w-3.5" /> 文本
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+      {/* captain 总控分发 Dialog */}
+      <CaptainPlanDialog
+        open={captainOpen}
+        onClose={() => setCaptainOpen(false)}
+        task={captainTask}
+        input={{ pathname: "/topics", topic_id: detailId }}
+        title="选题任务分发"
+      />
     </PageFrame>
   );
 }

@@ -160,6 +160,12 @@ export default function AccountsPage() {
       <h2 className="mb-1 text-xl font-semibold tracking-tight text-[#01011b]">账号矩阵</h2>
       <p className="mb-4 text-xs text-[#89828d]">{project ? `当前项目：${project}` : "当前项目：加载中…"}</p>
 
+      {/* 截图导入提示：把账号首页截图发给右下角 Toni，Toni 会按 schema 自动填表 */}
+      <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-dashed border-[#cbd8f1] bg-[#eef2fc] px-4 py-3 text-xs text-[#3d4f7a]">
+        <span>📸</span>
+        <span>截图导入：把账号首页截图发给右下角 Toni，队长按 schema 自动填表，无需手敲。</span>
+      </div>
+
       <Card className="mb-5">
         <CardContent className="flex flex-wrap items-end gap-2 pt-4">
           <Select value={platform} onValueChange={(v) => setPlatform(v ?? "xiaohongshu")}>
