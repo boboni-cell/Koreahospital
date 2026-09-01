@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 import { chatCompleteForAgent } from "@/lib/agent-llm";
 import { requireAgentPreconditions } from "@/lib/agent-contracts";
+import { getAgentModel } from "@/lib/agent-models";
 
 export const dynamic = "force-dynamic";
 
@@ -36,6 +37,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   db.prepare("UPDATE agent_plans SET steps_json=?, status='running', updated_at=CURRENT_TIMESTAMP WHERE id=?").run(JSON.stringify(steps), id);
 
   try {
+    const t0 = Date.now();
     const out = await chatCompleteForAgent(
       step.role,
       [
@@ -44,9 +46,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       ],
       { maxTokens: 600, timeoutMs: 60000 }
     );
+    const latencyMs = Date.now() - t0;
+    const m = getAgentModel(step.role as any);
     step.status = "done";
     step.result = out.slice(0, 4000);
     step.completed_at = new Date().toISOString();
+    step.meta = {
+      provider: m.provider,
+      model: m.model,
+      latency_ms: latencyMs,
+      is_mock: !!m.is_mock,
+      key_len: (m.api_key || "").length,
+    };
     // 全部完成 → plan.status='completed'，否则 'running'
     const allDone = steps.every((s) => s.status === "done");
     const someFailed = steps.some((s) => s.status === "failed");

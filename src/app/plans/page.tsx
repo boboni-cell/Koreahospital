@@ -16,6 +16,7 @@ interface PlanStep {
   error: string | null;
   started_at?: string;
   completed_at?: string;
+  meta?: { provider: string; model: string; latency_ms: number; is_mock: boolean; key_len: number };
 }
 interface Plan {
   id: number;
@@ -167,6 +168,11 @@ export default function PlansPage() {
                               <summary className="cursor-pointer text-xs text-[#675f58]">查看产出（{s.result.length} 字符）</summary>
                               <pre className="mt-1 max-h-60 overflow-auto whitespace-pre-wrap rounded-lg bg-white p-2 text-xs text-[#31263b]">{s.result}</pre>
                             </details>
+                          )}
+                          {s.status === "done" && s.meta && (
+                            <p className="mt-1 text-[11px] text-[#89828d]">
+                              {s.meta.is_mock ? "🟡 mock" : "🟢 real"} · {s.meta.provider}/{s.meta.model} · {s.meta.latency_ms}ms
+                            </p>
                           )}
                         </div>
                         {s.status === "pending" && (
