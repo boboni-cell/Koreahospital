@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { parseJsonBlock } from "@/lib/ai-client";
+import { chatComplete, type ChatMessage } from "@/lib/ai-client";
 import { chatCompleteForAgent } from "@/lib/agent-llm";
 import { catalog, listSkills, resolveContents } from "@/lib/skills";
 import { getAgentConfig, ASSISTANT_MODE_PROMPT } from "@/lib/agent";
+import { getAgentModel } from "@/lib/agent-models";
 import { loadContext, append } from "@/lib/daily-log";
-import { contextHint } from "@/lib/page-context";
+import { contextHint, ocrSchemaHint } from "@/lib/page-context";
+import { chatUrlFor, PROVIDERS, type ProviderId } from "@/lib/providers";
+import "@/lib/page-schemas"; // side-effect: register schemas
 import { requireAgentPreconditions } from "@/lib/agent-contracts";
 
 export const dynamic = "force-dynamic";
@@ -62,15 +66,27 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ mode: "assistant", reply: "总 Agent（strategist）未配置真实模型，无法回复。请到「Agent 模型」配置。", draft: [], suggestions: [], powered: false });
   }
 
-  // 拼 system：base + assistant 模式 + 当前页上下文 + 长期记忆
+  // 拼 system：截图场景用 OCR 专用 prompt（更短更精准），普通对话走通用 assistant sp
+  const ocrHint = imageDataUrl ? ocrSchemaHint(pathname) : "";
   const mem = loadContext();
   const pageHint = contextHint(pathname);
-  const sys = [
-    systemPrompt,
-    ASSISTANT_MODE_PROMPT,
-    pageHint,
-    mem ? `\n${mem}` : "",
-  ].filter(Boolean).join("\n\n");
+  const sys = imageDataUrl
+    ? [
+        systemPrompt,
+        // 截图 OCR 专用 prompt：硬约束 schema + 短回复
+        `你是 OCR 字段抽取器。用户给你一张截图 + 当前页 schema，必须严格按 schema 字段名返 draft JSON。
+只返一个 JSON 对象（不要 markdown、不要解释、不要寒暄）：
+{"summary":"≤30 字概括截图内容","draft":[{"table":"...","fields":{...schema 内的字段名...}}],"suggestions":["≤2 条,如某字段看不清"]}
+字段值类型严格按 schema（enum 用白名单值,看不出的填 null,不要猜）。
+不返任何 schema 外字段,不要 Markdown 表格。`,
+        ocrHint,
+      ].filter(Boolean).join("\n\n")
+    : [
+        systemPrompt,
+        ASSISTANT_MODE_PROMPT,
+        pageHint,
+        mem ? `\n${mem}` : "",
+      ].filter(Boolean).join("\n\n");
 
   // 拼 user 消息：支持截图（多模态）
   const userContent: any =
@@ -85,17 +101,41 @@ export async function POST(req: NextRequest) {
   append({ kind: "user_msg", text: task || "(empty)", page: pathname });
 
   try {
-    const text = await chatCompleteForAgent(
-      "strategist",
-      [
-        { role: "system", content: sys },
-        { role: "user", content: userContent as any },
-      ],
-      { maxTokens: 1200, timeoutMs: 90000 }
-    );
-    // 优先按 JSON 草稿解析（draft/suggestions/next），失败则整段当文本回复
+    let text: string;
+
+    if (imageDataUrl) {
+      // OCR 场景：绕开 chatCompleteForAgent 的 mock fallback，直接调 chatComplete 让 4xx/5xx 真的抛出来
+      const m = getAgentModel("strategist");
+      if (!m.api_key) throw new Error("strategist 未配置 api_key");
+      const provider = (m.provider || "mock") as ProviderId;
+      const baseOverride = provider === "custom" ? m.base_url : (PROVIDERS[provider]?.chat ?? m.base_url);
+      const endpoint = chatUrlFor(provider, baseOverride);
+      text = await chatComplete(
+        [
+          { role: "system", content: sys },
+          { role: "user", content: userContent as any },
+        ],
+        { baseUrl: endpoint, apiKey: m.api_key, model: m.model, enabled: true },
+        { maxTokens: 800, timeoutMs: 90000 }
+      );
+    } else {
+      text = await chatCompleteForAgent(
+        "strategist",
+        [
+          { role: "system", content: sys },
+          { role: "user", content: task },
+        ],
+        { maxTokens: 1200, timeoutMs: 90000 }
+      );
+    }
+
+    // OCR 场景强制按 JSON 解析（不 fallback 文本），普通对话允许 fallback
     let parsed: any = null;
-    try { parsed = parseJsonBlock<any>(text); } catch { parsed = null; }
+    if (imageDataUrl) {
+      try { parsed = JSON.parse(text); } catch { parsed = parseJsonBlock<any>(text); }
+    } else {
+      try { parsed = parseJsonBlock<any>(text); } catch { parsed = null; }
+    }
     append({ kind: "agent_msg", role: "strategist", text: text.slice(0, 200), page: pathname });
     return NextResponse.json({
       mode: "assistant",
@@ -107,11 +147,23 @@ export async function POST(req: NextRequest) {
       raw: text,
     });
   } catch (e) {
-    console.error("[assistant] 失败", e);
-    append({ kind: "agent_msg", role: "strategist", text: `[ERR] ${String(e).slice(0, 100)}`, page: pathname });
-    return NextResponse.json({ mode: "assistant", powered: false, reply: "请求失败,请稍后重试", draft: [], suggestions: [] });
+      console.error("[assistant] 失败", e);
+      const errStr = String((e as Error)?.message || e).slice(0, 200);
+      append({ kind: "agent_msg", role: "strategist", text: `[ERR] ${errStr}`, page: pathname });
+      // 截图场景下如果因为模型不支持 vision 而 fallback mock，明确告诉用户
+      if (imageDataUrl) {
+        return NextResponse.json({
+          mode: "assistant",
+          powered: false,
+          reply: "截图识别失败：当前 strategist 模型不支持 vision。\n\n到「Agent 模型」把 strategist 换成支持 vision 的（如 doubao-1.5-vision-pro / deepseek-vl）。",
+          draft: [],
+          suggestions: ["先在设置页改模型", "或直接告诉我字段内容,我手写草稿"],
+          visionRequired: true,
+        });
+      }
+      return NextResponse.json({ mode: "assistant", powered: false, reply: "请求失败,请稍后重试", draft: [], suggestions: [] });
+    }
   }
-}
 
 export async function GET() {
   const all = await listSkills();

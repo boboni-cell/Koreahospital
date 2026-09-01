@@ -18,7 +18,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="zh-CN" className={cn("font-sans", geist.variable)}>
+    <html lang="zh-CN" className={cn("font-sans", geist.variable)} suppressHydrationWarning>
       <body className="antialiased">
         {children}
         <FloatingAssistant />
