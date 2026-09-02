@@ -28,6 +28,10 @@ export function DailyHotspots() {
 
   useEffect(() => { load(); }, []);
   const items = useMemo(() => sources.flatMap((source) => source.items.map((item) => ({ ...item, sourceId: source.id, sourceName: source.name }))).filter((item) => active === "all" || item.sourceId === active), [sources, active]);
+  useEffect(() => {
+    const context = items.slice(0, 30).map((item) => `${item.sourceName} #${item.rank} ${item.title}${item.hotValue ? ` 热度${item.hotValue}` : ""}${item.link ? ` ${item.link}` : ""}`).join("\n");
+    window.dispatchEvent(new CustomEvent("toni:context", { detail: { pathname: "/contents/hotspots", context } }));
+  }, [items]);
 
   function askToni(item: HotspotItem & { sourceName: string }) {
     window.dispatchEvent(new CustomEvent("toni:compose", { detail: { text: `请阅读当前每日热点页面，并根据${item.sourceName}热点「${item.title}」结合 Koreahospital 项目背景，先提出 5 个合规内容选题和切入角度，不要直接生成发布内容。来源：${item.link || "60s API"}` } }));

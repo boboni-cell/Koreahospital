@@ -66,6 +66,7 @@ export default function FloatingAssistant() {
   const [input, setInput] = useState("");
   const [img, setImg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [externalContext, setExternalContext] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
   const taRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -95,6 +96,15 @@ export default function FloatingAssistant() {
     window.addEventListener("toni:compose", compose);
     return () => window.removeEventListener("toni:compose", compose);
   }, []);
+
+  useEffect(() => {
+    function receiveContext(event: Event) {
+      const detail = (event as CustomEvent<{ pathname?: string; context?: string }>).detail;
+      if (detail?.pathname === pathname) setExternalContext(detail.context || "");
+    }
+    window.addEventListener("toni:context", receiveContext);
+    return () => window.removeEventListener("toni:context", receiveContext);
+  }, [pathname]);
 
   // 全局快捷键：Ctrl/Cmd + ` = 切显隐；Esc = 关闭；Ctrl/Cmd+K = 聚焦输入框
   // 输入框已聚焦时不抢浏览器原生（粘贴/撤销/复制/Cmd+Z 全部走原生）
@@ -127,7 +137,7 @@ export default function FloatingAssistant() {
         body: JSON.stringify({
           mode: shouldCreatePlan ? "orchestrate" : "assistant",
           task: text,
-          input: { pathname, image: img },
+          input: { pathname, image: img, pageData: externalContext.slice(0, 12000) },
         }),
       });
       const d = await r.json();
