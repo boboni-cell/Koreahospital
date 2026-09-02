@@ -6,8 +6,7 @@ import { resolveContents } from "@/lib/skills";
 import { AGENT_LABELS } from "@/lib/agent-labels";
 import { getCurrentProjectId } from "@/lib/projects";
 import { collectXhsNow, refineXhsQuery } from "@/lib/xhs-collector";
-
-const URL_RE = /https?:\/\/[^\s)\]}>,]+/g;
+import { separateResearchOutput } from "@/lib/research-output";
 
 async function liveSearch(query: string) {
   const controller = new AbortController();
@@ -86,17 +85,17 @@ export async function runPlanStep(planId: number, idx: number) {
       .map((s) => `${AGENT_LABELS[s.role] || s.role}的产出：${String(s.result).slice(0, 1800)}`).join("\n\n");
     const liveSources = step.role === "researcher" ? await liveWebSources(refinedQuery) : [];
     const researchRule = step.role === "researcher"
-      ? `\n你是研究员，必须基于下面经过细化的搜索词和全网实时公开搜索结果执行热点研究。小红书仅是一个来源，必须同时比较抖音、微博、新闻/网页等公开信号。每条热点都返回来源名称、来源链接(URL)和发布时间或搜索时间；无法访问或验证时明确写待验证，绝不编造来源。\n细化后的搜索词：${refinedQuery}\n全网搜索结果：${liveSources.join("\n") || "暂未取得搜索结果，请明确说明待验证"}`
+      ? `\n你是研究员，必须基于下面经过细化的搜索词和全网实时公开搜索结果执行热点研究。小红书仅是一个来源，必须同时比较抖音、微博、新闻/网页等公开信号。正文按“研究结论、候选选题、证据与风险、交接建议”组织，不能只罗列链接；来源链接集中放在最后的“来源”部分。无法访问或验证时明确写待验证，绝不编造来源。\n细化后的搜索词：${refinedQuery}\n全网搜索结果：${liveSources.join("\n") || "暂未取得搜索结果，请明确说明待验证"}`
       : "";
     const system = `你是${AGENT_LABELS[step.role] || step.role}，是协作任务中的第 ${idx + 1} 步执行者。\n任务：${String(row.task).slice(0, 500)}\n当前动作：${String(step.text)}${researchRule}${collectionContext}\n请直接返回本步产出，并说明可交接给下一位成员的关键信息。不要声称尚未完成的动作已经完成。${skillContent ? `\n\n相关工作规范：\n${skillContent}` : ""}${prior ? `\n\n前序产出：\n${prior}` : ""}`;
     const started = Date.now();
     const out = await chatCompleteForAgent(step.role, [{ role: "system", content: system }, { role: "user", content: String(step.text) }], { maxTokens: 900, timeoutMs: 90000 });
-    const urls = Array.from(new Set(out.match(URL_RE) || []));
-    const allSources = Array.from(new Set([...urls, ...liveSources]));
+    const separated = step.role === "researcher" ? separateResearchOutput(out) : { result: out, sources: [] };
+    const allSources = Array.from(new Set([...separated.sources, ...liveSources]));
     if (step.role === "researcher" && allSources.length === 0) throw new Error("研究员没有返回可验证的来源链接，已停止该步骤");
     const model = getAgentModel(step.role as any);
     step.status = "done";
-    step.result = out.slice(0, 6000);
+    step.result = separated.result.slice(0, 6000);
     step.sources = allSources;
     step.completed_at = new Date().toISOString();
     step.meta = { provider: model.provider, model: model.model, latency_ms: Date.now() - started, is_mock: !!model.is_mock };

@@ -64,22 +64,31 @@ export async function chatComplete(
  */
 export function parseJsonBlock<T = unknown>(text: string): T {
   if (!text) throw new Error("空文本无法解析 JSON");
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  const candidate = fenced ? fenced[1] : text;
-  const start = candidate.indexOf("{");
-  const arrStart = candidate.indexOf("[");
-  let slice = candidate;
-  if (start === -1 && arrStart === -1) throw new Error("未找到 JSON");
-  if (arrStart !== -1 && (start === -1 || arrStart < start)) {
-    const end = candidate.lastIndexOf("]");
-    slice = candidate.slice(arrStart, end + 1);
-  } else {
-    const end = candidate.lastIndexOf("}");
-    slice = candidate.slice(start, end + 1);
+  const candidates = [text.trim(), ...Array.from(text.matchAll(/```(?:json)?\s*([\s\S]*?)```/gi), (match) => match[1].trim())];
+  let lastError = "未找到完整 JSON 对象";
+  for (const candidate of candidates) {
+    try { return JSON.parse(candidate) as T; } catch (error) { lastError = String((error as Error).message); }
+    for (let start = 0; start < candidate.length; start += 1) {
+      const opener = candidate[start];
+      if (opener !== "{" && opener !== "[") continue;
+      const closer = opener === "{" ? "}" : "]";
+      let depth = 0; let quoted = false; let escaped = false;
+      for (let end = start; end < candidate.length; end += 1) {
+        const char = candidate[end];
+        if (quoted) {
+          if (escaped) escaped = false;
+          else if (char === "\\") escaped = true;
+          else if (char === '"') quoted = false;
+          continue;
+        }
+        if (char === '"') quoted = true;
+        else if (char === opener) depth += 1;
+        else if (char === closer && --depth === 0) {
+          try { return JSON.parse(candidate.slice(start, end + 1)) as T; } catch (error) { lastError = String((error as Error).message); }
+          break;
+        }
+      }
+    }
   }
-  try {
-    return JSON.parse(slice) as T;
-  } catch {
-    throw new Error("JSON 解析失败");
-  }
+  throw new Error(`JSON 解析失败：${lastError.slice(0, 160)}`);
 }

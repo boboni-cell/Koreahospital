@@ -25,6 +25,15 @@ type OrchestrationPlan = {
 
 function minimumPlan(task: string): OrchestrationPlan {
   const text = String(task || "");
+  if (/视频|分镜|口播/.test(text)) {
+    return { modelKind: "video", skills: [], steps: [{ role: "designer", text: "基于指定内容整理视频提示词和分镜，并列出生成前需要用户确认的时长、比例、分辨率、风格、模特、场景和 BGM；确认前不生成视频。" }], note: "策略师输出格式修复失败，已按视频任务意图生成安全的最小计划。" };
+  }
+  if (/配图|封面|海报|图片|视觉/.test(text)) {
+    return { modelKind: "image", skills: [], steps: [{ role: "designer", text: "基于指定内容整理配图提示词，并列出生成前需要用户确认的风格、比例、模特、场景和用途；确认前不生成图片。" }], note: "策略师输出格式修复失败，已按图片任务意图生成安全的最小计划。" };
+  }
+  if (/文案|笔记|脚本/.test(text)) {
+    return { modelKind: "text", skills: [], steps: [{ role: "writer", text: "基于用户指定的选题生成平台合规文案、标题和 CTA，并把草稿保存到内容管理。" }], note: "策略师输出格式修复失败，已按文案任务意图生成最小计划。" };
+  }
   if (/收集|采集|抓取|后台数据|账号数据/.test(text)) {
     return { modelKind: "text", skills: [], steps: [{ role: "analyst", text: "通过只读采集工具收集相关账号或帖子数据，并返回采集状态与来源。" }], note: "策略师输出格式修复失败，已生成最小可执行计划。" };
   }
@@ -64,7 +73,7 @@ export async function POST(req: NextRequest) {
       const text = await chatCompleteForAgent(
         "strategist",
         [{ role: "system", content: systemPrompt }, { role: "user", content: user }],
-        { maxTokens: 900, timeoutMs: 60000 }
+        { maxTokens: 1600, timeoutMs: 60000 }
       );
       let plan: OrchestrationPlan;
       let formatWarning = false;
@@ -82,7 +91,7 @@ export async function POST(req: NextRequest) {
               { role: "system", content: "你是执行计划格式修复器。把用户提供的策略师回复转换为严格 JSON。只输出一个 JSON 对象，不要 markdown，不要解释。字段必须是 modelKind(text|image|video)、skills(字符串数组)、steps(数组，每项含 role 和 text)、note(字符串)。role 只能是 researcher、strategist、writer、designer、publisher、analyst。" },
               { role: "user", content: `原任务：${task}\n策略师原回复：${text.slice(0, 12000)}` },
             ],
-            { maxTokens: 900, timeoutMs: 60000 }
+            { maxTokens: 1600, timeoutMs: 60000 }
           );
           plan = parseJsonBlock<OrchestrationPlan>(repaired);
           if (!Array.isArray(plan.steps) || plan.steps.length === 0) throw new Error("修复结果没有可执行步骤");

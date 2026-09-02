@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Play, Loader2, CheckCircle2, AlertCircle, Sparkles, RefreshCw, ListTodo, Trash2, FileText, Lightbulb } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { separateResearchOutput } from "@/lib/research-output";
 import { PageFrame } from "@/components/layout/page-frame";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -229,9 +230,9 @@ export default function PlansPage() {
                           )}
                           {s.status === "done" && s.result && (
                             <details className="mt-2">
-                              <summary className="cursor-pointer text-xs text-[#675f58]">查看产出（{s.result.length} 字符）</summary>
+                              <summary className="cursor-pointer text-xs text-[#675f58]">{s.role === "researcher" ? "查看研究结论" : "查看产出"}（{(s.role === "researcher" ? separateResearchOutput(s.result).result : s.result).length} 字符）</summary>
                               <div className="prose prose-sm mt-1 max-h-96 max-w-none overflow-auto rounded-lg bg-white p-3 text-[#31263b]">
-                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{s.result}</ReactMarkdown>
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{s.role === "researcher" ? separateResearchOutput(s.result).result : s.result}</ReactMarkdown>
                               </div>
                             </details>
                           )}
