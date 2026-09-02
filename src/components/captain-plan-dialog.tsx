@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, Loader2, Sparkles, X } from "lucide-react";
+import { CheckCircle2, Loader2, Sparkles, X, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,40 +20,139 @@ export interface CaptainPlanPayload {
   planId: number;
   plan: { modelKind: "text" | "image" | "video"; skills: string[]; note: string };
   steps: CaptainPlanStep[];
-  catalog?: { id: string; name: string; description: string }[];
 }
 
 const ROLE_LABEL: Record<string, string> = {
-  strategist: "总控",
-  writer: "文案",
-  designer: "设计",
-  researcher: "研究",
-  publisher: "发布",
-  analyst: "分析",
-};
-
-const ROLE_TONE: Record<string, string> = {
-  strategist: "bg-[#31263b] text-white",
-  writer: "bg-[#eee8ff] text-[#665a86]",
-  designer: "bg-[#f0c7cc] text-[#7a3954]",
-  researcher: "bg-[#dff4e8] text-[#35684d]",
-  publisher: "bg-[#fae7bf] text-[#8a6321]",
-  analyst: "bg-[#d8cdf5] text-[#5a4a8a]",
+  strategist: "总控", writer: "文案", designer: "设计",
+  researcher: "研究", publisher: "发布", analyst: "分析",
 };
 
 /**
- * ponytail: 根据 task 长度自适应展示
- *   - task ≤ 24 字 → 短任务，只 toast 摘要
- *   - 24 < task ≤ 80 字 → 右下浮卡，半透明，紧凑
- *   - task > 80 字 → 中等 Dialog
- * 用户不需要选 skill，captain 自己挑。
+ * ponytail: 一行 toast 卡片（CaptainProgressBar），宽度由内容自然撑开，
+ * 不弹 modal、不抢屏幕。看完整历史去 /plans。
+ * 通过 toast 自带的 duration 控制消失时机；用户点 X 立即关。
+ */
+export function CaptainProgressToast({
+  task,
+  input,
+}: {
+  task: string;
+  input?: Record<string, any>;
+}) {
+  const router = useRouter();
+  const [payload, setPayload] = useState<CaptainPlanPayload | null>(null);
+  const [running, setRunning] = useState(false);
+  const [done, setDone] = useState(0);
+  const [total, setTotal] = useState(0);
+
+  useEffect(() => {
+    if (!task) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await fetch("/api/agent/orchestrate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ task, input: input ?? {}, mode: "orchestrate" }),
+        });
+        const d = await r.json();
+        if (cancelled || !d.planId) return;
+        setPayload(d);
+        setTotal(d.steps.length);
+        setRunning(true);
+        for (let i = 0; i < d.steps.length; i++) {
+          if (cancelled) return;
+          try {
+            const rr = await fetch(`/api/agent/plans/${d.planId}/execute-step`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ step_index: i }),
+            });
+            await rr.json().catch(() => ({}));
+            if (cancelled) return;
+            setDone((n) => n + 1);
+          } catch {
+            if (cancelled) return;
+            setDone((n) => n + 1);
+          }
+        }
+        setRunning(false);
+      } catch {
+        if (cancelled) return;
+        toast.error("队长连接失败");
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [task]);
+
+  if (!task) return null;
+
+  const status: "loading" | "running" | "done" = running ? "running" : payload ? (done >= total && total > 0 ? "done" : "running") : "loading";
+  const allSkills = payload?.plan.skills ?? [];
+  const skillLine = allSkills.length > 0 ? ` · ${allSkills.length} skill` : "";
+
+  return (
+    <div
+      className={
+        "pointer-events-auto flex w-fit max-w-[min(90vw,720px)] items-center gap-2 rounded-full border px-3 py-1.5 text-xs shadow-sm backdrop-blur transition " +
+        (status === "loading"
+          ? "border-[#cbd8f1] bg-white/95 text-[#3d4f7a]"
+          : status === "running"
+            ? "border-[#fae7bf] bg-[#fffbef]/95 text-[#7a571c]"
+            : "border-[#c8e6d4] bg-[#f0fbf4]/95 text-[#35684d]")
+      }
+    >
+      {status === "loading" && <Loader2 className="h-3 w-3 animate-spin" />}
+      {status === "running" && <Loader2 className="h-3 w-3 animate-spin text-[#e6a700]" />}
+      {status === "done" && <CheckCircle2 className="h-3 w-3 text-emerald-500" />}
+
+      <span className="grid h-4 w-4 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#31263b] to-[#1f1a25] text-white">
+        <Sparkles className="h-2.5 w-2.5" />
+      </span>
+
+      <span className="truncate">
+        {status === "loading"
+          ? "队长拆解中…"
+          : status === "running"
+            ? `${done}/${total}${skillLine} · ${payload?.plan.modelKind ?? ""}`
+            : `完成 ${total}/${total}${skillLine}`}
+      </span>
+
+      {payload && allSkills.length > 0 && status === "done" && (
+        <span className="flex shrink-0 gap-1">
+          {allSkills.slice(0, 2).map((s) => (
+            <Badge key={s} className="h-4 bg-[#eee8ff] px-1.5 text-[9px] text-[#665a86]">{s}</Badge>
+          ))}
+          {allSkills.length > 2 && <span className="text-[9px] text-[#89828d]">+{allSkills.length - 2}</span>}
+        </span>
+      )}
+
+      <button
+        onClick={() => router.push("/plans")}
+        className="shrink-0 rounded px-1.5 text-[10px] underline-offset-2 hover:underline"
+      >
+        看全部 →
+      </button>
+
+      {status === "done" && (
+        <button onClick={() => toast.dismiss(task)} aria-label="关" className="shrink-0 rounded p-0.5 opacity-60 hover:opacity-100">
+          <X className="h-3 w-3" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+/**
+ * 极简版：替代之前 Dialog/浮卡；只做单行 toast。
+ * 调用方拿到 task 后渲染一个 <CaptainProgressToast task={...} /> 即可，
+ * 视图会随 done/total 实时刷新。
  */
 export function CaptainPlanDialog({
   open,
   onClose,
   task,
   input,
-  title,
 }: {
   open: boolean;
   onClose: () => void;
@@ -61,228 +160,23 @@ export function CaptainPlanDialog({
   input?: Record<string, any>;
   title?: string;
 }) {
-  const router = useRouter();
-  const [payload, setPayload] = useState<CaptainPlanPayload | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [runningAll, setRunningAll] = useState(false);
-  const taskLen = task.length;
-
   useEffect(() => {
-    if (!open || !task) return;
-    setPayload(null);
-    setLoading(true);
-    fetch("/api/agent/orchestrate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ task, input: input ?? {}, mode: "orchestrate" }),
-    })
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.planId && d.steps) {
-          setPayload({
-            planId: d.planId,
-            plan: d.plan,
-            steps: d.steps,
-            catalog: d.catalog,
-          });
-        } else {
-          toast.error(d.reason || "总控未返回计划");
-          onClose();
-        }
-      })
-      .catch(() => toast.error("总控连接失败"))
-      .finally(() => setLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, task]);
-
-  async function runStep(planId: number, stepIdx: number) {
-    const r = await fetch(`/api/agent/plans/${planId}/execute-step`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ step_index: stepIdx }),
-    });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error || "执行失败");
-    return d;
-  }
-
-  async function runAll(planId: number, steps: CaptainPlanStep[]) {
-    setRunningAll(true);
-    try {
-      for (let i = 0; i < steps.length; i++) {
-        if (steps[i].status === "done") continue;
-        setPayload((p) =>
-          p ? { ...p, steps: p.steps.map((s, j) => (j === i ? { ...s, status: "running" } : s)) } : p
-        );
-        try {
-          const result = await runStep(planId, i);
-          setPayload((p) =>
-            p
-              ? {
-                  ...p,
-                  steps: p.steps.map((s, j) =>
-                    j === i ? { ...s, status: result.status === "failed" ? "failed" : "done" } : s
-                  ),
-                }
-              : p
-          );
-        } catch {
-          setPayload((p) => (p ? { ...p, steps: p.steps.map((s, j) => (j === i ? { ...s, status: "failed" } : s)) } : p));
-          throw new Error(`第 ${i + 1} 步失败`);
-        }
+    if (open) {
+      // 单行 toast：固定显示到任务完成或 30 秒；提供「看全部」去 /plans
+      toast.custom(
+        () => <CaptainProgressToast task={task} input={input} />,
+        { id: task, duration: 30000, position: "bottom-right" }
+      );
+      // 短任务：8 秒自动关；长任务：用户点 X
+      const shortTask = task.length <= 24;
+      if (shortTask) {
+        setTimeout(() => toast.dismiss(task), 8000);
       }
-      toast.success("全部完成");
-    } catch (e: any) {
-      toast.error(e.message || "执行失败");
-    } finally {
-      setRunningAll(false);
     }
-  }
-
-  // 短任务：只 toast，不弹任何面板
-  useEffect(() => {
-    if (open && !loading && payload && taskLen <= 24) {
-      const summary = `队长已规划：${payload.steps.length} 步 · ${payload.plan.skills.length} skill`;
-      toast.success(summary);
-      // 直接执行（短任务用户不需要 Approve）
-      runAll(payload.planId, payload.steps);
-      onClose();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, payload, open, taskLen]);
-
-  if (!open) return null;
-
-  const skillList = payload?.catalog?.filter((c) => payload.plan.skills.includes(c.id)) ?? [];
-
-  // 中等长：右下浮卡，紧凑半透明
-  if (taskLen > 24 && taskLen <= 80) {
-    return (
-      <div className="fixed bottom-4 right-4 z-50 w-[360px] max-w-[calc(100vw-2rem)] rounded-2xl border border-[#e4e0e6] bg-white/95 p-4 shadow-2xl backdrop-blur">
-        <div className="mb-2 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="grid h-7 w-7 place-items-center rounded-full bg-gradient-to-br from-[#31263b] to-[#1f1a25] text-white">
-              <Sparkles className="h-3.5 w-3.5" />
-            </span>
-            <span className="text-sm font-semibold text-[#01011b]">{title ?? "队长规划"}</span>
-          </div>
-          <button onClick={onClose} aria-label="关闭" className="rounded p-1 hover:bg-[#f4eeea]">
-            <X className="h-3.5 w-3.5" />
-          </button>
-        </div>
-        {loading || !payload ? (
-          <p className="text-xs text-[#77716b]">
-            <Loader2 className="mr-1 inline h-3 w-3 animate-spin" /> 队长正在拆解…
-          </p>
-        ) : (
-          <CompactPlanView
-            payload={payload}
-            skillList={skillList}
-            runningAll={runningAll}
-            onApprove={() => runAll(payload.planId, payload.steps)}
-            onOpen={() => router.push("/plans")}
-          />
-        )}
-      </div>
-    );
-  }
-
-  // 长任务：中等 Dialog（max-w-xl，比之前 max-w-2xl 小一圈）
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="max-h-[85vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
-        <div className="sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-[#ecedf2] bg-gradient-to-br from-[#fff7e6] to-[#fffefa] px-5 py-4">
-          <div className="flex items-center gap-2">
-            <span className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-[#31263b] to-[#1f1a25] text-white">
-              <Sparkles className="h-4 w-4" />
-            </span>
-            <div>
-              <h3 className="text-sm font-semibold text-[#01011b]">{title ?? "队长规划"}</h3>
-              <p className="text-[10px] text-[#77716b]">
-                {payload?.plan.modelKind ?? "…"} · {payload?.steps.length ?? 0} 步 · {payload?.plan.skills.length ?? 0} skill
-              </p>
-            </div>
-          </div>
-          <button onClick={onClose} aria-label="关闭" className="grid h-7 w-7 place-items-center rounded-full hover:bg-[#f4eeea]">
-            <X className="h-3.5 w-3.5" />
-          </button>
-        </div>
-
-        <div className="space-y-4 p-5">
-          {loading && (
-            <div className="flex items-center gap-2 text-xs text-[#675f58]">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" /> 队长正在拆解…
-            </div>
-          )}
-          {payload && (
-            <CompactPlanView
-              payload={payload}
-              skillList={skillList}
-              runningAll={runningAll}
-              onApprove={() => runAll(payload.planId, payload.steps)}
-              onOpen={() => router.push("/plans")}
-            />
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function CompactPlanView({
-  payload,
-  skillList,
-  runningAll,
-  onApprove,
-  onOpen,
-}: {
-  payload: CaptainPlanPayload;
-  skillList: { id: string; name: string; description: string }[];
-  runningAll: boolean;
-  onApprove: () => void;
-  onOpen: () => void;
-}) {
-  const allDone = payload.steps.every((s) => s.status === "done");
-  return (
-    <>
-      {payload.plan.note && (
-        <p className="mb-2 text-[11px] text-[#43394c]">{payload.plan.note}</p>
-      )}
-      {skillList.length > 0 && (
-        <div className="mb-2 flex flex-wrap gap-1">
-          {skillList.map((s) => (
-            <Badge key={s.id} className="bg-[#eee8ff] text-[#665a86]">{s.id}</Badge>
-          ))}
-        </div>
-      )}
-      <ol className="mb-3 space-y-1">
-        {payload.steps.map((s, i) => (
-          <li key={i} className="flex items-center gap-2 text-[11px]">
-            {s.status === "done" ? (
-              <CheckCircle2 className="h-3 w-3 shrink-0 text-emerald-500" />
-            ) : s.status === "failed" ? (
-              <X className="h-3 w-3 shrink-0 text-red-500" />
-            ) : s.status === "running" ? (
-              <Loader2 className="h-3 w-3 shrink-0 animate-spin text-blue-500" />
-            ) : (
-              <span className="grid h-3 w-3 shrink-0 place-items-center rounded-full bg-[#31263b] text-[8px] text-white">{i + 1}</span>
-            )}
-            <Badge className={`${ROLE_TONE[s.role] ?? "bg-[#ecedf2] text-[#717a94]"} text-[9px]`}>{ROLE_LABEL[s.role] ?? s.role}</Badge>
-            <span className="truncate text-[#43394c]">{s.text}</span>
-          </li>
-        ))}
-      </ol>
-      <div className="flex items-center justify-between gap-2">
-        <button onClick={onOpen} className="text-[10px] text-[#665a86] hover:underline">
-          打开执行计划 →
-        </button>
-        {!allDone && (
-          <Button size="sm" onClick={onApprove} disabled={runningAll} className="h-7 px-3 text-xs">
-            {runningAll ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-            Approve & Run
-          </Button>
-        )}
-      </div>
-    </>
-  );
+    return () => {
+      if (!open) toast.dismiss(task);
+    };
+  }, [open, task, input]);
+  useEffect(() => () => onClose(), [onClose]);
+  return null;
 }
