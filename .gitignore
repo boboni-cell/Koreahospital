@@ -1,5 +1,6 @@
 node_modules
 .next
+.env.local
 data/clinic.db
 data/clinic.db-*
 data/ai-config.json
