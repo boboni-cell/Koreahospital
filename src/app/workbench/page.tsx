@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -85,6 +85,15 @@ export default function WorkbenchPage() {
   // 总控任务：用户在 hero 输入框里写一句话，captain 拆解后弹 plan dialog
   const [captainTask, setCaptainTask] = useState("");
   const [captainOpen, setCaptainOpen] = useState(false);
+  const captainInputRef = useRef<HTMLTextAreaElement>(null);
+
+  useLayoutEffect(() => {
+    const input = captainInputRef.current;
+    if (!input) return;
+    input.style.height = "auto";
+    input.style.height = `${Math.min(input.scrollHeight, 128)}px`;
+    input.style.overflowY = input.scrollHeight > 128 ? "auto" : "hidden";
+  }, [captainTask]);
 
   const refresh = () => {
     setLoading(true);
@@ -210,15 +219,16 @@ export default function WorkbenchPage() {
             </div>
           </div>
 
-          {/* 大输入框 */}
+          {/* 队长输入框：单行起步，内容变多时自动增高 */}
           <div className="relative mt-3">
             <div className="rounded-2xl border-2 border-[#31263b]/10 bg-white p-1 shadow-inner transition focus-within:border-[#31263b]/40">
               <Textarea
+                ref={captainInputRef}
                 value={captainTask}
                 onChange={(e) => setCaptainTask(e.target.value)}
                 placeholder="一句话告诉队长要做什么。例如：「为植发术后 30 天护理写一篇小红书笔记 + 配图」「分析上周哪条视频涨粉最快，复制结构」「给 5 个账号各起一条夏季选题」…"
-                rows={3}
-                className="min-h-16 resize-none border-0 px-4 py-2 text-sm leading-relaxed shadow-none focus-visible:ring-0"
+                rows={1}
+                className="min-h-10 max-h-32 resize-none overflow-hidden border-0 px-4 py-2 text-sm leading-relaxed shadow-none focus-visible:ring-0"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && captainTask.trim()) {
                     setCaptainOpen(true);
