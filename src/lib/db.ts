@@ -27,6 +27,8 @@ CREATE TABLE IF NOT EXISTS accounts (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   platform TEXT NOT NULL,
   handle TEXT NOT NULL,
+  external_id TEXT,
+  profile_url TEXT,
   role TEXT,
   followers INTEGER DEFAULT 0,
   status TEXT DEFAULT 'active',
@@ -480,6 +482,8 @@ function ensureAccountColumn(name: string, ddl: string) {
 ensureAccountColumn("positioning", "positioning TEXT");
 ensureAccountColumn("operator_id", "operator_id INTEGER");
 ensureAccountColumn("environment_status", "environment_status TEXT DEFAULT 'configuring'");
+ensureAccountColumn("external_id", "external_id TEXT");
+ensureAccountColumn("profile_url", "profile_url TEXT");
 
 // 默认运营者（首版单人）
 const opCount = (db.prepare("SELECT COUNT(*) AS n FROM operators").get() as { n: number }).n;

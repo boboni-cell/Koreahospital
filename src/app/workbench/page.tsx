@@ -158,24 +158,24 @@ export default function WorkbenchPage() {
   return (
     <PageFrame>
       <div className="space-y-6">
-        {/* 队长总控：原长度不变，只压上下间距 */}
+        {/* 队长总控：保持功能不变，压缩顶部占用空间 */}
         <section
           id="agent-task"
-          className="relative overflow-hidden rounded-[28px] border border-[#e2dcd5] bg-gradient-to-br from-[#fff7e6] via-[#fffefa] to-[#f3f0ff] p-3 shadow-[0_8px_30px_rgba(60,40,20,0.05)] sm:p-4"
+          className="relative overflow-hidden rounded-[28px] border border-[#e2dcd5] bg-gradient-to-br from-[#fff7e6] via-[#fffefa] to-[#f3f0ff] p-2 shadow-[0_8px_30px_rgba(60,40,20,0.05)] sm:p-3"
         >
           {/* 背景装饰圆点 */}
           <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[#f0c7cc]/40 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-24 -left-16 h-72 w-72 rounded-full bg-[#cbd8f1]/40 blur-3xl" />
 
-          <div className="relative flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+          <div className="relative flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
             {/* 左侧：队长 + 队员 avatars */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               {/* 队长 */}
               <div className="relative">
-                <div className="grid h-16 w-16 place-items-center rounded-full bg-gradient-to-br from-[#31263b] to-[#1f1a25] text-white shadow-lg">
-                  <Sparkles className="h-7 w-7" />
+                <div className="grid h-12 w-12 place-items-center rounded-full bg-gradient-to-br from-[#31263b] to-[#1f1a25] text-white shadow-lg">
+                  <Sparkles className="h-5 w-5" />
                 </div>
-                <span className="absolute -bottom-1 -right-1 rounded-full border-2 border-white bg-[#f0c7cc] px-1.5 py-0.5 text-[9px] font-bold text-[#7a3954]">队长</span>
+                <span className="absolute -bottom-1 -right-1 rounded-full border-2 border-white bg-[#f0c7cc] px-1 py-0.5 text-[8px] font-bold text-[#7a3954]">队长</span>
               </div>
 
               {/* 队员链 */}
@@ -192,10 +192,10 @@ export default function WorkbenchPage() {
                     <div
                       key={m.name}
                       title={m.name}
-                      className={cn("grid h-10 w-10 place-items-center rounded-full border-2 border-white shadow-sm", m.tone)}
+                      className={cn("grid h-8 w-8 place-items-center rounded-full border-2 border-white shadow-sm", m.tone)}
                       style={{ zIndex: 10 - i }}
                     >
-                      <Icon className="h-4 w-4" />
+                      <Icon className="h-3.5 w-3.5" />
                     </div>
                   );
                 })}
@@ -220,7 +220,7 @@ export default function WorkbenchPage() {
           </div>
 
           {/* 队长输入框：单行起步，内容变多时自动增高 */}
-          <div className="relative mt-3">
+          <div className="relative mt-2">
             <div className="rounded-2xl border-2 border-[#31263b]/10 bg-white p-1 shadow-inner transition focus-within:border-[#31263b]/40">
               <Textarea
                 ref={captainInputRef}
@@ -228,14 +228,14 @@ export default function WorkbenchPage() {
                 onChange={(e) => setCaptainTask(e.target.value)}
                 placeholder="一句话告诉队长要做什么。例如：「为植发术后 30 天护理写一篇小红书笔记 + 配图」「分析上周哪条视频涨粉最快，复制结构」「给 5 个账号各起一条夏季选题」…"
                 rows={1}
-                className="min-h-10 max-h-32 resize-none overflow-hidden border-0 px-4 py-2 text-sm leading-relaxed shadow-none focus-visible:ring-0"
+                className="min-h-9 max-h-32 resize-none overflow-hidden border-0 px-3 py-1.5 text-sm leading-relaxed shadow-none focus-visible:ring-0"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && captainTask.trim()) {
                     setCaptainOpen(true);
                   }
                 }}
               />
-              <div className="flex items-center justify-between border-t border-[#f4eeea] px-2 py-2">
+              <div className="flex items-center justify-between border-t border-[#f4eeea] px-2 py-1.5">
                 <div className="flex items-center gap-2 px-2 text-[11px] text-[#89828d]">
                   <kbd className="rounded border border-[#e4e0e6] bg-[#f8f6f2] px-1.5 py-0.5 text-[10px]">⌘</kbd>
                   <kbd className="rounded border border-[#e4e0e6] bg-[#f8f6f2] px-1.5 py-0.5 text-[10px]">Enter</kbd>

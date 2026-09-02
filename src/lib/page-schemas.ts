@@ -17,6 +17,8 @@ register({
   ],
   fields: [
     { table: "accounts", name: "handle", label: "账号昵称(handle)", type: "text", required: true },
+    { table: "accounts", name: "external_id", label: "真实账号 ID", type: "text" },
+    { table: "accounts", name: "profile_url", label: "账号主页链接", type: "text" },
     { table: "accounts", name: "platform", label: "平台", type: "enum", enum: ["xiaohongshu", "douyin", "bilibili", "wechat"], required: true },
     { table: "accounts", name: "role", label: "账号角色", type: "enum", enum: ["director", "consultant", "official", "case_study", "knowledge", "viral"] },
     { table: "accounts", name: "followers", label: "粉丝数", type: "int" },

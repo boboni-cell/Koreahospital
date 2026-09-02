@@ -9,10 +9,12 @@ export async function PUT(
   const { id } = await params;
   const b = await req.json();
   db.prepare(
-    "UPDATE accounts SET platform=?, handle=?, role=?, followers=?, status=?, positioning=?, operator_id=?, environment_status=? WHERE id=?"
+    "UPDATE accounts SET platform=?, handle=?, external_id=?, profile_url=?, role=?, followers=?, status=?, positioning=?, operator_id=?, environment_status=? WHERE id=?"
   ).run(
     b.platform ?? "xiaohongshu",
     b.handle ?? "未命名",
+    b.external_id ?? null,
+    b.profile_url ?? null,
     b.role ?? "official",
     b.followers ?? 0,
     b.status ?? "active",

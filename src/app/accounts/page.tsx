@@ -22,11 +22,14 @@ import {
   ACCOUNT_ENVIRONMENT_NAME,
   ACCOUNT_POSITIONING_OPTIONS,
 } from "@/lib/constants";
+import { parseAccountProfile } from "@/lib/account-profile";
 
 interface Account {
   id: number;
   platform: string;
   handle: string;
+  external_id?: string | null;
+  profile_url?: string | null;
   role: string;
   followers: number;
   status: string;
@@ -66,11 +69,15 @@ export default function AccountsPage() {
 
   const [platform, setPlatform] = useState("xiaohongshu");
   const [handle, setHandle] = useState("");
+  const [externalId, setExternalId] = useState("");
+  const [profileUrl, setProfileUrl] = useState("");
   const [role, setRole] = useState("director");
   const [positioning, setPositioning] = useState("");
   const [environmentStatus, setEnvironmentStatus] = useState("configuring");
 
   const [editingFor, setEditingFor] = useState<number | null>(null);
+  const [editingAccountFor, setEditingAccountFor] = useState<number | null>(null);
+  const [accountDraft, setAccountDraft] = useState({ platform: "xiaohongshu", handle: "", externalId: "", profileUrl: "" });
   const [draft, setDraft] = useState<Record<number, number>>({});
 
   const load = () =>
@@ -105,15 +112,67 @@ export default function AccountsPage() {
     fetch("/api/accounts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ platform, handle, role, followers: 0, status: "active", positioning, environment_status: environmentStatus }),
+      body: JSON.stringify({ platform, handle, external_id: externalId || null, profile_url: profileUrl || null, role, followers: 0, status: "active", positioning, environment_status: environmentStatus }),
     })
       .then(() => {
         setHandle("");
+        setExternalId("");
+        setProfileUrl("");
         setPositioning("");
         toast.success("已新增账号");
         load();
       })
       .catch(() => toast.error("新增失败"));
+  }
+
+  function applyProfileUrl(value: string, target: "new" | "edit") {
+    const parsed = parseAccountProfile(value);
+    if (!parsed) return;
+    if (target === "new") {
+      setPlatform(parsed.platform);
+      setExternalId(parsed.externalId ?? "");
+      if (parsed.handle) setHandle(parsed.handle);
+      setProfileUrl(parsed.profileUrl);
+    } else {
+      setAccountDraft((draft) => ({
+        ...draft,
+        platform: parsed.platform,
+        externalId: parsed.externalId ?? draft.externalId,
+        handle: parsed.handle ?? draft.handle,
+        profileUrl: parsed.profileUrl,
+      }));
+    }
+  }
+
+  function openAccountEditor(account: Account) {
+    setEditingAccountFor(account.id);
+    setAccountDraft({
+      platform: account.platform,
+      handle: account.handle,
+      externalId: account.external_id ?? "",
+      profileUrl: account.profile_url ?? "",
+    });
+  }
+
+  function saveAccount(accountId: number) {
+    if (!accountDraft.handle.trim()) return toast.error("请填写账号名");
+    fetch(`/api/accounts/${accountId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        platform: accountDraft.platform,
+        handle: accountDraft.handle,
+        external_id: accountDraft.externalId || null,
+        profile_url: accountDraft.profileUrl || null,
+        role: accounts.find((account) => account.id === accountId)?.role,
+        followers: accounts.find((account) => account.id === accountId)?.followers ?? 0,
+        status: accounts.find((account) => account.id === accountId)?.status ?? "active",
+        positioning: accounts.find((account) => account.id === accountId)?.positioning ?? null,
+        environment_status: accounts.find((account) => account.id === accountId)?.environment_status ?? "configuring",
+      }),
+    })
+      .then(() => { toast.success("账号信息已保存"); setEditingAccountFor(null); load(); })
+      .catch(() => toast.error("保存失败"));
   }
 
   function del(id: number) {
@@ -184,6 +243,18 @@ export default function AccountsPage() {
             onChange={(e) => setHandle(e.target.value)}
             placeholder="账号名 / 昵称"
           />
+          <Input
+            className="w-40"
+            value={externalId}
+            onChange={(e) => setExternalId(e.target.value)}
+            placeholder="真实账号 ID"
+          />
+          <Input
+            className="w-64"
+            value={profileUrl}
+            onChange={(e) => { setProfileUrl(e.target.value); applyProfileUrl(e.target.value, "new"); }}
+            placeholder="账号主页链接（粘贴后自动识别）"
+          />
           <Select value={role} onValueChange={(v) => setRole(v ?? "director")}>
             <SelectTrigger className="w-32">
               <SelectValue />
@@ -233,6 +304,12 @@ export default function AccountsPage() {
                   <div className="flex items-center gap-2">
                     <Badge>{PLATFORM_NAME[a.platform] ?? a.platform}</Badge>
                     <button
+                      onClick={() => openAccountEditor(a)}
+                      className="text-xs text-[#7160b0] hover:underline"
+                    >
+                      编辑账号
+                    </button>
+                    <button
                       onClick={() => del(a.id)}
                       className="text-[#a9a4ad] transition hover:text-rose-500"
                       aria-label="删除"
@@ -244,11 +321,40 @@ export default function AccountsPage() {
                 <div className="text-xs text-[#89828d]">
                   {ROLE_NAMES[a.role] ?? a.role} · 粉丝 {(a.followers ?? 0).toLocaleString()}
                 </div>
+                {a.external_id && <div className="truncate text-xs text-[#89828d]" title={a.external_id}>ID：{a.external_id}</div>}
+                {a.profile_url && <a className="block truncate text-xs text-[#7160b0] hover:underline" href={a.profile_url} target="_blank" rel="noreferrer">主页：{a.profile_url}</a>}
                 <div className="flex flex-wrap gap-1 text-xs">
                   {a.positioning && <Badge className="border border-[#e4e0e6] bg-white">{a.positioning}</Badge>}
                   <Badge className="border border-[#e4e0e6] bg-white">{ACCOUNT_ENVIRONMENT_NAME[a.environment_status ?? "configuring"] ?? a.environment_status}</Badge>
                   {a.operator_name && <Badge className="border border-[#e4e0e6] bg-white">{a.operator_name}</Badge>}
                 </div>
+
+                {editingAccountFor === a.id && (
+                  <div className="space-y-2 border-t border-[#ecedf2] pt-2">
+                    <Input
+                      value={accountDraft.profileUrl}
+                      onChange={(e) => { setAccountDraft((draft) => ({ ...draft, profileUrl: e.target.value })); applyProfileUrl(e.target.value, "edit"); }}
+                      placeholder="主页链接（粘贴后自动识别平台和 ID）"
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input
+                        value={accountDraft.externalId}
+                        onChange={(e) => setAccountDraft((draft) => ({ ...draft, externalId: e.target.value }))}
+                        placeholder="真实账号 ID"
+                      />
+                      <Input
+                        value={accountDraft.handle}
+                        onChange={(e) => setAccountDraft((draft) => ({ ...draft, handle: e.target.value }))}
+                        placeholder="账号名 / 昵称"
+                      />
+                    </div>
+                    <p className="text-[11px] text-[#89828d]">平台：{PLATFORM_NAME[accountDraft.platform] ?? accountDraft.platform}</p>
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={() => saveAccount(a.id)}>保存账号</Button>
+                      <Button size="sm" variant="ghost" onClick={() => setEditingAccountFor(null)}>取消</Button>
+                    </div>
+                  </div>
+                )}
 
                 {ap.length > 0 && editingFor !== a.id && (
                   <div className="flex flex-wrap gap-1">
