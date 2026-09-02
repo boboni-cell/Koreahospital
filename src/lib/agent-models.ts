@@ -1,5 +1,5 @@
-import db from "./db";
-import type { ProviderId } from "./providers";
+import db from "./db.ts";
+import type { ProviderId } from "./providers.ts";
 
 export type AgentRole = "researcher" | "strategist" | "writer" | "designer" | "publisher" | "analyst";
 

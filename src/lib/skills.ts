@@ -1,8 +1,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { parseJsonBlock } from "./ai-client";
-import { chatCompleteForAgent } from "./agent-llm";
-import { getAgentModel } from "./agent-models";
+import { parseJsonBlock } from "./ai-client.ts";
+import { chatCompleteForAgent } from "./agent-llm.ts";
+import { getAgentModel } from "./agent-models.ts";
 
 /** 一个 skill 的来源：本地 skills/ 目录（SKILL.md 或 .md，支持 YAML frontmatter） */
 export interface SkillEntry {
@@ -174,4 +174,19 @@ export async function resolveContents(
     if (joined.length >= maxChars) break;
   }
   return joined.slice(0, maxChars);
+}
+
+export async function injectSkillsForTask(
+  task: string,
+  input: Record<string, unknown> = {},
+  preferIds: string[] = [],
+  maxChars = 6000
+): Promise<string> {
+  try {
+    const { ids } = await selectSkillIds(task, input, preferIds);
+    return await resolveContents(ids, maxChars);
+  } catch (e) {
+    console.error("[injectSkillsForTask] 失败,降级空注入", e);
+    return "";
+  }
 }

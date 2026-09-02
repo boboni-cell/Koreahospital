@@ -1,4 +1,4 @@
-import db from "@/lib/db";
+import db from "./db.ts";
 
 export interface WorkflowAction {
   id: number;

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { parseJsonBlock } from "@/lib/ai-client";
 import { chatCompleteForAgent } from "@/lib/agent-llm";
 import { requireAgentPreconditions } from "@/lib/agent-contracts";
+import { injectSkillsForTask } from "@/lib/skills";
 
 /**
  * 配图/视频计划：生成文案时同步给出「这条内容适合配什么」。
@@ -18,12 +19,24 @@ export async function POST(req: NextRequest) {
   const pre = requireAgentPreconditions("writer");
   if (!pre.ok) return NextResponse.json({ error: pre.reason }, { status: 412 });
 
+  let skillContent = "";
+  try {
+    skillContent = await injectSkillsForTask(
+      "为内容生成配图/视频方案",
+      { platform, role: content.role, kind: /视频|口播|vlog/.test(`${content.title ?? ""} ${content.body ?? ""}`) ? "video" : "image" },
+      ["medical-compliance"]
+    );
+  } catch (e) {
+    console.warn("[media-plan] skill 注入跳过", e);
+  }
+
   try {
     const sys = [
       "你是内容配图/视频指导。根据一篇内容，判断它该配什么样的视觉素材，并给出具体可执行建议。",
       "对医疗植发内容：凡涉及真实患者案例、疗效对比、医生出镜，倾向「真实拍摄」；科普/概念/氛围类可「AI 生成」。",
       "只输出一个 JSON 对象，不要解释、不要 markdown 围栏。",
-    ];
+      skillContent ? `\n\n[专业指引 skill]\n${skillContent.slice(0, 3000)}` : "",
+    ].filter(Boolean);
     const user = [
       `标题：${content.title || ""}`,
       `正文：${content.body?.slice(0, 600) || ""}`,

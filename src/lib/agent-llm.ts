@@ -1,7 +1,7 @@
-import { chatComplete as legacyChatComplete, parseJsonBlock, type ChatMessage, type ChatOptions } from "./ai-client";
-import { getAgentModel, type AgentRole } from "./agent-models";
-import { recordAction } from "./workflow-actions";
-import { PROVIDERS, chatUrlFor, type ProviderId } from "./providers";
+import { chatComplete as legacyChatComplete, parseJsonBlock, type ChatMessage, type ChatOptions } from "./ai-client.ts";
+import { getAgentModel, type AgentRole } from "./agent-models.ts";
+import { recordAction } from "./workflow-actions.ts";
+import { PROVIDERS, chatUrlFor, type ProviderId } from "./providers.ts";
 
 /** 按 agent role + provider 派生真实 endpoint；mock 一律走 mock 占位 */
 function resolveConfig(role: AgentRole) {
