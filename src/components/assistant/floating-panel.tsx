@@ -37,6 +37,7 @@ type Msg = {
 const PAGE_HINT: Record<string, string> = {
   "/accounts": "录入账号 / 改定位 / 改环境状态 / 改粉丝数",
   "/topics": "录入选题 / 改热度 / 改目标账号",
+  "/contents/hotspots": "读取当前热点 / 提炼选题 / 创建研究计划",
   "/data": "导入官方导出 / 看数据 / 写复盘",
   "/contents": "新建内容 / 复制变体 / 改简报",
   "/assets": "上传 / AI 生图 / AI 生视频",
@@ -82,6 +83,18 @@ export default function FloatingAssistant() {
     const hint = PAGE_HINT[pathname];
     if (hint) setMsgs((m) => m.some((x) => x.text.startsWith("💡")) ? m : [...m, { id: -Date.now(), role: "assistant", text: `💡 当前页 ${pathname}：${hint}` }]);
   }, [pathname, open]);
+
+  useEffect(() => {
+    function compose(event: Event) {
+      const text = (event as CustomEvent<{ text?: string }>).detail?.text;
+      if (!text) return;
+      setOpen(true);
+      setInput(text);
+      setTimeout(() => taRef.current?.focus(), 0);
+    }
+    window.addEventListener("toni:compose", compose);
+    return () => window.removeEventListener("toni:compose", compose);
+  }, []);
 
   // 全局快捷键：Ctrl/Cmd + ` = 切显隐；Esc = 关闭；Ctrl/Cmd+K = 聚焦输入框
   // 输入框已聚焦时不抢浏览器原生（粘贴/撤销/复制/Cmd+Z 全部走原生）

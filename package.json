@@ -11,7 +11,8 @@
     "test:data-import": "node --no-warnings --experimental-strip-types --test scripts/data-import.test.mts",
     "test:agent-system": "node --no-warnings --experimental-strip-types --test scripts/agent-system.test.mts",
     "test:account-profile": "node --no-warnings --experimental-strip-types --test scripts/account-profile.test.mts",
-    "test:post-analytics": "node --no-warnings --experimental-strip-types --test scripts/post-analytics.test.mts"
+    "test:post-analytics": "node --no-warnings --experimental-strip-types --test scripts/post-analytics.test.mts",
+    "test:daily-hotspots": "node --no-warnings --experimental-strip-types --test scripts/daily-hotspots.test.mts"
   },
   "dependencies": {
     "@base-ui-components/react": "^1.0.0-beta.1",

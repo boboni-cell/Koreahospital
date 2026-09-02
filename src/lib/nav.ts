@@ -3,6 +3,7 @@ import {
   BookOpen,
   Bot,
   CalendarDays,
+  Flame,
   FileBarChart,
   FileText,
   FolderKanban,
@@ -44,6 +45,7 @@ export const NAV_ITEMS: NavItem[] = [
   {
     label: "内容生产", shortLabel: "生产", description: "信号、选题与创作", href: "/production", icon: Sparkles,
     children: [
+      { label: "每日热点", href: "/contents/hotspots", icon: Flame },
       { label: "选题池", href: "/topics", icon: Lightbulb },
       { label: "选题研究", href: "/contents/research", icon: Lightbulb },
       { label: "AI 文案工坊", href: "/contents/ai", icon: MessageSquare },
@@ -115,6 +117,7 @@ export const ROUTE_TITLES: Record<string, string> = {
   "/contents/new": "新建内容",
   "/contents/ai": "AI 文案工坊",
   "/contents/research": "选题研究",
+  "/contents/hotspots": "每日热点",
   "/production": "内容生产",
   "/assets": "素材中心",
   "/assets/generate": "AI 生成配图",
