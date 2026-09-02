@@ -16,6 +16,24 @@ import { AGENT_ROLES } from "@/lib/agent-labels";
 
 export const dynamic = "force-dynamic";
 
+type OrchestrationPlan = {
+  modelKind: "text" | "image" | "video";
+  skills: string[];
+  steps: Array<string | { role?: string; text?: string; skillIds?: string[] }>;
+  note: string;
+};
+
+function minimumPlan(task: string): OrchestrationPlan {
+  const text = String(task || "");
+  if (/收集|采集|抓取|后台数据|账号数据/.test(text)) {
+    return { modelKind: "text", skills: [], steps: [{ role: "analyst", text: "通过只读采集工具收集相关账号或帖子数据，并返回采集状态与来源。" }], note: "策略师输出格式修复失败，已生成最小可执行计划。" };
+  }
+  if (/热点|搜索|来源|竞品|资料|趋势|舆情|研究|小红书/.test(text)) {
+    return { modelKind: "text", skills: [], steps: [{ role: "researcher", text: "搜索并整理与任务相关的近期公开信息，返回可验证来源。" }], note: "策略师输出格式修复失败，已生成最小可执行计划。" };
+  }
+  return { modelKind: "text", skills: [], steps: [{ role: "strategist", text: "拆解用户任务，明确下一步负责人、产出和验收标准。" }], note: "策略师输出格式修复失败，已生成最小可执行计划。" };
+}
+
 /**
  * 工作台总控 Agent（orchestrator / 页面助手）：
  *  - mode=orchestrate（默认）：任务决策 + skill 注入，跟旧版完全一致
@@ -48,12 +66,33 @@ export async function POST(req: NextRequest) {
         [{ role: "system", content: systemPrompt }, { role: "user", content: user }],
         { maxTokens: 900, timeoutMs: 60000 }
       );
-      const plan = parseJsonBlock<{
-        modelKind: "text" | "image" | "video";
-        skills: string[];
-        steps: Array<string | { role?: string; text?: string; skillIds?: string[] }>;
-        note: string;
-      }>(text);
+      let plan: OrchestrationPlan;
+      let formatWarning = false;
+      let formatError = "";
+      try {
+        plan = parseJsonBlock<OrchestrationPlan>(text);
+        if (!Array.isArray(plan.steps) || plan.steps.length === 0) throw new Error("策略师返回的计划没有可执行步骤");
+      } catch (firstError) {
+        formatWarning = true;
+        formatError = String((firstError as Error)?.message || firstError).slice(0, 240);
+        try {
+          const repaired = await chatCompleteForAgent(
+            "strategist",
+            [
+              { role: "system", content: "你是执行计划格式修复器。把用户提供的策略师回复转换为严格 JSON。只输出一个 JSON 对象，不要 markdown，不要解释。字段必须是 modelKind(text|image|video)、skills(字符串数组)、steps(数组，每项含 role 和 text)、note(字符串)。role 只能是 researcher、strategist、writer、designer、publisher、analyst。" },
+              { role: "user", content: `原任务：${task}\n策略师原回复：${text.slice(0, 12000)}` },
+            ],
+            { maxTokens: 900, timeoutMs: 60000 }
+          );
+          plan = parseJsonBlock<OrchestrationPlan>(repaired);
+          if (!Array.isArray(plan.steps) || plan.steps.length === 0) throw new Error("修复结果没有可执行步骤");
+          plan.note = [plan.note, `策略师原始输出格式异常，已自动修复（${formatError}）。`].filter(Boolean).join(" ");
+        } catch (repairError) {
+          const reason = String((repairError as Error)?.message || repairError).slice(0, 240);
+          plan = minimumPlan(task);
+          plan.note = `${plan.note} 原始输出：${formatError}；自动修复：${reason}`;
+        }
+      }
       const skillIds = (plan.skills || []).map((sid) => cat.find((s) => s.id === sid)?.id).filter((x): x is string => !!x);
       const content = await resolveContents(skillIds);
       const inferRole = (text: string) => {
@@ -79,7 +118,7 @@ export async function POST(req: NextRequest) {
       ).run(pid, task.slice(0, 500), JSON.stringify(steps), plan.note ?? null, "pending");
       const planId = Number(info.lastInsertRowid);
       append({ kind: "agent_msg", role: "strategist", text: `plan #${planId} created: ${steps.length} steps (${plan.modelKind})` });
-      return NextResponse.json({ ids: skillIds, content, catalog: cat, modelPowered: true, plan, planId, steps });
+      return NextResponse.json({ ids: skillIds, content, catalog: cat, modelPowered: true, plan, planId, steps, formatWarning, formatError });
     } catch (e) {
       console.error("[orchestrator] 决策失败，退回 skill 目录", e);
       const reason = String((e as Error)?.message || e).slice(0, 240);

@@ -8,10 +8,19 @@ export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
   const pid = getCurrentProjectId();
   const limit = Math.min(50, Math.max(1, Number(req.nextUrl.searchParams.get("limit") ?? 20)));
-  const rows = db.prepare("SELECT * FROM agent_plans WHERE project_id=? ORDER BY id DESC LIMIT ?").all(pid, limit) as any[];
+  const rows = db.prepare(`
+    SELECT *, ROW_NUMBER() OVER (
+      PARTITION BY date(created_at, '-' || ((CAST(strftime('%w', created_at) AS INTEGER) + 6) % 7) || ' days')
+      ORDER BY id ASC
+    ) AS weekly_number
+    FROM agent_plans
+    WHERE project_id=?
+    ORDER BY id DESC LIMIT ?
+  `).all(pid, limit) as any[];
   return NextResponse.json(
     rows.map((r) => ({
       id: r.id,
+      weekly_number: r.weekly_number,
       task: r.task,
       note: r.note,
       status: r.status,

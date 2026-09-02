@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Play, Loader2, CheckCircle2, AlertCircle, Sparkles, RefreshCw, ListTodo } from "lucide-react";
+import { Play, Loader2, CheckCircle2, AlertCircle, Sparkles, RefreshCw, ListTodo, Trash2 } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { PageFrame } from "@/components/layout/page-frame";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +24,7 @@ interface PlanStep {
 }
 interface Plan {
   id: number;
+  weekly_number: number;
   task: string;
   note: string | null;
   status: string;
@@ -33,6 +36,7 @@ export default function PlansPage() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState<{ plan: number; step: number } | null>(null);
+  const [creatingNext, setCreatingNext] = useState<number | null>(null);
 
   const load = useCallback(async (initial = false) => {
     if (initial) setLoading(true);
@@ -77,6 +81,40 @@ export default function PlansPage() {
     for (let i = 0; i < plan.steps.length; i++) {
       if (plan.steps[i].status === "done") continue;
       await runStep(plan.id, i);
+    }
+  }
+
+  async function removePlan(plan: Plan) {
+    if (!confirm(`确认删除执行计划 #${plan.id}？历史产出也会一并删除。`)) return;
+    const r = await fetch(`/api/agent/plans/${plan.id}`, { method: "DELETE" });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) return toast.error(d.error || "删除失败");
+    toast.success("执行计划已删除");
+    await load();
+  }
+
+  function nextAction(task: string) {
+    if (/热点|搜索|来源|竞品|趋势|舆情|研究|小红书/.test(task)) return { label: "下一步：生成选题计划", task: `根据已完成的研究任务「${task}」，请总编生成 5 条可执行的小红书选题并进入选题池。` };
+    if (/选题/.test(task)) return { label: "下一步：生成内容计划", task: `根据已完成的选题任务「${task}」，请总编生成一篇可审核的小红书内容。` };
+    if (/文案|内容|笔记|脚本/.test(task)) return { label: "下一步：合规审核计划", task: `对已完成的内容任务「${task}」安排合规审核，并列出需要人工确认的问题。` };
+    if (/复盘|数据分析|数据/.test(task)) return { label: "下一步：优化计划", task: `根据已完成的数据任务「${task}」提出下一轮内容优化计划。` };
+    return null;
+  }
+
+  async function createNextPlan(plan: Plan) {
+    const next = nextAction(plan.task);
+    if (!next) return;
+    setCreatingNext(plan.id);
+    try {
+      const r = await fetch("/api/agent/orchestrate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ task: next.task, input: { pathname: "/plans", previousPlanId: plan.id }, mode: "orchestrate" }) });
+      const d = await r.json();
+      if (!r.ok || !d.planId) throw new Error([d.error, d.reason].filter(Boolean).join("：") || "创建下一步计划失败");
+      toast.success("已创建下一步执行计划");
+      await load();
+    } catch (error: any) {
+      toast.error(error.message || "创建下一步计划失败");
+    } finally {
+      setCreatingNext(null);
     }
   }
 
@@ -131,7 +169,7 @@ export default function PlansPage() {
                       <Badge className={p.status === "completed" ? "bg-emerald-100 text-emerald-600" : p.status === "partial" ? "bg-amber-100 text-amber-600" : p.status === "running" ? "bg-blue-100 text-blue-600" : "bg-[#ecedf2] text-[#717a94]"}>
                         {{ pending: "等待开始", running: "正在执行", completed: "已完成", partial: "部分完成" }[p.status] || p.status}
                       </Badge>
-                      <Badge>#{p.id}</Badge>
+                      <Badge>{p.weekly_number}</Badge>
                       <span className="text-[11px] text-[#89828d]">{p.created_at?.slice(0, 19).replace("T", " ")}</span>
                     </div>
                     <h3 className="mt-2 text-base font-semibold text-[#01011b]">{p.task}</h3>
@@ -144,15 +182,16 @@ export default function PlansPage() {
                     </div>
                     {p.status === "running" && (() => { const current = p.steps.find((s) => s.status === "running") || p.steps.find((s) => s.status === "pending"); return current ? <p className="mt-1 text-xs text-blue-600">{AGENT_LABELS[current.role] || current.role}正在处理：{current.text}</p> : null; })()}
                   </div>
-                  {done < total && (
-                    <Button
-                      size="sm"
-                      onClick={() => runAll(p)}
-                      disabled={running !== null}
-                    >
-                      <Play className="h-3.5 w-3.5" /> 继续执行
+                  <div className="flex flex-wrap justify-end gap-2">
+                    {p.status === "completed" && nextAction(p.task) && <Button size="sm" variant="outline" onClick={() => createNextPlan(p)} disabled={creatingNext !== null}>
+                      {creatingNext === p.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                      {nextAction(p.task)?.label}
+                    </Button>}
+                    {done < total && <Button size="sm" onClick={() => runAll(p)} disabled={running !== null}><Play className="h-3.5 w-3.5" /> 继续执行</Button>}
+                    <Button size="sm" variant="outline" onClick={() => removePlan(p)} disabled={p.status === "running"} title="删除计划">
+                      <Trash2 className="h-3.5 w-3.5" /> 删除
                     </Button>
-                  )}
+                  </div>
                 </div>
 
                 <div className="mt-4 space-y-2">
@@ -174,7 +213,9 @@ export default function PlansPage() {
                           {s.status === "done" && s.result && (
                             <details className="mt-2">
                               <summary className="cursor-pointer text-xs text-[#675f58]">查看产出（{s.result.length} 字符）</summary>
-                              <pre className="mt-1 max-h-60 overflow-auto whitespace-pre-wrap rounded-lg bg-white p-2 text-xs text-[#31263b]">{s.result}</pre>
+                              <div className="prose prose-sm mt-1 max-h-96 max-w-none overflow-auto rounded-lg bg-white p-3 text-[#31263b]">
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{s.result}</ReactMarkdown>
+                              </div>
                             </details>
                           )}
                           {s.sources && s.sources.length > 0 && (

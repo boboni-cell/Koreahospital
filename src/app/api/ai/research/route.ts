@@ -4,6 +4,8 @@ import { selectSkillIds, resolveContents } from "@/lib/skills";
 import { chatCompleteForAgent } from "@/lib/agent-llm";
 import { requireAgentPreconditions } from "@/lib/agent-contracts";
 import db from "@/lib/db";
+import { collectXhsNow } from "@/lib/xhs-collector";
+import { getCurrentProjectId } from "@/lib/projects";
 
 interface ResearchInput {
   niche?: string;
@@ -47,6 +49,22 @@ export async function POST(req: NextRequest) {
 
   // 由 researcher Agent 模型基于自身知识 + skill + 本地情报产出选题灵感
   const local = localTrends(input.niche || "毛发移植", input.platform || "xiaohongshu");
+  let collected = "";
+  let collectionTaskId: number | undefined;
+  if (!input.platform || input.platform.toLowerCase().includes("xiaohongshu")) {
+    try {
+      const keywords = `${input.niche || "毛发移植"} ${input.goal || "热点"}`.slice(0, 200);
+      const info = db.prepare("INSERT INTO research_tasks (project_id, platform, keywords) VALUES (?, 'xiaohongshu', ?)").run(getCurrentProjectId(), keywords);
+      collectionTaskId = Number(info.lastInsertRowid);
+      const task = await collectXhsNow(collectionTaskId, keywords);
+      if (task?.status === "completed") {
+        const items = db.prepare("SELECT title, author, source_url, likes, saves, comments, raw_json FROM research_items WHERE task_id=? ORDER BY id").all(collectionTaskId) as any[];
+        collected = items.map((item) => JSON.stringify(item)).join("\n");
+      }
+    } catch (e) {
+      console.warn("socai 研究采集跳过", e);
+    }
+  }
 
   try {
     const sys = [
@@ -69,6 +87,7 @@ export async function POST(req: NextRequest) {
       "",
       "以下是本账本地已有的选题/内容（供对齐语境，避免重复）：",
       ...local,
+      ...(collected ? ["", "以下是 socai 从已登录小红书读取的真实结果，请优先基于这些结果分析：", collected.slice(0, 12000)] : ["", "小红书实时采集未完成，请明确标注需要人工验证"]),
       "",
       '输出 JSON：{"sources":["信源1"],"topics":[{"title":"选题","heat":8,"angle":"切入点","why":"推荐理由","contentType":"image"}],"note":"合规提示"}',
       "其中 contentType 用 \"image\"（适合图文）或 \"video\"（适合视频/口播），每个选题都要给。",
@@ -86,7 +105,7 @@ export async function POST(req: NextRequest) {
       topics: { title: string; heat: number; angle: string; why: string; contentType?: "image" | "video" }[];
       note: string;
     }>(text);
-    return NextResponse.json({ ...data, modelPowered: true, engine: "researcher-agent" });
+    return NextResponse.json({ ...data, modelPowered: true, engine: "researcher-agent", collectionTaskId });
   } catch (e) {
     console.error("AI research failed:", e);
     return NextResponse.json(templateResearch(input));

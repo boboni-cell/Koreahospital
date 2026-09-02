@@ -614,6 +614,12 @@ CREATE TABLE IF NOT EXISTS research_items (
 );
 CREATE INDEX IF NOT EXISTS idx_research_tasks_project ON research_tasks(project_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_research_items_task ON research_items(task_id);
+CREATE TABLE IF NOT EXISTS feishu_integrations (
+  project_id INTEGER PRIMARY KEY,
+  base_token TEXT,
+  table_id TEXT,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
 `);
 
 

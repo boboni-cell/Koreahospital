@@ -23,6 +23,8 @@ export interface CaptainPlanPayload {
   planId: number;
   plan: { modelKind: "text" | "image" | "video"; skills: string[]; note: string };
   steps: CaptainPlanStep[];
+  formatWarning?: boolean;
+  formatError?: string;
 }
 
 const ROLE_LABEL = AGENT_LABELS;
@@ -55,7 +57,7 @@ export function CaptainProgressToast({
         });
         const d = await r.json();
         if (cancelled) return;
-        if (!r.ok || !d.planId) throw new Error(d.error || "策略师规划失败");
+        if (!r.ok || !d.planId) throw new Error([d.error, d.reason].filter(Boolean).join("：") || "策略师规划失败");
         setPayload(d);
         setStatus("running");
         void fetch(`/api/agent/plans/${d.planId}/run`, { method: "POST" });
@@ -112,7 +114,9 @@ export function CaptainProgressToast({
         {status === "loading"
           ? "策略师正在为您拆解任务…"
           : status === "running"
-            ? `${currentLabel}正在处理：${current?.text || `已完成 ${done}/${steps.length}`}`
+            ? payload?.formatWarning
+              ? "策略师正在分析，但格式需要修正…"
+              : `${currentLabel}正在处理：${current?.text || `已完成 ${done}/${steps.length}`}`
             : status === "failed" ? "执行未完成，请查看执行计划中的失败原因" : `任务已完成（${done}/${steps.length}）`}
       </span>
 
