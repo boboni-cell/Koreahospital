@@ -149,16 +149,16 @@ export default function WorkbenchPage() {
   return (
     <PageFrame>
       <div className="space-y-6">
-        {/* 队长总控 hero 区：dsh-agent-teams 风格的「One prompt. A working team.」 */}
+        {/* 队长总控：原长度不变，只压上下间距 */}
         <section
           id="agent-task"
-          className="relative overflow-hidden rounded-[28px] border border-[#e2dcd5] bg-gradient-to-br from-[#fff7e6] via-[#fffefa] to-[#f3f0ff] p-6 shadow-[0_8px_30px_rgba(60,40,20,0.05)] sm:p-8"
+          className="relative overflow-hidden rounded-[28px] border border-[#e2dcd5] bg-gradient-to-br from-[#fff7e6] via-[#fffefa] to-[#f3f0ff] p-3 shadow-[0_8px_30px_rgba(60,40,20,0.05)] sm:p-4"
         >
           {/* 背景装饰圆点 */}
           <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[#f0c7cc]/40 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-24 -left-16 h-72 w-72 rounded-full bg-[#cbd8f1]/40 blur-3xl" />
 
-          <div className="relative flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
+          <div className="relative flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             {/* 左侧：队长 + 队员 avatars */}
             <div className="flex items-center gap-4">
               {/* 队长 */}
@@ -211,7 +211,7 @@ export default function WorkbenchPage() {
           </div>
 
           {/* 大输入框 */}
-          <div className="relative mt-6">
+          <div className="relative mt-3">
             <div className="rounded-2xl border-2 border-[#31263b]/10 bg-white p-1 shadow-inner transition focus-within:border-[#31263b]/40">
               <Textarea
                 value={captainTask}
