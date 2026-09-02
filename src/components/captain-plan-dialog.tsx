@@ -20,17 +20,16 @@ export interface CaptainPlanPayload {
   planId: number;
   plan: { modelKind: "text" | "image" | "video"; skills: string[]; note: string };
   steps: CaptainPlanStep[];
-  skillContents?: { id: string; name: string; description: string }[];
   catalog?: { id: string; name: string; description: string }[];
 }
 
 const ROLE_LABEL: Record<string, string> = {
-  strategist: "总控（规划）",
+  strategist: "总控",
   writer: "文案",
-  designer: "设计 / 配图",
-  researcher: "研究 / 选题",
+  designer: "设计",
+  researcher: "研究",
   publisher: "发布",
-  analyst: "数据 / 复盘",
+  analyst: "分析",
 };
 
 const ROLE_TONE: Record<string, string> = {
@@ -43,8 +42,11 @@ const ROLE_TONE: Record<string, string> = {
 };
 
 /**
- * Plan → Approve → Run 弹窗（借鉴 dsh-agent-teams 的 activity panel 思路）。
- * 父级控制 open + onClose；plan 自动跑 captains + 一键执行 steps。
+ * ponytail: 根据 task 长度自适应展示
+ *   - task ≤ 24 字 → 短任务，只 toast 摘要
+ *   - 24 < task ≤ 80 字 → 右下浮卡，半透明，紧凑
+ *   - task > 80 字 → 中等 Dialog
+ * 用户不需要选 skill，captain 自己挑。
  */
 export function CaptainPlanDialog({
   open,
@@ -52,20 +54,18 @@ export function CaptainPlanDialog({
   task,
   input,
   title,
-  autoApprove,
 }: {
   open: boolean;
   onClose: () => void;
   task: string;
   input?: Record<string, any>;
   title?: string;
-  /** ponytail: 自动跑（用于 "Approve & Run"）；用户能看到每步 result。 */
-  autoApprove?: boolean;
 }) {
   const router = useRouter();
   const [payload, setPayload] = useState<CaptainPlanPayload | null>(null);
   const [loading, setLoading] = useState(false);
   const [runningAll, setRunningAll] = useState(false);
+  const taskLen = task.length;
 
   useEffect(() => {
     if (!open || !task) return;
@@ -85,9 +85,6 @@ export function CaptainPlanDialog({
             steps: d.steps,
             catalog: d.catalog,
           });
-          if (autoApprove) {
-            setTimeout(() => runAll(d.planId, d.steps), 50);
-          }
         } else {
           toast.error(d.reason || "总控未返回计划");
           onClose();
@@ -114,8 +111,9 @@ export function CaptainPlanDialog({
     try {
       for (let i = 0; i < steps.length; i++) {
         if (steps[i].status === "done") continue;
-        // 推进本地状态
-        setPayload((p) => p && { ...p, steps: p.steps.map((s, j) => (j === i ? { ...s, status: "running" } : s)) });
+        setPayload((p) =>
+          p ? { ...p, steps: p.steps.map((s, j) => (j === i ? { ...s, status: "running" } : s)) } : p
+        );
         try {
           const result = await runStep(planId, i);
           setPayload((p) =>
@@ -129,7 +127,7 @@ export function CaptainPlanDialog({
               : p
           );
         } catch {
-          setPayload((p) => p && { ...p, steps: p.steps.map((s, j) => (j === i ? { ...s, status: "failed" } : s)) });
+          setPayload((p) => (p ? { ...p, steps: p.steps.map((s, j) => (j === i ? { ...s, status: "failed" } : s)) } : p));
           throw new Error(`第 ${i + 1} 步失败`);
         }
       }
@@ -141,108 +139,150 @@ export function CaptainPlanDialog({
     }
   }
 
+  // 短任务：只 toast，不弹任何面板
+  useEffect(() => {
+    if (open && !loading && payload && taskLen <= 24) {
+      const summary = `队长已规划：${payload.steps.length} 步 · ${payload.plan.skills.length} skill`;
+      toast.success(summary);
+      // 直接执行（短任务用户不需要 Approve）
+      runAll(payload.planId, payload.steps);
+      onClose();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, payload, open, taskLen]);
+
   if (!open) return null;
 
   const skillList = payload?.catalog?.filter((c) => payload.plan.skills.includes(c.id)) ?? [];
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white shadow-2xl">
-        {/* 头部 */}
-        <div className="sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-[#ecedf2] bg-gradient-to-br from-[#fff7e6] to-[#fffefa] px-6 py-5">
-          <div className="flex-1">
-            <div className="flex items-center gap-2">
-              <span className="grid h-9 w-9 place-items-center rounded-full bg-[#31263b] text-white">
-                <Sparkles className="h-4 w-4" />
-              </span>
-              <div>
-                <h3 className="text-base font-semibold text-[#01011b]">总控已规划：{title ?? "执行计划"}</h3>
-                <p className="text-[11px] text-[#77716b]">模型类型 {payload?.plan.modelKind ?? "…"} · {payload?.steps.length ?? 0} 步 · {payload?.plan.skills.length ?? 0} 个 skill</p>
-              </div>
-            </div>
-            <p className="mt-2 text-xs text-[#43394c]">
-              {payload?.plan.note ?? (loading ? "总控正在思考…" : "等待中")}
-            </p>
+  // 中等长：右下浮卡，紧凑半透明
+  if (taskLen > 24 && taskLen <= 80) {
+    return (
+      <div className="fixed bottom-4 right-4 z-50 w-[360px] max-w-[calc(100vw-2rem)] rounded-2xl border border-[#e4e0e6] bg-white/95 p-4 shadow-2xl backdrop-blur">
+        <div className="mb-2 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="grid h-7 w-7 place-items-center rounded-full bg-gradient-to-br from-[#31263b] to-[#1f1a25] text-white">
+              <Sparkles className="h-3.5 w-3.5" />
+            </span>
+            <span className="text-sm font-semibold text-[#01011b]">{title ?? "队长规划"}</span>
           </div>
-          <button onClick={onClose} aria-label="关闭" className="grid h-8 w-8 place-items-center rounded-full hover:bg-[#f4eeea]">
-            <X className="h-4 w-4" />
+          <button onClick={onClose} aria-label="关闭" className="rounded p-1 hover:bg-[#f4eeea]">
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+        {loading || !payload ? (
+          <p className="text-xs text-[#77716b]">
+            <Loader2 className="mr-1 inline h-3 w-3 animate-spin" /> 队长正在拆解…
+          </p>
+        ) : (
+          <CompactPlanView
+            payload={payload}
+            skillList={skillList}
+            runningAll={runningAll}
+            onApprove={() => runAll(payload.planId, payload.steps)}
+            onOpen={() => router.push("/plans")}
+          />
+        )}
+      </div>
+    );
+  }
+
+  // 长任务：中等 Dialog（max-w-xl，比之前 max-w-2xl 小一圈）
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="max-h-[85vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
+        <div className="sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-[#ecedf2] bg-gradient-to-br from-[#fff7e6] to-[#fffefa] px-5 py-4">
+          <div className="flex items-center gap-2">
+            <span className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-[#31263b] to-[#1f1a25] text-white">
+              <Sparkles className="h-4 w-4" />
+            </span>
+            <div>
+              <h3 className="text-sm font-semibold text-[#01011b]">{title ?? "队长规划"}</h3>
+              <p className="text-[10px] text-[#77716b]">
+                {payload?.plan.modelKind ?? "…"} · {payload?.steps.length ?? 0} 步 · {payload?.plan.skills.length ?? 0} skill
+              </p>
+            </div>
+          </div>
+          <button onClick={onClose} aria-label="关闭" className="grid h-7 w-7 place-items-center rounded-full hover:bg-[#f4eeea]">
+            <X className="h-3.5 w-3.5" />
           </button>
         </div>
 
-        {/* 内容 */}
-        <div className="space-y-5 p-6">
+        <div className="space-y-4 p-5">
           {loading && (
-            <div className="flex items-center gap-2 text-sm text-[#675f58]">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              队长正在拆解任务并召集队员…
+            <div className="flex items-center gap-2 text-xs text-[#675f58]">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" /> 队长正在拆解…
             </div>
           )}
-
-          {/* 选中的 skill */}
-          {skillList.length > 0 && (
-            <section>
-              <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-[#89828d]">调用的 skill</h4>
-              <div className="space-y-2">
-                {skillList.map((s) => (
-                  <div key={s.id} className="flex items-start gap-2 rounded-lg bg-[#f6f4f5] p-2 text-xs">
-                    <Badge className="bg-white text-[#31263b]">{s.id}</Badge>
-                    <span className="text-[#43394c]">{s.description.slice(0, 120)}…</span>
-                  </div>
-                ))}
-              </div>
-            </section>
+          {payload && (
+            <CompactPlanView
+              payload={payload}
+              skillList={skillList}
+              runningAll={runningAll}
+              onApprove={() => runAll(payload.planId, payload.steps)}
+              onOpen={() => router.push("/plans")}
+            />
           )}
-
-          {/* 执行步骤 */}
-          {payload && payload.steps.length > 0 && (
-            <section>
-              <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-[#89828d]">队员将按顺序执行</h4>
-              <ol className="space-y-2">
-                {payload.steps.map((s, i) => (
-                  <li key={i} className="flex items-start gap-3 rounded-xl border border-[#e8e1da] bg-white p-3">
-                    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[#31263b] text-[11px] text-white">{i + 1}</span>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <Badge className={ROLE_TONE[s.role] ?? "bg-[#ecedf2] text-[#717a94]"}>{ROLE_LABEL[s.role] ?? s.role}</Badge>
-                        <span className="text-sm font-medium text-[#211e1c]">{s.text}</span>
-                      </div>
-                      {s.meta && (
-                        <p className="mt-1 text-[10px] text-[#89828d]">
-                          {s.meta.is_mock ? "🟡 mock" : "🟢 real"} · {s.meta.provider}/{s.meta.model} · {s.meta.latency_ms}ms
-                        </p>
-                      )}
-                      {s.result && (
-                        <details className="mt-1">
-                          <summary className="cursor-pointer text-[11px] text-[#675f58]">查看产出 ({s.result.length} 字符)</summary>
-                          <pre className="mt-1 max-h-40 overflow-auto whitespace-pre-wrap rounded-lg bg-[#f6f4f5] p-2 text-[11px] text-[#31263b]">{s.result}</pre>
-                        </details>
-                      )}
-                      {s.status === "failed" && s.error && <p className="mt-1 text-[11px] text-red-500">✕ {s.error}</p>}
-                    </div>
-                    {s.status === "done" && <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-500" />}
-                  </li>
-                ))}
-              </ol>
-            </section>
-          )}
-        </div>
-
-        {/* 底部按钮 */}
-        <div className="sticky bottom-0 z-10 flex items-center justify-between gap-2 border-t border-[#ecedf2] bg-white px-6 py-4">
-          <Button variant="outline" onClick={() => router.push(`/plans`)}>
-            打开执行计划页
-          </Button>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={onClose}>关闭</Button>
-            {payload && !autoApprove && (
-              <Button onClick={() => runAll(payload.planId, payload.steps)} disabled={runningAll}>
-                {runningAll ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                Approve & Run 一键执行
-              </Button>
-            )}
-          </div>
         </div>
       </div>
     </div>
+  );
+}
+
+function CompactPlanView({
+  payload,
+  skillList,
+  runningAll,
+  onApprove,
+  onOpen,
+}: {
+  payload: CaptainPlanPayload;
+  skillList: { id: string; name: string; description: string }[];
+  runningAll: boolean;
+  onApprove: () => void;
+  onOpen: () => void;
+}) {
+  const allDone = payload.steps.every((s) => s.status === "done");
+  return (
+    <>
+      {payload.plan.note && (
+        <p className="mb-2 text-[11px] text-[#43394c]">{payload.plan.note}</p>
+      )}
+      {skillList.length > 0 && (
+        <div className="mb-2 flex flex-wrap gap-1">
+          {skillList.map((s) => (
+            <Badge key={s.id} className="bg-[#eee8ff] text-[#665a86]">{s.id}</Badge>
+          ))}
+        </div>
+      )}
+      <ol className="mb-3 space-y-1">
+        {payload.steps.map((s, i) => (
+          <li key={i} className="flex items-center gap-2 text-[11px]">
+            {s.status === "done" ? (
+              <CheckCircle2 className="h-3 w-3 shrink-0 text-emerald-500" />
+            ) : s.status === "failed" ? (
+              <X className="h-3 w-3 shrink-0 text-red-500" />
+            ) : s.status === "running" ? (
+              <Loader2 className="h-3 w-3 shrink-0 animate-spin text-blue-500" />
+            ) : (
+              <span className="grid h-3 w-3 shrink-0 place-items-center rounded-full bg-[#31263b] text-[8px] text-white">{i + 1}</span>
+            )}
+            <Badge className={`${ROLE_TONE[s.role] ?? "bg-[#ecedf2] text-[#717a94]"} text-[9px]`}>{ROLE_LABEL[s.role] ?? s.role}</Badge>
+            <span className="truncate text-[#43394c]">{s.text}</span>
+          </li>
+        ))}
+      </ol>
+      <div className="flex items-center justify-between gap-2">
+        <button onClick={onOpen} className="text-[10px] text-[#665a86] hover:underline">
+          打开执行计划 →
+        </button>
+        {!allDone && (
+          <Button size="sm" onClick={onApprove} disabled={runningAll} className="h-7 px-3 text-xs">
+            {runningAll ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+            Approve & Run
+          </Button>
+        )}
+      </div>
+    </>
   );
 }
