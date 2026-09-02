@@ -1148,4 +1148,25 @@ CREATE TABLE IF NOT EXISTS agent_plans (
 CREATE INDEX IF NOT EXISTS idx_agent_plans_project ON agent_plans(project_id, created_at DESC);
 `);
 
+// ---- Task G2b：媒体请求（Toni 多轮参数确认 -> 生成 -> 素材库） ----
+// ponytail: 一次媒体请求 = 一条可追踪记录；params_json 存最终参数，
+// rounds_json 存多轮确认历史（每轮可以改参数），status: draft|confirmed|generating|done|failed。
+db.exec(`
+CREATE TABLE IF NOT EXISTS media_requests (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  project_id INTEGER,
+  kind TEXT NOT NULL DEFAULT 'image',
+  source_label TEXT,
+  prompt TEXT NOT NULL DEFAULT '',
+  params_json TEXT NOT NULL DEFAULT '{}',
+  rounds_json TEXT NOT NULL DEFAULT '[]',
+  status TEXT NOT NULL DEFAULT 'draft',
+  asset_ids_json TEXT NOT NULL DEFAULT '[]',
+  content_id INTEGER,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_media_requests_project ON media_requests(project_id, created_at DESC);
+`);
+
 export default db;

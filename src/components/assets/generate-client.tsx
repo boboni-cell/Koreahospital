@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { Loader2, Sparkles, ImageIcon, Video, Wand2, Link2, Camera } from "lucide-react";
+import { Loader2, Sparkles, ImageIcon, Video, Wand2, Link2, Camera, Copy, Download, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CaptainPlanDialog } from "@/components/captain-plan-dialog";
@@ -34,6 +34,18 @@ interface MediaModel {
   is_mock: number;
 }
 
+interface MediaRequestItem {
+  id: number;
+  kind: GenKind;
+  source_label: string | null;
+  prompt: string;
+  params: Record<string, string>;
+  rounds: { round: number; phase: string; note?: string; at: string }[];
+  status: string;
+  asset_ids: number[];
+  created_at: string;
+}
+
 export function GenerateClient() {
   const sp = useSearchParams();
   const [kind, setKind] = useState<GenKind>("image");
@@ -55,6 +67,9 @@ export function GenerateClient() {
   const [captainOpen, setCaptainOpen] = useState(false);
   const [captainTask, setCaptainTask] = useState("");
   const [result, setResult] = useState<{ url: string; file_type: string } | null>(null);
+  const [segments, setSegments] = useState<{ label: string; prompt: string; url: string | null }[]>([]);
+  const [mediaRequests, setMediaRequests] = useState<MediaRequestItem[]>([]);
+  const [requestId, setRequestId] = useState<number | null>(null);
 
   // —— 从内容生成配图流程（feature 4）——
   const [contents, setContents] = useState<Content[]>([]);
@@ -73,8 +88,57 @@ export function GenerateClient() {
     });
   }
 
+  async function refreshMediaRequests() {
+    try {
+      const d = await fetch("/api/media-requests").then((r) => r.json());
+      setMediaRequests(d.requests || []);
+    } catch { /* 静默 */ }
+  }
+
+  async function trackRequest(kind: GenKind, prompt: string, params: Record<string, string>, phase: string, note: string, status?: string) {
+    const body: Record<string, unknown> = { kind, prompt, params };
+    if (requestId) body.id = requestId;
+    if (status) body.status = status;
+    body.round = { phase, note };
+    const r = await fetch("/api/media-requests", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const d = await r.json();
+    if (d.request?.id) setRequestId(d.request.id);
+    await refreshMediaRequests();
+    return d.request as { id: number } | null | undefined;
+  }
+
+  function copyText(t: string) {
+    navigator.clipboard.writeText(t).then(() => toast.success("已复制"));
+  }
+
+  function exportPrompt(t: string, name: string) {
+    const blob = new Blob([t], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${name}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("已导出提示词");
+  }
+
+  function composeRequestPrompt(m: MediaRequestItem) {
+    const extras = Object.entries(m.params || {}).filter(([, v]) => v).map(([k, v]) => `${k}：${v}`).join("\n");
+    return [m.prompt, extras].filter(Boolean).join("\n");
+  }
+
+  function mediaStatusLabel(status: string) {
+    const map: Record<string, string> = { draft: "待确认", confirmed: "已确认", generating: "生成中", done: "已完成", failed: "失败" };
+    return map[status] || status;
+  }
+
   useEffect(() => {
     reloadModels();
+    refreshMediaRequests();
     fetch("/api/contents")
       .then((r) => r.json())
       .then((d: Content[]) => setContents(d))
@@ -104,8 +168,11 @@ export function GenerateClient() {
       return toast.error("请先在「图像/视频」中配置视频模型");
     setGen(true);
     setResult(null);
+    setSegments([]);
+    const params: Record<string, string> = { ratio, style, scene, usage, duration, resolution, storyboard, bgm, model: activeModels[kind] || "" };
     const configuredPrompt = [prompt, `用途：${usage}`, `风格：${style}`, `画面比例：${ratio}`, scene && `模特与场景：${scene}`, kind === "video" && `时长：${duration} 秒；分辨率：${resolution}`, kind === "video" && storyboard && `分镜：${storyboard}`, kind === "video" && bgm && `BGM：${bgm}`, kind === "video" && Number(duration) > 15 && "拆分为两段不超过 15 秒且首尾动作连续的镜头，生成后按顺序剪辑衔接。"].filter(Boolean).join("\n");
     try {
+      const request = await trackRequest(kind, prompt, params, "params_confirmed", "用户逐项确认参数后开始生成", "confirmed");
       const r = await fetch("/api/assets/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -118,15 +185,32 @@ export function GenerateClient() {
           surgery_type: surgery,
           patient_code: patientCode || null,
           content_id: contentId || null,
+          media_request_id: request?.id ?? null,
+          ratio,
+          style,
+          scene,
+          usage,
+          duration,
+          resolution,
+          storyboard,
+          bgm,
           filename: `${kind === "video" ? "视频" : "配图"}-${Date.now()}`,
         }),
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || "生成失败");
-      setResult({ url: d.asset.file_url, file_type: d.asset.file_type });
-      toast.success("已生成并存入素材库");
+      const firstAsset = d.asset || d.assets?.[0];
+      if (firstAsset) setResult({ url: firstAsset.file_url, file_type: firstAsset.file_type });
+      if (d.segments?.length) {
+        setSegments(d.segments.map((s: { label: string; prompt: string; url: string | null }) => ({ label: s.label, prompt: s.prompt, url: s.url })));
+        toast.success(`已生成长视频拆段 ${d.segments.length} 段并存入素材库`);
+      } else {
+        toast.success("已生成并存入素材库");
+      }
+      await refreshMediaRequests();
     } catch (e: any) {
       toast.error(e.message || "生成失败");
+      await refreshMediaRequests();
     } finally {
       setGen(false);
     }
@@ -166,7 +250,9 @@ export function GenerateClient() {
     if (!c || !plan) return toast.error("请先分析配图方案");
     if (!activeModels.image) return toast.error("没有启用中的图像模型");
     setGenFromContent(true);
+    setSegments([]);
     try {
+      const request = await trackRequest("image", plan.prompt || prompt, { ratio, style, scene, usage, category: plan.category }, "skill_prompt_confirmed", "按 Skill 提示词生成配图", "confirmed");
       const r = await fetch("/api/assets/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -176,6 +262,11 @@ export function GenerateClient() {
           category: plan.category || "科普图示",
           surgery_type: null,
           patient_code: null,
+          media_request_id: request?.id ?? null,
+          ratio,
+          style,
+          scene,
+          usage,
           filename: `${c.title.slice(0, 20)}-配图-${Date.now()}`,
           content_id: c.id,
         }),
@@ -184,6 +275,7 @@ export function GenerateClient() {
       if (!r.ok) throw new Error(d.error || "生成失败");
       setResult({ url: d.asset.file_url, file_type: d.asset.file_type });
       setSyncedId(d.asset.id);
+      await refreshMediaRequests();
       toast.success(
         d.attachedContentId
           ? `已生成并自动设为「${c.title}」的封面`
@@ -370,6 +462,23 @@ export function GenerateClient() {
         <Card>
           <CardHeader><CardTitle>预览</CardTitle></CardHeader>
           <CardContent>
+            {segments.length > 0 && (
+              <div className="mb-3 space-y-2">
+                <div className="text-xs font-medium text-[#514b46]">长视频分段（已按顺序生成，可复制提示词到外部生成/拼接）</div>
+                {segments.map((s, i) => (
+                  <div key={i} className="rounded-xl border border-[#e4e0e6] bg-white p-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-medium text-[#211e1c]">{s.label || `第 ${i + 1} 段`}</span>
+                      <div className="flex gap-1">
+                        <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px]" onClick={() => copyText(s.prompt)}><Copy className="h-3 w-3" /> 复制</Button>
+                        <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px]" onClick={() => exportPrompt(s.prompt, `视频分段${i + 1}`)}><Download className="h-3 w-3" /> 导出</Button>
+                      </div>
+                    </div>
+                    {s.url && <video src={s.url} controls className="mt-2 w-full rounded-lg bg-black" />}
+                  </div>
+                ))}
+              </div>
+            )}
             {gen || genFromContent ? (
               <div className="flex h-64 items-center justify-center rounded-xl bg-[#f6f4f5] text-sm text-zinc-400">
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 模型生成中…
@@ -395,6 +504,41 @@ export function GenerateClient() {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="mb-5">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <History className="h-4 w-4" /> 参数确认与生成记录（可追踪多轮）
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {mediaRequests.length === 0 ? (
+            <p className="text-xs text-[#89828d]">暂无记录。点击「直接生成」前会先落一条媒体请求，记录参数确认轮次与产物，便于回看与复盘。</p>
+          ) : (
+            <div className="space-y-2">
+              {mediaRequests.slice(0, 10).map((m) => (
+                <div key={m.id} className="rounded-xl border border-[#e4e0e6] bg-[#faf8f6] p-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className={`pill ${m.kind === "video" ? "bg-violet-100 text-violet-600" : "bg-rose-100 text-rose-600"}`}>#{m.id} {m.kind === "video" ? "视频" : "配图"}</span>
+                    <span className={`pill ${m.status === "done" ? "bg-emerald-100 text-emerald-600" : m.status === "failed" ? "bg-red-100 text-red-600" : "bg-[#ecedf2] text-[#717a94]"}`}>{mediaStatusLabel(m.status)}</span>
+                    <span className="text-[11px] text-[#89828d]">{m.rounds.length} 轮确认 · {m.asset_ids.length} 个素材 · {m.created_at}</span>
+                  </div>
+                  <p className="mt-1 line-clamp-2 text-xs text-[#43394c]">{m.prompt}</p>
+                  <div className="mt-1 flex flex-wrap gap-1 text-[10px] text-[#717a94]">
+                    {Object.entries(m.params || {}).filter(([, v]) => v).map(([k, v]) => (
+                      <span key={k} className="rounded bg-white px-1.5 py-0.5">{k}:{String(v)}</span>
+                    ))}
+                  </div>
+                  <div className="mt-2 flex gap-2">
+                    <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px]" onClick={() => copyText(composeRequestPrompt(m))}><Copy className="h-3 w-3" /> 复制提示词</Button>
+                    <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px]" onClick={() => exportPrompt(composeRequestPrompt(m), `media-request-${m.id}`)}><Download className="h-3 w-3" /> 导出 .txt</Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <CaptainPlanDialog
         open={captainOpen}
