@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
   // Q2=a：agent 混合选择并注入本次需要的 skill（如起号方法论 / 合规红线）
   let skillContent = "";
   try {
-    const { ids } = await selectSkillIds("选题研究", input as Record<string, unknown>);
+    const { ids } = await selectSkillIds("选题研究", input as Record<string, unknown>, ["research-sources", "apify-ultimate-scraper"]);
     skillContent = await resolveContents(ids);
   } catch (e) {
     console.warn("[agent] skill 注入跳过", e);

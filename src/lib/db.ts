@@ -578,6 +578,42 @@ CREATE TABLE IF NOT EXISTS signals (
   created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_signals_project ON signals(project_id, status);
+
+CREATE TABLE IF NOT EXISTS research_tasks (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  project_id INTEGER NOT NULL,
+  platform TEXT NOT NULL,
+  keywords TEXT,
+  status TEXT DEFAULT 'pending',
+  progress INTEGER DEFAULT 0,
+  total INTEGER DEFAULT 0,
+  error TEXT,
+  started_at TEXT,
+  completed_at TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE IF NOT EXISTS research_items (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  task_id INTEGER NOT NULL,
+  project_id INTEGER NOT NULL,
+  platform TEXT NOT NULL,
+  external_id TEXT,
+  source_url TEXT,
+  title TEXT,
+  author TEXT,
+  published_at TEXT,
+  views INTEGER,
+  likes INTEGER,
+  saves INTEGER,
+  comments INTEGER,
+  shares INTEGER,
+  raw_json TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(task_id, source_url)
+);
+CREATE INDEX IF NOT EXISTS idx_research_tasks_project ON research_tasks(project_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_research_items_task ON research_items(task_id);
 `);
 
 
@@ -621,13 +657,18 @@ if (contractCount === 0) {
   const contracts = [
     { role: "researcher", name: "研究员", inputs: "项目简报、平台、公开信号、竞品资料", outputs: "带来源的研究包、待确认信号", allowed: "提取/汇总公开信号、标注不确定性", forbidden: "把推测标记成平台事实", handoff: "研究包、信号ID、证据、时间", fail: "无项目简报或信号来源时停止，说明缺哪一项" },
     { role: "strategist", name: "策略师", inputs: "项目简报、研究包、历史复盘", outputs: "账号定位、内容支柱、选题优先级、母版简报", allowed: "基于证据排优先级、配置内容支柱", forbidden: "绕过证据或合规约束", handoff: "母版简报、支柱ID、优先级、证据", fail: "项目简报或研究包缺失时停止" },
-    { role: "writer", name: "文案", inputs: "母版简报、平台规则、账号语气", outputs: "小红书文案或抖音脚本、标题、CTA", allowed: "在合规内生成文案/标题/CTA", forbidden: "自行发布、虚构医疗事实", handoff: "文案版本、标题、CTA、语气", fail: "母版简报或账号语气未定则停止" },
-    { role: "designer", name: "设计", inputs: "内容版本、素材授权、平台规格", outputs: "封面方案、配图计划、分镜、素材清单", allowed: "设计封面/分镜、引用已授权素材", forbidden: "使用未授权患者素材", handoff: "设计稿、素材清单、授权标记", fail: "素材授权不足时停止并列出缺失" },
-    { role: "publisher", name: "发布", inputs: "已批准版本、账号环境、排期", outputs: "可复制发布包、发布前检查", allowed: "生成发布包、前置检查", forbidden: "登录、自动发布、自动互动", handoff: "发布包、账号环境、排期、检查项", fail: "版本未批准或账号环境不可用时停止" },
-    { role: "analyst", name: "分析师", inputs: "发布快照、24h/7d/30d 数据", outputs: "归因报告、待确认回写建议", allowed: "分析数据、生成待确认建议", forbidden: "直接修改正式知识库", handoff: "归因报告、回写建议、数据不足标记", fail: "数据不足时不下结论并说明" },
+    { role: "writer", name: "总编", inputs: "母版简报、平台规则、账号语气", outputs: "小红书文案或抖音脚本、标题、CTA", allowed: "在合规内生成文案/标题/CTA", forbidden: "自行发布、虚构医疗事实", handoff: "文案版本、标题、CTA、语气", fail: "母版简报或账号语气未定则停止" },
+    { role: "designer", name: "设计师", inputs: "内容版本、素材授权、平台规格", outputs: "封面方案、配图计划、分镜、素材清单", allowed: "设计封面/分镜、引用已授权素材", forbidden: "使用未授权患者素材", handoff: "设计稿、素材清单、授权标记", fail: "素材授权不足时停止并列出缺失" },
+    { role: "publisher", name: "发布助手", inputs: "已批准版本、账号环境、排期", outputs: "可复制发布包、发布前检查", allowed: "生成发布包、前置检查", forbidden: "登录、自动发布、自动互动", handoff: "发布包、账号环境、排期、检查项", fail: "版本未批准或账号环境不可用时停止" },
+    { role: "analyst", name: "数据分析师", inputs: "发布快照、24h/7d/30d 数据", outputs: "归因报告、待确认回写建议", allowed: "分析数据、生成待确认建议", forbidden: "直接修改正式知识库", handoff: "归因报告、回写建议、数据不足标记", fail: "数据不足时不下结论并说明" },
   ];
   const ins = db.prepare("INSERT INTO agent_contracts (role, name, inputs, outputs, allowed_actions, forbidden_actions, handoff_fields, fail_condition) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
   for (const c of contracts) ins.run(c.role, c.name, c.inputs, c.outputs, c.allowed, c.forbidden, c.handoff, c.fail);
+}
+
+// 显示名称可迭代，内部 role ID 保持稳定，避免破坏已有模型配置和历史计划。
+for (const [role, name] of Object.entries({ strategist: "策略师", researcher: "研究员", writer: "总编", designer: "设计师", publisher: "发布助手", analyst: "数据分析师" })) {
+  db.prepare("UPDATE agent_contracts SET name=? WHERE role=?").run(name, role);
 }
 
 

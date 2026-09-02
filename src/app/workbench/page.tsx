@@ -61,12 +61,12 @@ const COLUMNS: Array<{ id: ColumnId; label: string; hint: string; tone: string; 
 ];
 
 const AGENTS = [
-  { name: "研究", icon: Radar, tone: "bg-[#d7e2f7] text-[#4e68a6]" },
-  { name: "策略", icon: Target, tone: "bg-[#f3dfb9] text-[#9a6b27]" },
-  { name: "文案", icon: ClipboardList, tone: "bg-[#f4cbd0] text-[#a45360]" },
-  { name: "设计", icon: ImageIcon, tone: "bg-[#ddd5f6] text-[#7160b0]" },
-  { name: "发布", icon: Send, tone: "bg-[#cce9dd] text-[#3d876b]" },
-  { name: "分析", icon: BarChart3, tone: "bg-[#d7e2f7] text-[#4e68a6]" },
+  { name: "研究员", icon: Radar, tone: "bg-[#d7e2f7] text-[#4e68a6]" },
+  { name: "策略师", icon: Target, tone: "bg-[#f3dfb9] text-[#9a6b27]" },
+  { name: "总编", icon: ClipboardList, tone: "bg-[#f4cbd0] text-[#a45360]" },
+  { name: "设计师", icon: ImageIcon, tone: "bg-[#ddd5f6] text-[#7160b0]" },
+  { name: "发布助手", icon: Send, tone: "bg-[#cce9dd] text-[#3d876b]" },
+  { name: "数据分析师", icon: BarChart3, tone: "bg-[#d7e2f7] text-[#4e68a6]" },
 ];
 
 function initials(value: string) {
@@ -181,11 +181,11 @@ export default function WorkbenchPage() {
               {/* 队员链 */}
               <div className="flex items-center -space-x-2">
                 {[
-                  { name: "研究", tone: "bg-[#dff4e8] text-[#35684d]", icon: Lightbulb },
-                  { name: "文案", tone: "bg-[#eee8ff] text-[#665a86]", icon: ClipboardList },
-                  { name: "设计", tone: "bg-[#f0c7cc] text-[#7a3954]", icon: ImageIcon },
-                  { name: "发布", tone: "bg-[#fae7bf] text-[#8a6321]", icon: Send },
-                  { name: "分析", tone: "bg-[#d8cdf5] text-[#5a4a8a]", icon: BarChart3 },
+                  { name: "研究员", tone: "bg-[#dff4e8] text-[#35684d]", icon: Lightbulb },
+                  { name: "总编", tone: "bg-[#eee8ff] text-[#665a86]", icon: ClipboardList },
+                  { name: "设计师", tone: "bg-[#f0c7cc] text-[#7a3954]", icon: ImageIcon },
+                  { name: "发布助手", tone: "bg-[#fae7bf] text-[#8a6321]", icon: Send },
+                  { name: "数据分析师", tone: "bg-[#d8cdf5] text-[#5a4a8a]", icon: BarChart3 },
                 ].map((m, i) => {
                   const Icon = m.icon;
                   return (

@@ -6,6 +6,7 @@ import { CheckCircle2, Loader2, Sparkles, X, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { AGENT_LABELS } from "@/lib/agent-labels";
 
 export interface CaptainPlanStep {
   text: string;
@@ -13,6 +14,8 @@ export interface CaptainPlanStep {
   role: string;
   result: string | null;
   error: string | null;
+  skillIds?: string[];
+  sources?: string[];
   meta?: { provider: string; model: string; latency_ms: number; is_mock: boolean; key_len: number };
 }
 
@@ -22,10 +25,7 @@ export interface CaptainPlanPayload {
   steps: CaptainPlanStep[];
 }
 
-const ROLE_LABEL: Record<string, string> = {
-  strategist: "总控", writer: "文案", designer: "设计",
-  researcher: "研究", publisher: "发布", analyst: "分析",
-};
+const ROLE_LABEL = AGENT_LABELS;
 
 /**
  * ponytail: 一行 toast 卡片（CaptainProgressBar），宽度由内容自然撑开，
@@ -41,9 +41,7 @@ export function CaptainProgressToast({
 }) {
   const router = useRouter();
   const [payload, setPayload] = useState<CaptainPlanPayload | null>(null);
-  const [running, setRunning] = useState(false);
-  const [done, setDone] = useState(0);
-  const [total, setTotal] = useState(0);
+  const [status, setStatus] = useState<"loading" | "running" | "done" | "failed">("loading");
 
   useEffect(() => {
     if (!task) return;
@@ -56,29 +54,24 @@ export function CaptainProgressToast({
           body: JSON.stringify({ task, input: input ?? {}, mode: "orchestrate" }),
         });
         const d = await r.json();
-        if (cancelled || !d.planId) return;
+        if (cancelled) return;
+        if (!r.ok || !d.planId) throw new Error(d.error || "策略师规划失败");
         setPayload(d);
-        setTotal(d.steps.length);
-        setRunning(true);
-        for (let i = 0; i < d.steps.length; i++) {
+        setStatus("running");
+        void fetch(`/api/agent/plans/${d.planId}/run`, { method: "POST" });
+        while (!cancelled) {
+          await new Promise((resolve) => setTimeout(resolve, 1500));
+          const latest = await fetch(`/api/agent/plans/${d.planId}`).then((res) => res.json());
           if (cancelled) return;
-          try {
-            const rr = await fetch(`/api/agent/plans/${d.planId}/execute-step`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ step_index: i }),
-            });
-            await rr.json().catch(() => ({}));
-            if (cancelled) return;
-            setDone((n) => n + 1);
-          } catch {
-            if (cancelled) return;
-            setDone((n) => n + 1);
+          setPayload((old) => old ? { ...old, steps: latest.steps } : { ...d, steps: latest.steps });
+          if (latest.status === "completed" || latest.status === "partial") {
+            setStatus(latest.status === "completed" ? "done" : "failed");
+            return;
           }
         }
-        setRunning(false);
       } catch {
         if (cancelled) return;
+        setStatus("failed");
         toast.error("队长连接失败");
       }
     })();
@@ -87,9 +80,11 @@ export function CaptainProgressToast({
 
   if (!task) return null;
 
-  const status: "loading" | "running" | "done" = running ? "running" : payload ? (done >= total && total > 0 ? "done" : "running") : "loading";
   const allSkills = payload?.plan.skills ?? [];
-  const skillLine = allSkills.length > 0 ? ` · ${allSkills.length} skill` : "";
+  const steps = payload?.steps ?? [];
+  const done = steps.filter((s) => s.status === "done").length;
+  const current = steps.find((s) => s.status === "running") || steps.find((s) => s.status === "pending");
+  const currentLabel = current ? (ROLE_LABEL[current.role] || current.role) : "队长";
 
   return (
     <div
@@ -99,12 +94,15 @@ export function CaptainProgressToast({
           ? "border-[#cbd8f1] bg-white/95 text-[#3d4f7a]"
           : status === "running"
             ? "border-[#fae7bf] bg-[#fffbef]/95 text-[#7a571c]"
-            : "border-[#c8e6d4] bg-[#f0fbf4]/95 text-[#35684d]")
+            : status === "failed"
+              ? "border-red-200 bg-red-50/95 text-red-700"
+              : "border-[#c8e6d4] bg-[#f0fbf4]/95 text-[#35684d]")
       }
     >
       {status === "loading" && <Loader2 className="h-3 w-3 animate-spin" />}
       {status === "running" && <Loader2 className="h-3 w-3 animate-spin text-[#e6a700]" />}
       {status === "done" && <CheckCircle2 className="h-3 w-3 text-emerald-500" />}
+      {status === "failed" && <AlertCircle className="h-3 w-3 text-red-500" />}
 
       <span className="grid h-4 w-4 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#31263b] to-[#1f1a25] text-white">
         <Sparkles className="h-2.5 w-2.5" />
@@ -112,10 +110,10 @@ export function CaptainProgressToast({
 
       <span className="truncate">
         {status === "loading"
-          ? "队长拆解中…"
+          ? "策略师正在为您拆解任务…"
           : status === "running"
-            ? `${done}/${total}${skillLine} · ${payload?.plan.modelKind ?? ""}`
-            : `完成 ${total}/${total}${skillLine}`}
+            ? `${currentLabel}正在处理：${current?.text || `已完成 ${done}/${steps.length}`}`
+            : status === "failed" ? "执行未完成，请查看执行计划中的失败原因" : `任务已完成（${done}/${steps.length}）`}
       </span>
 
       {payload && allSkills.length > 0 && status === "done" && (
@@ -134,7 +132,7 @@ export function CaptainProgressToast({
         看全部 →
       </button>
 
-      {status === "done" && (
+      {(status === "done" || status === "failed") && (
         <button onClick={() => toast.dismiss(task)} aria-label="关" className="shrink-0 rounded p-0.5 opacity-60 hover:opacity-100">
           <X className="h-3 w-3" />
         </button>
@@ -165,13 +163,8 @@ export function CaptainPlanDialog({
       // 单行 toast：固定显示到任务完成或 30 秒；提供「看全部」去 /plans
       toast.custom(
         () => <CaptainProgressToast task={task} input={input} />,
-        { id: task, duration: 30000, position: "bottom-right" }
+        { id: task, duration: Infinity, position: "bottom-right" }
       );
-      // 短任务：8 秒自动关；长任务：用户点 X
-      const shortTask = task.length <= 24;
-      if (shortTask) {
-        setTimeout(() => toast.dismiss(task), 8000);
-      }
     }
     return () => {
       if (!open) toast.dismiss(task);

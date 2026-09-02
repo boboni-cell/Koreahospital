@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "skills": {
+    "apify-ultimate-scraper": {
+      "source": "apify/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/apify-ultimate-scraper/SKILL.md",
+      "computedHash": "04248bcb9227819a38d95a348d9ca550fc1ae087d9a1e666930b3a3499db317a"
+    },
+    "cheat-on-content": {
+      "source": "xbuilderlab/cheat-on-content",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "b462054f3dddef02be432f9d592a1ca24c6cc318547e00d5594df81bcdbb21e1"
+    },
+    "research-sources": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "skillPath": "skills/strategies/launch/research-sources/SKILL.md",
+      "computedHash": "0e71b0cbbf78ee0da2563550e72dfb78f11f59fb507c8c673e1d477f8f883acb"
+    },
+    "workflow-orchestration-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "skillPath": "plugins/backend-development/skills/workflow-orchestration-patterns/SKILL.md",
+      "computedHash": "5c300d6d3241235a765a637c2953faf1ff2b2db4be54038056c6db6d9ff4ce1c"
+    }
+  }
+}

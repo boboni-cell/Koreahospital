@@ -16,7 +16,10 @@ export interface SkillEntry {
   frontmatter: string;
 }
 
-const SKILLS_DIR = path.join(process.cwd(), "skills");
+const SKILLS_DIRS = [
+  path.join(process.cwd(), "skills"),
+  path.join(process.cwd(), ".agents", "skills"),
+];
 
 /** 解析简单 YAML frontmatter（key: value 或 key: [a,b,c]） */
 function parseFrontmatter(raw: string): Record<string, string> {
@@ -79,7 +82,7 @@ async function walkSkills(dir: string): Promise<string[]> {
 /** 扫描 skills/ 目录，返回全部 skill */
 export async function listSkills(): Promise<SkillEntry[]> {
   try {
-    const files = await walkSkills(SKILLS_DIR);
+    const files = (await Promise.all(SKILLS_DIRS.map((dir) => walkSkills(dir)))).flat();
     const all: SkillEntry[] = [];
     for (const f of files) {
       const s = await readSkillFile(f);

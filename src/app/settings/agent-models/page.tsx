@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from "@/components/ui/select";
+import { AGENT_LABELS } from "@/lib/agent-labels";
 
 type AgentRole = "researcher" | "strategist" | "writer" | "designer" | "publisher" | "analyst";
 type ProviderId = "mock" | "openai" | "deepseek" | "kimi" | "volcengine" | "dashscope" | "siliconflow" | "openrouter" | "minimax" | "nanogpt" | "custom";
@@ -34,10 +35,10 @@ interface AgentModel {
 const ROLES: { role: AgentRole; label: string; desc: string }[] = [
   { role: "researcher", label: "研究员", desc: "选题研究、信号收集" },
   { role: "strategist", label: "策略师", desc: "项目总控、平台决策" },
-  { role: "writer", label: "文案", desc: "小红书/抖音文案与脚本" },
-  { role: "designer", label: "设计", desc: "封面、分镜、配图" },
-  { role: "publisher", label: "发布", desc: "发布包、检查清单" },
-  { role: "analyst", label: "分析师", desc: "复盘归因、回写建议" },
+  { role: "writer", label: AGENT_LABELS.writer, desc: "选题整理、小红书/抖音文案与脚本" },
+  { role: "designer", label: AGENT_LABELS.designer, desc: "封面、分镜、配图" },
+  { role: "publisher", label: AGENT_LABELS.publisher, desc: "发布包、检查清单" },
+  { role: "analyst", label: AGENT_LABELS.analyst, desc: "复盘归因、回写建议" },
 ];
 
 const NO_PULL: ProviderId[] = ["volcengine"]; // 不支持通用 /models

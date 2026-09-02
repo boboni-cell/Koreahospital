@@ -14,6 +14,7 @@ import { LineChart } from "@/components/charts/charts";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { toast } from "sonner";
 import {
   Select,
   SelectContent,
@@ -86,6 +87,16 @@ export default function AccountDataPage() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={async () => {
+            const keywords = window.prompt("请输入小红书采集关键词", "植发术后护理")?.trim();
+            if (!keywords) return;
+            const response = await fetch("/api/agent/research/collect", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ keywords }) });
+            const result = await response.json();
+            if (!response.ok) return toast.error(result.error || "采集任务创建失败");
+            toast.success(`已交给数据分析师采集，任务 #${result.taskId}。请先在只读 Chrome 中登录小红书并打开笔记列表。`);
+          }}>
+            <TrendingUp className="h-4 w-4" /> 采集小红书数据
+          </Button>
           <Link href="/data/input">
             <Button variant="outline">
               <Download className="h-4 w-4" /> 导入账号数据

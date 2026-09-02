@@ -7,6 +7,7 @@ import { PageFrame } from "@/components/layout/page-frame";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { AGENT_LABELS } from "@/lib/agent-labels";
 
 interface PlanStep {
   text: string;
@@ -17,6 +18,7 @@ interface PlanStep {
   started_at?: string;
   completed_at?: string;
   meta?: { provider: string; model: string; latency_ms: number; is_mock: boolean; key_len: number };
+  sources?: string[];
 }
 interface Plan {
   id: number;
@@ -32,8 +34,8 @@ export default function PlansPage() {
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState<{ plan: number; step: number } | null>(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async (initial = false) => {
+    if (initial) setLoading(true);
     try {
       const d = await fetch("/api/agent/plans").then((r) => r.json());
       setPlans(d || []);
@@ -44,7 +46,12 @@ export default function PlansPage() {
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(true); }, [load]);
+  useEffect(() => {
+    if (!plans.some((p) => p.status === "pending" || p.status === "running")) return;
+    const timer = setInterval(() => load(), 2000);
+    return () => clearInterval(timer);
+  }, [plans, load]);
 
   async function runStep(planId: number, stepIdx: number) {
     setRunning({ plan: planId, step: stepIdx });
@@ -56,7 +63,7 @@ export default function PlansPage() {
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || "执行失败");
-      toast.success(`step ${stepIdx + 1} 已完成`);
+      toast.success(`第 ${stepIdx + 1} 步已完成`);
       await load();
     } catch (e: any) {
       toast.error(e.message || "执行失败");
@@ -78,17 +85,17 @@ export default function PlansPage() {
       <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[.18em] text-[#99918a]">
-            Agent · Collaboration
+            团队协作
           </p>
           <h2 className="mt-1 text-3xl font-semibold tracking-[-.045em] text-[#211e1c]">
-            编排执行计划
+            执行计划
           </h2>
           <p className="mt-1 text-sm text-[#817a73]">
-            每个 plan 由 strategist 一次性生成，每步可单独点「执行」跑对应角色 Agent；plan 持久化、可追溯。
+            策略师会安排团队按顺序完成任务，首页和这里都会显示当前进度。
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={load}>
+          <Button variant="outline" onClick={() => load(true)}>
             <RefreshCw className="h-4 w-4" /> 刷新
           </Button>
           <a href="/workbench#agent-task">
@@ -105,7 +112,7 @@ export default function PlansPage() {
           <CardContent className="py-12 text-center">
             <ListTodo className="mx-auto h-10 w-10 text-[#89828d]" />
             <p className="mt-3 text-sm text-[#89828d]">暂无执行计划</p>
-            <p className="mt-1 text-xs text-[#a9a4ad]">去工作台输入任务，strategist 会自动生成 plan 存到这里</p>
+            <p className="mt-1 text-xs text-[#a9a4ad]">去工作台输入任务，策略师会自动生成执行计划</p>
           </CardContent>
         </Card>
       )}
@@ -122,7 +129,7 @@ export default function PlansPage() {
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <Badge className={p.status === "completed" ? "bg-emerald-100 text-emerald-600" : p.status === "partial" ? "bg-amber-100 text-amber-600" : p.status === "running" ? "bg-blue-100 text-blue-600" : "bg-[#ecedf2] text-[#717a94]"}>
-                        {p.status}
+                        {{ pending: "等待开始", running: "正在执行", completed: "已完成", partial: "部分完成" }[p.status] || p.status}
                       </Badge>
                       <Badge>#{p.id}</Badge>
                       <span className="text-[11px] text-[#89828d]">{p.created_at?.slice(0, 19).replace("T", " ")}</span>
@@ -135,6 +142,7 @@ export default function PlansPage() {
                         <div className="h-full bg-emerald-400 transition-all" style={{ width: `${pct}%` }} />
                       </div>
                     </div>
+                    {p.status === "running" && (() => { const current = p.steps.find((s) => s.status === "running") || p.steps.find((s) => s.status === "pending"); return current ? <p className="mt-1 text-xs text-blue-600">{AGENT_LABELS[current.role] || current.role}正在处理：{current.text}</p> : null; })()}
                   </div>
                   {done < total && (
                     <Button
@@ -142,7 +150,7 @@ export default function PlansPage() {
                       onClick={() => runAll(p)}
                       disabled={running !== null}
                     >
-                      <Play className="h-3.5 w-3.5" /> 一键全部执行
+                      <Play className="h-3.5 w-3.5" /> 继续执行
                     </Button>
                   )}
                 </div>
@@ -157,7 +165,7 @@ export default function PlansPage() {
                               s.status === "failed" ? <AlertCircle className="h-4 w-4 text-red-500" /> :
                               s.status === "running" ? <Loader2 className="h-4 w-4 animate-spin text-blue-500" /> :
                               <span className="grid h-4 w-4 place-items-center rounded-full bg-[#ecedf2] text-[10px] text-[#717a94]">{i + 1}</span>}
-                            <Badge className="bg-[#ecedf2] text-[#717a94]">{s.role}</Badge>
+                            <Badge className="bg-[#ecedf2] text-[#717a94]">{AGENT_LABELS[s.role] || s.role}</Badge>
                             <span className="text-sm font-medium text-[#211e1c]">{s.text}</span>
                           </div>
                           {s.status === "failed" && s.error && (
@@ -167,6 +175,12 @@ export default function PlansPage() {
                             <details className="mt-2">
                               <summary className="cursor-pointer text-xs text-[#675f58]">查看产出（{s.result.length} 字符）</summary>
                               <pre className="mt-1 max-h-60 overflow-auto whitespace-pre-wrap rounded-lg bg-white p-2 text-xs text-[#31263b]">{s.result}</pre>
+                            </details>
+                          )}
+                          {s.sources && s.sources.length > 0 && (
+                            <details className="mt-2">
+                              <summary className="cursor-pointer text-xs text-[#675f58]">查看来源（{s.sources.length} 条）</summary>
+                              <div className="mt-1 space-y-1 text-xs">{s.sources.map((source) => <a key={source} href={source} target="_blank" rel="noreferrer" className="block truncate text-blue-600 underline">{source}</a>)}</div>
                             </details>
                           )}
                           {s.status === "done" && s.meta && (

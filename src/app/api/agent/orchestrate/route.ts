@@ -12,6 +12,7 @@ import "@/lib/page-schemas"; // side-effect: register schemas
 import { requireAgentPreconditions } from "@/lib/agent-contracts";
 import db from "@/lib/db";
 import { getCurrentProjectId } from "@/lib/projects";
+import { AGENT_ROLES } from "@/lib/agent-labels";
 
 export const dynamic = "force-dynamic";
 
@@ -50,14 +51,27 @@ export async function POST(req: NextRequest) {
       const plan = parseJsonBlock<{
         modelKind: "text" | "image" | "video";
         skills: string[];
-        steps: string[];
+        steps: Array<string | { role?: string; text?: string; skillIds?: string[] }>;
         note: string;
       }>(text);
       const skillIds = (plan.skills || []).map((sid) => cat.find((s) => s.id === sid)?.id).filter((x): x is string => !!x);
       const content = await resolveContents(skillIds);
-      // 把 step 数组展开成可执行记录，每步带 status + role。role 暂时按 modelKind 映射到已有 6 角色之一。
-      const roleForKind = plan.modelKind === "image" ? "designer" : plan.modelKind === "video" ? "designer" : "writer";
-      const steps = (plan.steps || []).map((s) => ({ text: String(s), status: "pending", role: roleForKind, result: null, error: null }));
+      const inferRole = (text: string) => {
+        if (/收集|采集|抓取|后台数据|账号数据/.test(text)) return "analyst";
+        if (/热点|搜索|来源|竞品|资料|趋势|舆情|研究/.test(text)) return "researcher";
+        if (/策略|筛选|优先级|定位|方向|规划/.test(text)) return "strategist";
+        if (/封面|配图|视觉|设计|图片|海报|分镜/.test(text)) return "designer";
+        if (/发布|排期|发布包|上线/.test(text)) return "publisher";
+        if (/数据|分析|复盘|报告|归因/.test(text)) return "analyst";
+        return plan.modelKind === "text" ? "writer" : "designer";
+      };
+      const steps = (plan.steps || []).map((raw) => {
+        const item = typeof raw === "string" ? { text: raw } : raw;
+        const text = String(item.text || "").trim();
+        const role = /收集|采集|抓取|后台数据|账号数据/.test(text) ? "analyst" : AGENT_ROLES.includes(item.role || "") ? item.role! : inferRole(text);
+        return { text, status: "pending", role, skillIds: (item.skillIds || skillIds).filter((sid) => skillIds.includes(sid)), result: null, error: null };
+      }).filter((s) => s.text);
+      if (steps.length === 0) return NextResponse.json({ error: "策略师没有生成可执行步骤", catalog: cat, modelPowered: true }, { status: 422 });
       // 持久化：G2 模式下 plan 可被前端逐步执行
       const pid = getCurrentProjectId();
       const info = db.prepare(
@@ -68,7 +82,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ids: skillIds, content, catalog: cat, modelPowered: true, plan, planId, steps });
     } catch (e) {
       console.error("[orchestrator] 决策失败，退回 skill 目录", e);
-      return NextResponse.json({ ids: [], content: "", catalog: cat, modelPowered: false, plan: null });
+      const reason = String((e as Error)?.message || e).slice(0, 240);
+      return NextResponse.json({ error: "策略师规划失败，请稍后重试", reason, ids: [], content: "", catalog: cat, modelPowered: false, plan: null }, { status: 502 });
     }
   }
 
