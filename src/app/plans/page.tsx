@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Play, Loader2, CheckCircle2, AlertCircle, Sparkles, RefreshCw, ListTodo, Trash2 } from "lucide-react";
+import { Play, Loader2, CheckCircle2, AlertCircle, Sparkles, RefreshCw, ListTodo, Trash2, FileText, Lightbulb } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { PageFrame } from "@/components/layout/page-frame";
@@ -37,6 +37,7 @@ export default function PlansPage() {
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState<{ plan: number; step: number } | null>(null);
   const [creatingNext, setCreatingNext] = useState<number | null>(null);
+  const [syncing, setSyncing] = useState<number | null>(null);
 
   const load = useCallback(async (initial = false) => {
     if (initial) setLoading(true);
@@ -94,7 +95,7 @@ export default function PlansPage() {
   }
 
   function nextAction(task: string) {
-    if (/热点|搜索|来源|竞品|趋势|舆情|研究|小红书/.test(task)) return { label: "下一步：生成选题计划", task: `根据已完成的研究任务「${task}」，请总编生成 5 条可执行的小红书选题并进入选题池。` };
+    if (/热点|搜索|来源|竞品|趋势|舆情|研究|采集/.test(task)) return null;
     if (/选题/.test(task)) return { label: "下一步：生成内容计划", task: `根据已完成的选题任务「${task}」，请总编生成一篇可审核的小红书内容。` };
     if (/文案|内容|笔记|脚本/.test(task)) return { label: "下一步：合规审核计划", task: `对已完成的内容任务「${task}」安排合规审核，并列出需要人工确认的问题。` };
     if (/复盘|数据分析|数据/.test(task)) return { label: "下一步：优化计划", task: `根据已完成的数据任务「${task}」提出下一轮内容优化计划。` };
@@ -116,6 +117,18 @@ export default function PlansPage() {
     } finally {
       setCreatingNext(null);
     }
+  }
+
+  async function syncPlan(plan: Plan) {
+    setSyncing(plan.id);
+    try {
+      const r = await fetch(`/api/agent/plans/${plan.id}/feishu`, { method: "POST" });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || "同步飞书失败");
+      toast.success("研究结果已同步到飞书");
+      if (d.docUrl) window.open(d.docUrl, "_blank");
+    } catch (error: any) { toast.error(error.message || "同步飞书失败"); }
+    finally { setSyncing(null); }
   }
 
   return (
@@ -183,6 +196,10 @@ export default function PlansPage() {
                     {p.status === "running" && (() => { const current = p.steps.find((s) => s.status === "running") || p.steps.find((s) => s.status === "pending"); return current ? <p className="mt-1 text-xs text-blue-600">{AGENT_LABELS[current.role] || current.role}正在处理：{current.text}</p> : null; })()}
                   </div>
                   <div className="flex flex-wrap justify-end gap-2">
+                    {p.status === "completed" && /热点|搜索|来源|竞品|趋势|舆情|研究|采集/.test(p.task) && <>
+                      <Button size="sm" onClick={() => syncPlan(p)} disabled={syncing !== null}>{syncing === p.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileText className="h-3.5 w-3.5" />} 同步研究结果到飞书</Button>
+                      <a href="/topics"><Button size="sm" variant="outline"><Lightbulb className="h-3.5 w-3.5" /> 去选题池采纳</Button></a>
+                    </>}
                     {p.status === "completed" && nextAction(p.task) && <Button size="sm" variant="outline" onClick={() => createNextPlan(p)} disabled={creatingNext !== null}>
                       {creatingNext === p.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
                       {nextAction(p.task)?.label}

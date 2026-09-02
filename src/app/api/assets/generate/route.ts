@@ -50,7 +50,15 @@ export async function POST(req: NextRequest) {
     if (body.content_id) {
       const cid = Number(body.content_id);
       if (Number.isFinite(cid) && cid > 0) {
-        db.prepare("UPDATE contents SET cover_url=? WHERE id=?").run(res.url, cid);
+        const content = db.prepare("SELECT media_urls FROM contents WHERE id=? AND project_id=?").get(cid, projectId) as { media_urls: string | null } | undefined;
+        if (content) {
+          let media: { type: "image" | "video"; url: string }[] = [];
+          try { media = JSON.parse(content.media_urls || "[]"); } catch {}
+          if (!media.some((item) => item.url === res.url)) media.push({ type: kind, url: res.url });
+          db.prepare("UPDATE contents SET cover_url=CASE WHEN ?='image' AND (cover_url IS NULL OR cover_url='') THEN ? ELSE cover_url END, media_urls=? WHERE id=?")
+            .run(kind, res.url, JSON.stringify(media.slice(0, 8)), cid);
+          db.prepare("INSERT INTO asset_usage (asset_id, content_id) VALUES (?, ?)").run(info.lastInsertRowid, cid);
+        }
         attachedContentId = cid;
       }
     }

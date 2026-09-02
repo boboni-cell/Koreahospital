@@ -100,6 +100,14 @@ export async function runPlanStep(planId: number, idx: number) {
     step.sources = allSources;
     step.completed_at = new Date().toISOString();
     step.meta = { provider: model.provider, model: model.model, latency_ms: Date.now() - started, is_mock: !!model.is_mock };
+    if (step.role === "writer" && /文案|内容|笔记|脚本/.test(`${row.task} ${step.text}`) && !/(生成|整理|创建).{0,8}选题/.test(String(step.text))) {
+      const title = String(row.task).replace(/^(请|帮我|根据)/, "").slice(0, 80) || "Agent 生成内容";
+      const platform = /抖音/.test(`${row.task} ${step.text}`) ? "douyin" : "xiaohongshu";
+      const info = db.prepare("INSERT INTO contents (title, body, platform, role, status, project_id) VALUES (?, ?, ?, ?, 'draft', ?)")
+        .run(title, step.result, platform, "knowledge", getCurrentProjectId());
+      step.content_id = Number(info.lastInsertRowid);
+      step.result += `\n\n已自动进入内容管理：内容 #${step.content_id}`;
+    }
     const planStatus = steps.every((s) => s.status === "done") ? "completed" : steps.some((s) => s.status === "failed") ? "partial" : "running";
     db.prepare("UPDATE agent_plans SET steps_json=?, status=?, updated_at=CURRENT_TIMESTAMP WHERE id=?").run(JSON.stringify(steps), planStatus, planId);
     return { step, planStatus };

@@ -1,6 +1,6 @@
 "use client";
-import { useState } from "react";
-import { X, Plus } from "lucide-react";
+import { useEffect, useState } from "react";
+import { X, Images } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { parseMediaUrls, type MediaItem } from "@/lib/media";
 
@@ -31,23 +31,25 @@ export function MediaEditor({
   value: MediaItem[];
   onChange: (next: MediaItem[]) => void;
 }) {
-  const [draftUrl, setDraftUrl] = useState("");
-  const [draftType, setDraftType] = useState<"image" | "video">("image");
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [assets, setAssets] = useState<{ id: number; filename: string; file_url: string; file_type: string; category: string | null }[]>([]);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  function add() {
-    setError("");
-    const url = draftUrl.trim();
-    if (!url) {
-      setError("请粘贴一个图片或视频的 URL");
-      return;
-    }
+  useEffect(() => {
+    if (!pickerOpen) return;
+    setLoading(true);
+    fetch("/api/assets").then((r) => r.json()).then(setAssets).catch(() => setError("素材库加载失败")).finally(() => setLoading(false));
+  }, [pickerOpen]);
+
+  function add(asset: { file_url: string; file_type: string }) {
     if (value.length >= 8) {
       setError("最多 8 个媒体，先删除再添加");
       return;
     }
-    onChange([...value, { type: draftType, url }]);
-    setDraftUrl("");
+    if (value.some((item) => item.url === asset.file_url)) return;
+    onChange([...value, { type: asset.file_type === "video" ? "video" : "image", url: asset.file_url }]);
+    setError("");
   }
 
   return (
@@ -73,29 +75,30 @@ export function MediaEditor({
           ))}
         </div>
       )}
-      <div className="flex flex-wrap items-center gap-2">
-        <select
-          value={draftType}
-          onChange={(e) => setDraftType(e.target.value as "image" | "video")}
-          className="rounded-lg border border-[#e4e0e6] bg-white px-2 py-1.5 text-sm"
-        >
-          <option value="image">图片</option>
-          <option value="video">视频</option>
-        </select>
-        <input
-          value={draftUrl}
-          onChange={(e) => setDraftUrl(e.target.value)}
-          placeholder="粘贴 URL（素材库点右键复制链接）"
-          className="min-w-0 flex-1 rounded-lg border border-[#e4e0e6] bg-white px-3 py-1.5 text-sm focus:outline-none"
-        />
-        <Button size="sm" variant="outline" onClick={add}>
-          <Plus className="h-3.5 w-3.5" /> 添加
-        </Button>
-      </div>
+      <Button size="sm" variant="outline" onClick={() => setPickerOpen(true)}>
+        <Images className="h-3.5 w-3.5" /> 从素材库选择
+      </Button>
       {error && <p className="text-xs text-red-500">{error}</p>}
-      <p className="text-[11px] text-[#89828d]">
-        提示：上传到「素材库」后右键图片 → 复制图片地址，再粘贴到这里。
-      </p>
+      {pickerOpen && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 p-4" onClick={() => setPickerOpen(false)}>
+          <div className="max-h-[80vh] w-full max-w-4xl overflow-y-auto rounded-2xl bg-white p-5 shadow-xl" onClick={(event) => event.stopPropagation()}>
+            <div className="mb-4 flex items-center justify-between">
+              <div><h3 className="font-semibold">从素材库选择</h3><p className="text-xs text-[#89828d]">点击素材即可关联到当前内容，最多 8 个。</p></div>
+              <Button size="sm" variant="ghost" onClick={() => setPickerOpen(false)}><X className="h-4 w-4" /></Button>
+            </div>
+            {loading ? <p className="py-10 text-center text-sm text-[#89828d]">加载中…</p> : (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                {assets.filter((asset) => asset.file_type === "image" || asset.file_type === "video").map((asset) => (
+                  <button key={asset.id} type="button" onClick={() => add(asset)} className="overflow-hidden rounded-xl border border-[#e4e0e6] text-left hover:border-[#8c78d8]">
+                    {asset.file_type === "video" ? <video src={asset.file_url} className="h-32 w-full bg-black object-contain" /> : <img src={asset.file_url} alt={asset.filename} className="h-32 w-full bg-[#f6f4f5] object-contain" />}
+                    <div className="p-2"><p className="truncate text-xs font-medium">{asset.filename}</p><p className="truncate text-[10px] text-[#89828d]">{asset.category || "未分类"}</p></div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

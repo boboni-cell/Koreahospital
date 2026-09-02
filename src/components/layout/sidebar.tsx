@@ -20,7 +20,7 @@ function childActive(pathname: string, child: NavChild) {
 }
 
 function sectionActive(pathname: string, item: NavItem) {
-  if (item.children?.some((child) => childActive(pathname, child))) return true;
+  if (item.children?.length) return item.children.some((child) => childActive(pathname, child));
   if (item.href === "/workbench") return pathname === "/" || pathname === "/ops" || pathname === "/workbench";
   return routeMatches(pathname, item.href, item.exact);
 }

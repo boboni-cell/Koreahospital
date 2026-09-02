@@ -44,15 +44,6 @@ interface Point {
   views: number;
   saves: number;
 }
-interface ResearchTask {
-  id: number;
-  keywords: string | null;
-  status: string;
-  progress: number;
-  total: number;
-  error: string | null;
-  created_at: string;
-}
 const PLATFORM: Record<string, string> = {
   xiaohongshu: "小红书",
   douyin: "抖音",
@@ -68,26 +59,11 @@ export default function AccountDataPage() {
   const [allAccounts, setAllAccounts] = useState<
     { id: number; platform: string; handle: string }[]
   >([]);
-  const [researchTasks, setResearchTasks] = useState<ResearchTask[]>([]);
   useEffect(() => {
     fetch("/api/accounts")
       .then((response) => response.json())
       .then(setAllAccounts);
-    fetch("/api/agent/research/collect")
-      .then((response) => response.json())
-      .then(setResearchTasks)
-      .catch(() => setResearchTasks([]));
   }, []);
-  useEffect(() => {
-    if (!researchTasks.some((task) => task.status === "running" || task.status === "pending")) return;
-    const timer = setInterval(() => {
-      fetch("/api/agent/research/collect")
-        .then((response) => response.json())
-        .then(setResearchTasks)
-        .catch(() => undefined);
-    }, 2000);
-    return () => clearInterval(timer);
-  }, [researchTasks]);
   useEffect(() => {
     const query = new URLSearchParams({ platform });
     if (accountId !== "all") query.set("account_id", accountId);
@@ -111,18 +87,6 @@ export default function AccountDataPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={async () => {
-            const keywords = window.prompt("请输入小红书采集关键词", "植发术后护理")?.trim();
-            if (!keywords) return;
-            const response = await fetch("/api/agent/research/collect", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ keywords }) });
-            const result = await response.json();
-            if (!response.ok) return toast.error(result.error || "采集任务创建失败");
-            toast.success(`已交给数据分析师采集，任务 #${result.taskId}。请先在 socai 中连接已登录的小红书 Chrome。`);
-            const tasks = await fetch("/api/agent/research/collect").then((r) => r.json()).catch(() => []);
-            setResearchTasks(tasks);
-          }}>
-            <TrendingUp className="h-4 w-4" /> 采集小红书数据
-          </Button>
           <Link href="/data/input">
             <Button variant="outline">
               <Download className="h-4 w-4" /> 导入账号数据
@@ -185,42 +149,6 @@ export default function AccountDataPage() {
           <Database className="h-4 w-4" /> 数据来自账号官方导出 · 中国市场时间
         </div>
       </div>
-      {!!researchTasks.length && (
-        <Card className="mb-5 border-[#e2dcd5] bg-[#fffefa]">
-          <CardContent className="p-5">
-            <div className="mb-3 flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold text-[#2d2926]">最近的小红书采集</h3>
-                <p className="text-xs text-[#918981]">由数据分析师通过 socai 只读读取</p>
-              </div>
-            </div>
-            <div className="space-y-2">
-              {researchTasks.slice(0, 5).map((task) => (
-                <div key={task.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[#eee8e1] px-3 py-2 text-sm">
-                  <div>
-                    <span className="font-medium">#{task.id} {task.keywords || "未命名任务"}</span>
-                    <span className="ml-2 text-xs text-[#918981]">{task.status === "completed" ? `已完成 ${task.progress} 条` : task.status === "failed" ? task.error || "失败" : "进行中"}</span>
-                  </div>
-                  {task.status === "completed" && (
-                    <div className="flex gap-1">
-                      {[["csv", "表格"], ["md", "报告"], ["json", "原始数据"]].map(([format, label]) => (
-                        <a key={format} className="rounded-lg border border-[#ded7cf] px-2 py-1 text-xs hover:bg-[#f4eee8]" href={`/api/agent/research/collect/${task.id}/export?format=${format}`}>{label}</a>
-                      ))}
-                      <button className="rounded-lg bg-[#211e1c] px-2 py-1 text-xs text-white hover:bg-[#403b37]" onClick={async () => {
-                        const response = await fetch(`/api/agent/research/collect/${task.id}/feishu`, { method: "POST" });
-                        const result = await response.json();
-                        if (!response.ok) return toast.error(result.error || "同步飞书失败");
-                        toast.success(`已同步 ${result.count} 条数据，并创建飞书研究报告`);
-                        if (result.docUrl) window.open(result.docUrl, "_blank");
-                      }}>同步飞书</button>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
         {(data?.accounts ?? []).map((account) => (

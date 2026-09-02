@@ -41,6 +41,15 @@ export function GenerateClient() {
   const [prompt, setPrompt] = useState("");
   const [patientCode, setPatientCode] = useState("");
   const [surgery, setSurgery] = useState("FUE");
+  const [ratio, setRatio] = useState("3:4");
+  const [style, setStyle] = useState("真实医疗纪实");
+  const [scene, setScene] = useState("");
+  const [usage, setUsage] = useState("小红书正文配图");
+  const [duration, setDuration] = useState("15");
+  const [resolution, setResolution] = useState("1080p");
+  const [storyboard, setStoryboard] = useState("");
+  const [bgm, setBgm] = useState("");
+  const [confirmed, setConfirmed] = useState(false);
   const [gen, setGen] = useState(false);
   // captain 分发：手动生成也走总控
   const [captainOpen, setCaptainOpen] = useState(false);
@@ -88,12 +97,14 @@ export function GenerateClient() {
 
   async function run() {
     if (!prompt.trim()) return toast.error("请填写生成提示词");
+    if (!confirmed) return toast.error("请先确认提示词配置");
     if (kind === "image" && !activeModels.image)
       return toast.error("请先在「图像/视频」中配置图像模型");
     if (kind === "video" && !activeModels.video)
       return toast.error("请先在「图像/视频」中配置视频模型");
     setGen(true);
     setResult(null);
+    const configuredPrompt = [prompt, `用途：${usage}`, `风格：${style}`, `画面比例：${ratio}`, scene && `模特与场景：${scene}`, kind === "video" && `时长：${duration} 秒；分辨率：${resolution}`, kind === "video" && storyboard && `分镜：${storyboard}`, kind === "video" && bgm && `BGM：${bgm}`, kind === "video" && Number(duration) > 15 && "拆分为两段不超过 15 秒且首尾动作连续的镜头，生成后按顺序剪辑衔接。"].filter(Boolean).join("\n");
     try {
       const r = await fetch("/api/assets/generate", {
         method: "POST",
@@ -102,10 +113,11 @@ export function GenerateClient() {
           kind,
           prompt:
             kind === "image"
-              ? `医疗合规：毛发移植/植发相关，自然真实，禁止夸大疗效。${prompt}`
-              : prompt,
+              ? `医疗合规：毛发移植/植发相关，自然真实，禁止夸大疗效。${configuredPrompt}`
+              : configuredPrompt,
           surgery_type: surgery,
           patient_code: patientCode || null,
+          content_id: contentId || null,
           filename: `${kind === "video" ? "视频" : "配图"}-${Date.now()}`,
         }),
       });
@@ -287,6 +299,19 @@ export function GenerateClient() {
                 </a>
               </div>
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1"><Label>画面比例</Label><Select value={ratio} onValueChange={(v) => setRatio(v ?? "3:4")}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{["1:1", "3:4", "4:3", "9:16", "16:9"].map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent></Select></div>
+              <div className="space-y-1"><Label>风格</Label><Input value={style} onChange={(e) => setStyle(e.target.value)} placeholder="真实医疗纪实" /></div>
+            </div>
+            <div className="space-y-1"><Label>模特与场景</Label><Input value={scene} onChange={(e) => setScene(e.target.value)} placeholder="如：30 岁韩国男性，医院咨询室，自然光" /></div>
+            <div className="space-y-1"><Label>用途</Label><Input value={usage} onChange={(e) => setUsage(e.target.value)} placeholder="如：小红书封面 / 正文配图" /></div>
+            {kind === "video" && <>
+              <div className="grid grid-cols-2 gap-3"><div className="space-y-1"><Label>时长（秒）</Label><Input type="number" min="1" value={duration} onChange={(e) => setDuration(e.target.value)} /></div><div className="space-y-1"><Label>分辨率</Label><Select value={resolution} onValueChange={(v) => setResolution(v ?? "1080p")}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{["720p", "1080p", "4K"].map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent></Select></div></div>
+              <div className="space-y-1"><Label>分镜</Label><textarea value={storyboard} onChange={(e) => setStoryboard(e.target.value)} rows={3} className="w-full rounded-xl border border-[#e4e0e6] px-3 py-2 text-sm" placeholder="逐镜头写画面、动作、台词与时间" /></div>
+              <div className="space-y-1"><Label>BGM</Label><Input value={bgm} onChange={(e) => setBgm(e.target.value)} placeholder="如：克制、可信赖、无歌词" /></div>
+              {Number(duration) > 15 && <p className="rounded-lg bg-amber-50 p-2 text-xs text-amber-700">超过 15 秒：提示词会自动拆为两段连续镜头，生成后按顺序剪辑。</p>}
+            </>}
+            <label className="flex items-start gap-2 rounded-xl border border-[#e4e0e6] bg-[#faf8f6] p-3 text-xs text-[#514b46]"><input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} className="mt-0.5" /><span>我已逐项确认提示词、{kind === "image" ? "风格、比例、模特场景和用途" : "时长、比例、分辨率、风格、模特场景、分镜和 BGM"}，可以生成。</span></label>
             <div className="space-y-1">
               <Label>类型</Label>
               <Select value={kind} onValueChange={(v) => setKind(v as GenKind)}>
@@ -323,7 +348,7 @@ export function GenerateClient() {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <Button onClick={run} disabled={gen} className="w-full" variant="outline">
+              <Button onClick={run} disabled={gen || !confirmed} className="w-full" variant="outline">
                 {gen ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                 {gen ? "生成中…" : "直接生成"}
               </Button>
@@ -352,19 +377,19 @@ export function GenerateClient() {
             ) : result ? (
               result.file_type === "video" ? (
                 // 视频：9:16 竖屏容器（抖音 / 小红书视频主比例），object-contain 不裁人脸
-                <div className="relative mx-auto w-full max-w-[260px] overflow-hidden rounded-xl bg-black aspect-[9/16]">
+                <div className="relative mx-auto w-full max-w-[520px] overflow-hidden rounded-xl bg-black" style={{ aspectRatio: ratio.replace(":", " / ") }}>
                   <video src={result.url} controls className="absolute inset-0 h-full w-full object-contain" />
                 </div>
               ) : (
                 // 配图：3:4 容器（小红书 / 公众号头图主比例）
-                <div className="relative mx-auto w-full max-w-[320px] overflow-hidden rounded-xl bg-[#f6f4f5] aspect-[3/4]">
+                <div className="relative mx-auto w-full max-w-[520px] overflow-hidden rounded-xl bg-[#f6f4f5]" style={{ aspectRatio: ratio.replace(":", " / ") }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={result.url} alt="生成结果" className="absolute inset-0 h-full w-full object-contain" />
                 </div>
               )
             ) : (
-              <div className="flex h-64 items-center justify-center rounded-xl bg-[#f6f4f5] text-sm text-zinc-400">
-                生成后在此预览，并自动进入素材库
+              <div className="mx-auto flex w-full max-w-[520px] items-center justify-center rounded-xl bg-[#f6f4f5] text-sm text-zinc-400" style={{ aspectRatio: ratio.replace(":", " / ") }}>
+                按 {ratio} 预览；生成后自动进入素材库{contentId ? "并关联所选内容" : ""}
               </div>
             )}
           </CardContent>

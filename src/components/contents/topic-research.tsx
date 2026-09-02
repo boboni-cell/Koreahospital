@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Lightbulb, Loader2 } from "lucide-react";
+import { Lightbulb, Loader2, ExternalLink, Database } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,6 +33,31 @@ export function TopicResearch() {
   const [note, setNote] = useState("");
   const [modelPowered, setModelPowered] = useState(true);
   const [engine, setEngine] = useState<string | null>(null);
+  const [tasks, setTasks] = useState<{ id: number; keywords: string; status: string; progress: number; error: string | null }[]>([]);
+
+  const loadTasks = useCallback(() => fetch("/api/agent/research/collect").then((r) => r.json()).then(setTasks).catch(() => setTasks([])), []);
+  useEffect(() => { loadTasks(); }, [loadTasks]);
+  useEffect(() => {
+    if (!tasks.some((task) => task.status === "pending" || task.status === "running")) return;
+    const timer = setInterval(loadTasks, 2000);
+    return () => clearInterval(timer);
+  }, [tasks, loadTasks]);
+
+  async function collect() {
+    const r = await fetch("/api/agent/research/collect", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ keywords: `${niche} ${goal}` }) });
+    const d = await r.json();
+    if (!r.ok) return toast.error(d.error || "热点采集创建失败");
+    toast.success(`热点采集任务 #${d.taskId} 已创建，搜索词已润色为「${d.refinedKeywords}」`);
+    await loadTasks();
+  }
+
+  async function syncFeishu(id: number) {
+    const r = await fetch(`/api/agent/research/collect/${id}/feishu`, { method: "POST" });
+    const d = await r.json();
+    if (!r.ok) return toast.error(d.error || "同步飞书失败");
+    toast.success(`已同步 ${d.count} 条研究数据到飞书`);
+    if (d.docUrl) window.open(d.docUrl, "_blank");
+  }
 
   async function adopt(t: Topic) {
    fetch("/api/topics", {
@@ -112,6 +137,19 @@ export function TopicResearch() {
               {loading ? "研究中" : "生成选题"}
             </Button>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle className="flex items-center gap-2"><Database className="h-4 w-4" /> 热点采集与研究历史</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-xs text-[#89828d]">这里负责公开热点与来源采集；数据中心只保留运营数据与复盘。</p><Button variant="outline" onClick={collect}>采集当前方向热点</Button></div>
+          {tasks.length === 0 ? <p className="text-sm text-[#89828d]">暂无采集历史</p> : tasks.slice(0, 8).map((task) => (
+            <div key={task.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[#e8e1da] p-3 text-sm">
+              <div><span className="font-medium">#{task.id} {task.keywords}</span><span className="ml-2 text-xs text-[#89828d]">{task.status === "completed" ? `已完成 ${task.progress} 条` : task.status === "failed" ? task.error || "失败" : "采集中"}</span></div>
+              {task.status === "completed" && <div className="flex gap-2"><a href={`/api/agent/research/collect/${task.id}/export?format=md`} className="inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-xs"><ExternalLink className="h-3 w-3" /> 查看报告</a><Button size="sm" onClick={() => syncFeishu(task.id)}>同步研究结果到飞书</Button></div>}
+            </div>
+          ))}
         </CardContent>
       </Card>
 

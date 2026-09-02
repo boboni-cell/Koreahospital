@@ -107,11 +107,12 @@ export default function FloatingAssistant() {
     setMsgs((m) => [...m, userMsg]);
     setInput(""); setImg(null); setBusy(true);
     try {
+      const shouldCreatePlan = !img && /帮我|请|生成|制作|写一篇|写文案|配图|视频|研究|采集|复盘/.test(text) && /生成|制作|写|配图|视频|研究|采集|复盘/.test(text);
       const r = await fetch("/api/agent/orchestrate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          mode: "assistant",
+          mode: shouldCreatePlan ? "orchestrate" : "assistant",
           task: text,
           input: { pathname, image: img },
         }),
@@ -120,10 +121,12 @@ export default function FloatingAssistant() {
       const reply: Msg = {
         id: Date.now() + 1,
         role: "assistant",
-        text: d.reply || "(无回复)",
+        text: shouldCreatePlan && d.planId
+          ? `已创建执行计划 #${d.planId}。${/配图|图片|视频/.test(text) ? "涉及生成媒体时，会先到 AI 生成页补齐并确认提示词配置，再允许生成；产物会自动进入素材库并关联内容。" : "执行完成后，生成的文案会进入内容管理。"}`
+          : d.reply || d.reason || d.error || "(无回复)",
         draft: d.draft,
         suggestions: d.suggestions,
-        next: d.next,
+        next: shouldCreatePlan && d.planId ? "/plans" : d.next,
       };
       setMsgs((m) => [...m, reply]);
     } catch (e: any) {
