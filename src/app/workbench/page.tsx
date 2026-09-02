@@ -218,7 +218,7 @@ export default function WorkbenchPage() {
                 onChange={(e) => setCaptainTask(e.target.value)}
                 placeholder="一句话告诉队长要做什么。例如：「为植发术后 30 天护理写一篇小红书笔记 + 配图」「分析上周哪条视频涨粉最快，复制结构」「给 5 个账号各起一条夏季选题」…"
                 rows={3}
-                className="min-h-20 resize-none border-0 px-4 py-3 text-sm leading-relaxed shadow-none focus-visible:ring-0"
+                className="min-h-16 resize-none border-0 px-4 py-2 text-sm leading-relaxed shadow-none focus-visible:ring-0"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && captainTask.trim()) {
                     setCaptainOpen(true);
