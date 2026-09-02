@@ -68,6 +68,8 @@ export function GenerateClient() {
   const [captainTask, setCaptainTask] = useState("");
   const [result, setResult] = useState<{ url: string; file_type: string } | null>(null);
   const [segments, setSegments] = useState<{ label: string; prompt: string; url: string | null }[]>([]);
+  const [stitchedUrl, setStitchedUrl] = useState<string | null>(null);
+  const [stitchError, setStitchError] = useState<string | null>(null);
   const [mediaRequests, setMediaRequests] = useState<MediaRequestItem[]>([]);
   const [requestId, setRequestId] = useState<number | null>(null);
 
@@ -169,6 +171,8 @@ export function GenerateClient() {
     setGen(true);
     setResult(null);
     setSegments([]);
+    setStitchedUrl(null);
+    setStitchError(null);
     const params: Record<string, string> = { ratio, style, scene, usage, duration, resolution, storyboard, bgm, model: activeModels[kind] || "" };
     const configuredPrompt = [prompt, `用途：${usage}`, `风格：${style}`, `画面比例：${ratio}`, scene && `模特与场景：${scene}`, kind === "video" && `时长：${duration} 秒；分辨率：${resolution}`, kind === "video" && storyboard && `分镜：${storyboard}`, kind === "video" && bgm && `BGM：${bgm}`, kind === "video" && Number(duration) > 15 && "拆分为两段不超过 15 秒且首尾动作连续的镜头，生成后按顺序剪辑衔接。"].filter(Boolean).join("\n");
     try {
@@ -201,6 +205,8 @@ export function GenerateClient() {
       if (!r.ok) throw new Error(d.error || "生成失败");
       const firstAsset = d.asset || d.assets?.[0];
       if (firstAsset) setResult({ url: firstAsset.file_url, file_type: firstAsset.file_type });
+      if (d.stitched?.file_url) setStitchedUrl(d.stitched.file_url);
+      setStitchError(d.stitchError || null);
       if (d.segments?.length) {
         setSegments(d.segments.map((s: { label: string; prompt: string; url: string | null }) => ({ label: s.label, prompt: s.prompt, url: s.url })));
         toast.success(`已生成长视频拆段 ${d.segments.length} 段并存入素材库`);
@@ -464,7 +470,9 @@ export function GenerateClient() {
           <CardContent>
             {segments.length > 0 && (
               <div className="mb-3 space-y-2">
-                <div className="text-xs font-medium text-[#514b46]">长视频分段（已按顺序生成，可复制提示词到外部生成/拼接）</div>
+                <div className="text-xs font-medium text-[#514b46]">长视频分段（已按顺序生成并自动拼接）</div>
+                {stitchedUrl && <div className="rounded-lg bg-emerald-50 p-2 text-xs text-emerald-700">✅ 已自动拼接为成品（见下方预览）</div>}
+                {stitchError && <div className="rounded-lg bg-amber-50 p-2 text-xs text-amber-700">拼接提示：{stitchError}，分段素材仍可单独使用，也可复制提示词到外部合成。</div>}
                 {segments.map((s, i) => (
                   <div key={i} className="rounded-xl border border-[#e4e0e6] bg-white p-2">
                     <div className="flex items-center justify-between gap-2">

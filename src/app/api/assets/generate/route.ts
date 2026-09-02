@@ -10,6 +10,7 @@ import {
   updateMediaRequest,
   appendMediaRequestRound,
 } from "@/lib/media-requests";
+import { hasFFmpeg, stitchVideos, saveVideoBytes } from "@/lib/ffmpeg";
 
 export const dynamic = "force-dynamic";
 
@@ -145,14 +146,43 @@ export async function POST(req: NextRequest) {
     }
 
     const first = segments.find((s) => s.assetId) ? db.prepare("SELECT * FROM assets WHERE id=?").get(segments.find((s) => s.assetId)!.assetId) as any : null;
+
+    // ffmpeg 自动拼接：多段视频按顺序合成一个成品，失败不影响分段素材
+    let stitchedAsset: any = null;
+    let stitchError = "";
+    const remoteUrls = segments.filter((s) => s.url && /^https?:\/\//i.test(s.url!)).map((s) => s.url!) as string[];
+    if (remoteUrls.length > 1 && (await hasFFmpeg())) {
+      try {
+        const bytes = await stitchVideos(remoteUrls);
+        const saved = await saveVideoBytes(bytes, "mp4");
+        stitchedAsset = insertAsset(
+          projectId,
+          { ...body, filename: `${body.filename || "视频"}-${Date.now()}-stitched` },
+          { url: saved.url, file_type: "video", stored: saved.stored },
+          "video"
+        );
+        assetIds.push(stitchedAsset.id);
+        const cid = attachToContent(stitchedAsset.id, body.content_id, projectId, "video", saved.url);
+        if (cid) attachedContentId = cid;
+      } catch (e) {
+        stitchError = String((e as Error)?.message || e).slice(0, 200);
+      }
+    } else if (remoteUrls.length > 1) {
+      stitchError = "ffmpeg 不可用，已保留分段素材";
+    }
+
     if (mediaRequestId) {
       updateMediaRequest(mediaRequestId, { status: "done", assetIds });
       appendMediaRequestRound(mediaRequestId, {
         phase: "generation_done",
-        note: `视频${split ? "已拆段生成 " + segments.length + " 段" : "已生成"}，素材已入库`,
+        note: `视频${split ? "已拆段生成 " + segments.length + " 段" : "已生成"}${stitchedAsset ? "，已自动拼接为一个成品" : stitchError ? `，${stitchError}` : ""}，素材已入库`,
       });
     }
-    return NextResponse.json({ ok: true, asset: first, assets: segments.filter((s) => s.assetId).map((s) => db.prepare("SELECT * FROM assets WHERE id=?").get(s.assetId)), segments, attachedContentId, mediaRequestId, assetIds, split });
+    const allAssets = [
+      ...segments.filter((s) => s.assetId).map((s) => db.prepare("SELECT * FROM assets WHERE id=?").get(s.assetId)),
+      ...(stitchedAsset ? [stitchedAsset] : []),
+    ];
+    return NextResponse.json({ ok: true, asset: stitchedAsset ?? first, assets: allAssets, segments, stitched: stitchedAsset, stitchError: stitchError || null, attachedContentId, mediaRequestId, assetIds, split });
   } catch (e) {
     if (mediaRequestId && getMediaRequest(mediaRequestId)) {
       updateMediaRequest(mediaRequestId, { status: "failed", assetIds });
