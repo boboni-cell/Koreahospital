@@ -238,6 +238,15 @@ export default function ReportsPage() {
             <Button variant="outline" onClick={exportCsv}>
               <Download className="h-4 w-4" /> 导出 CSV
             </Button>
+            <Button
+              variant="outline"
+              onClick={() => data?.drafts[0] && syncFeishu(data.drafts[0].id)}
+              disabled={!data?.drafts.length || feishuSyncing !== null}
+              title={data?.drafts.length ? "同步最新一份复盘报告" : "请先生成归因草稿"}
+            >
+              {feishuSyncing !== null ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
+              {data?.drafts.length ? "同步最新报告到飞书" : "同步飞书（先生成报告）"}
+            </Button>
             <Button onClick={generate} disabled={busy}>
               <Sparkles className="h-4 w-4" />{" "}
               {busy ? "生成中…" : "生成归因草稿"}
@@ -424,7 +433,7 @@ export default function ReportsPage() {
           })}
           {!data?.drafts.length && (
             <div className="rounded-[20px] border border-dashed border-[#d8d0c8] p-10 text-center text-sm text-[#918981]">
-              还没有复盘草稿，点击右上角生成。
+              还没有复盘草稿。点击顶部“生成归因草稿”，生成后即可同步到飞书。
             </div>
           )}
         </div>
