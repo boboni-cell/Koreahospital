@@ -77,7 +77,7 @@ export default function AccountsPage() {
 
   const [editingFor, setEditingFor] = useState<number | null>(null);
   const [editingAccountFor, setEditingAccountFor] = useState<number | null>(null);
-  const [accountDraft, setAccountDraft] = useState({ platform: "xiaohongshu", handle: "", externalId: "", profileUrl: "" });
+  const [accountDraft, setAccountDraft] = useState({ platform: "xiaohongshu", handle: "", externalId: "", profileUrl: "", role: "official", positioning: "", environmentStatus: "configuring" });
   const [draft, setDraft] = useState<Record<number, number>>({});
 
   const load = () =>
@@ -151,6 +151,9 @@ export default function AccountsPage() {
       handle: account.handle,
       externalId: account.external_id ?? "",
       profileUrl: account.profile_url ?? "",
+      role: account.role,
+      positioning: account.positioning ?? "",
+      environmentStatus: account.environment_status ?? "configuring",
     });
   }
 
@@ -164,11 +167,11 @@ export default function AccountsPage() {
         handle: accountDraft.handle,
         external_id: accountDraft.externalId || null,
         profile_url: accountDraft.profileUrl || null,
-        role: accounts.find((account) => account.id === accountId)?.role,
+        role: accountDraft.role,
         followers: accounts.find((account) => account.id === accountId)?.followers ?? 0,
         status: accounts.find((account) => account.id === accountId)?.status ?? "active",
-        positioning: accounts.find((account) => account.id === accountId)?.positioning ?? null,
-        environment_status: accounts.find((account) => account.id === accountId)?.environment_status ?? "configuring",
+        positioning: accountDraft.positioning || null,
+        environment_status: accountDraft.environmentStatus,
       }),
     })
       .then(() => { toast.success("账号信息已保存"); setEditingAccountFor(null); load(); })
@@ -347,6 +350,17 @@ export default function AccountsPage() {
                         onChange={(e) => setAccountDraft((draft) => ({ ...draft, handle: e.target.value }))}
                         placeholder="账号名 / 昵称"
                       />
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <Select value={accountDraft.role} onValueChange={(value) => setAccountDraft((draft) => ({ ...draft, role: value ?? draft.role }))}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>{Object.entries(ROLE_NAMES).map(([key, name]) => <SelectItem key={key} value={key}>{name}</SelectItem>)}</SelectContent>
+                      </Select>
+                      <Input value={accountDraft.positioning} onChange={(e) => setAccountDraft((draft) => ({ ...draft, positioning: e.target.value }))} placeholder="账号定位" />
+                      <Select value={accountDraft.environmentStatus} onValueChange={(value) => setAccountDraft((draft) => ({ ...draft, environmentStatus: value ?? draft.environmentStatus }))}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>{ACCOUNT_ENVIRONMENT_STATUS.map((item) => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}</SelectContent>
+                      </Select>
                     </div>
                     <p className="text-[11px] text-[#89828d]">平台：{PLATFORM_NAME[accountDraft.platform] ?? accountDraft.platform}</p>
                     <div className="flex gap-2">

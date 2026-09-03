@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { spawn } from "node:child_process";
 import Database from "better-sqlite3";
 
@@ -33,7 +33,25 @@ function runSocai(binary) {
     });
     let stdout = "";
     let stderr = "";
-    const timer = setTimeout(() => { child.kill("SIGTERM"); reject(new Error("socai 小红书采集超时（5分钟）")); }, 300000);
+    const timer = setTimeout(() => {
+      // socai 可能已经把部分笔记写入 notes.json；超时也先保存可用数据。
+      try {
+        const root = process.env.SOCAI_RUNS_DIR;
+        const dir = readdirSync(root, { withFileTypes: true }).filter((entry) => entry.isDirectory())
+          .map((entry) => `${root}/${entry.name}`).sort((a, b) => statSync(b).mtimeMs - statSync(a).mtimeMs)[0];
+        const partialPath = dir ? `${dir}/notes.json` : "";
+        if (partialPath && existsSync(partialPath)) {
+          const partial = JSON.parse(readFileSync(partialPath, "utf8"));
+          if (flattenNotes(partial).length) {
+            child.kill("SIGTERM");
+            resolve({ notes: partial, partial: true });
+            return;
+          }
+        }
+      } catch { /* 文件尚未写完，按正常超时处理 */ }
+      child.kill("SIGTERM");
+      reject(new Error("socai 小红书采集超时（5分钟），且没有可复用的已收集数据"));
+    }, 300000);
     child.stdout.on("data", (chunk) => { stdout += chunk; });
     child.stderr.on("data", (chunk) => { stderr += chunk; });
     child.on("error", (error) => { clearTimeout(timer); reject(error); });

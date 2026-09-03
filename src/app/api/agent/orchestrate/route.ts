@@ -13,6 +13,7 @@ import { requireAgentPreconditions } from "@/lib/agent-contracts";
 import db from "@/lib/db";
 import { getCurrentProjectId } from "@/lib/projects";
 import { AGENT_ROLES } from "@/lib/agent-labels";
+import { getProjectContext } from "@/lib/project-context";
 
 export const dynamic = "force-dynamic";
 
@@ -59,6 +60,11 @@ export async function POST(req: NextRequest) {
   const all = await listSkills();
   const cat = catalog(all);
   const { systemPrompt } = await getAgentConfig();
+  const projectContext = getProjectContext();
+  const isMedicalProject = /医疗|医院|植发|毛囊|患者|医美/.test(projectContext);
+  const projectRule = isMedicalProject
+    ? "当前项目属于医疗相关业务，必须加载并遵守医疗合规规则。"
+    : "当前项目不是医疗业务，不要加载医疗专属 skill；由 Agent 根据当前项目资料自行判断行业规则。";
   const strategistPre = requireAgentPreconditions("strategist");
 
   if (mode === "orchestrate") {
@@ -69,10 +75,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ids: [], content: "", catalog: cat, modelPowered: false, plan: null, stopped: true, reason: strategistPre.reason });
     }
     try {
-      const user = `任务：${task}\n附加信息：${JSON.stringify(input)}\n\n可用 skill 列表：\n${cat.map((s) => `- [${s.id}] ${s.name}：${s.description}`).join("\n")}\n\n请按你的 system prompt 输出决策。`;
+      const user = `任务：${task}\n附加信息：${JSON.stringify(input)}\n\n${projectRule}\n${projectContext}\n\n可用 skill 列表：\n${cat.map((s) => `- [${s.id}] ${s.name}：${s.description}`).join("\n")}\n\n请按你的 system prompt 输出决策。`;
       const text = await chatCompleteForAgent(
         "strategist",
-        [{ role: "system", content: systemPrompt }, { role: "user", content: user }],
+        [{ role: "system", content: `${systemPrompt}\n\n${projectRule}` }, { role: "user", content: user }],
         { maxTokens: 1600, timeoutMs: 60000 }
       );
       let plan: OrchestrationPlan;

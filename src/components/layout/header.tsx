@@ -27,14 +27,20 @@ export function Header() {
   const pathname = usePathname();
   const title = currentTitle(pathname);
   const area = currentArea(pathname);
+  const [projects, setProjects] = useState<{ id: number; name: string }[]>([]);
   const [projectName, setProjectName] = useState("Koreahospital");
 
   useEffect(() => {
     fetch("/api/projects")
       .then((response) => response.json())
-      .then((data) => setProjectName(data.current?.name ?? "Koreahospital"))
+      .then((data) => { setProjectName(data.current?.name ?? "Koreahospital"); setProjects(data.projects ?? []); })
       .catch(() => {});
   }, []);
+
+  async function switchProject(id: string) {
+    await fetch("/api/projects", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ projectId: Number(id) }) });
+    window.location.reload();
+  }
 
   return (
     <header className="sticky top-0 z-30 px-4 py-3 lg:ml-[256px] lg:px-8">
@@ -50,13 +56,15 @@ export function Header() {
           <h1 className="truncate text-[17px] font-semibold tracking-[-0.025em] text-[#171619]">{title}</h1>
         </div>
 
-        <Link href="/project" className="ml-auto hidden items-center gap-2 rounded-[12px] border border-[#e5dfd8] bg-[#f8f6f2] px-3 py-2 transition hover:border-[#cfc7be] md:flex">
+        <div className="ml-auto hidden items-center gap-2 rounded-[12px] border border-[#e5dfd8] bg-[#f8f6f2] px-3 py-2 md:flex">
           <span className="grid h-7 w-7 place-items-center rounded-[9px] bg-white text-[#6b625c]"><FolderKanban className="h-3.5 w-3.5" /></span>
           <span>
             <span className="block text-[9px] font-medium text-[#99918a]">当前项目</span>
-            <span className="block max-w-32 truncate text-[11px] font-semibold text-[#49443f]">{projectName}</span>
+            <select className="block max-w-32 truncate bg-transparent text-[11px] font-semibold text-[#49443f] outline-none" value={projects.find((p) => p.name === projectName)?.id ?? ""} onChange={(e) => switchProject(e.target.value)}>
+              {projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}
+            </select>
           </span>
-        </Link>
+        </div>
 
         <div className="flex items-center gap-2">
           <Link href="/calendar" className="hidden h-10 items-center gap-2 rounded-full border border-[#dfdad4] bg-white px-3.5 text-xs font-semibold text-[#57524d] transition hover:border-[#b8b0a8] xl:inline-flex">
