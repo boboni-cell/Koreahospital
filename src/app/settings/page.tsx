@@ -6,6 +6,7 @@ import { SkillsPanel } from "@/components/settings/skills-panel";
 import { SkillAuditPanel } from "@/components/settings/skill-audit-panel";
 import { AccessPanel } from "@/components/settings/access-panel";
 import { PlatformPanel } from "@/components/settings/platform-panel";
+import { D1ConfigForm } from "@/components/settings/d1-config-form";
 
 export default function SettingsPage() {
   return (
@@ -23,6 +24,7 @@ export default function SettingsPage() {
         <AccessPanel />
         <PlatformPanel />
         <R2ConfigForm />
+        <D1ConfigForm />
         <AgentConfigForm />
       </div>
     </PageFrame>
