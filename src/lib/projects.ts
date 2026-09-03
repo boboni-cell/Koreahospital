@@ -1,4 +1,16 @@
 import db from "@/lib/db";
+import fs from "node:fs";
+import path from "node:path";
+
+export const PROJECTS_DIR = path.join(process.cwd(), "data", "projects");
+
+/** 本地优先：每个项目预留独立工作区，后续可按项目迁移到 R2/D1。 */
+export function ensureProjectWorkspace(project: Pick<Project, "id" | "slug" | "name">) {
+  const slug = (project.slug || project.name || `project-${project.id}`).replace(/[^a-zA-Z0-9_-]/g, "-");
+  const root = path.join(PROJECTS_DIR, `${slug}-${project.id}`);
+  for (const dir of ["assets", "accounts", "contents", "research", "reports", "database"]) fs.mkdirSync(path.join(root, dir), { recursive: true });
+  return root;
+}
 
 export interface Project {
   id: number;

@@ -70,6 +70,17 @@ export default function ProjectPage() {
     window.location.reload();
   }
 
+  async function deleteProject() {
+    if (!brief) return;
+    const confirmation = window.prompt(`删除项目“${brief.name}”将清理该项目的本地数据库和本地工作区。请输入项目名称确认：`);
+    if (confirmation !== brief.name) return;
+    const r = await fetch(`/api/projects?id=${brief.id}&confirm=${encodeURIComponent(confirmation)}`, { method: "DELETE" });
+    const d = await r.json();
+    if (!r.ok) return toast.error(d.error || "删除项目失败");
+    toast.success("项目及本地数据已删除");
+    window.location.reload();
+  }
+
   return (
     <PageFrame>
       <div className="mb-6 flex items-center justify-between">
@@ -80,6 +91,7 @@ export default function ProjectPage() {
         <div className="flex items-center gap-2">
           <Input className="w-36" value={newProject} onChange={(e) => setNewProject(e.target.value)} placeholder="新项目名称" />
           <Button variant="outline" onClick={createProject}><Plus className="h-4 w-4" /> 新建项目</Button>
+          <Button variant="outline" className="text-rose-600" onClick={deleteProject}>删除当前项目</Button>
           <Link href="/workbench" className="inline-flex items-center gap-1 text-xs text-[#473982] hover:text-indigo-700">回工作区 <ArrowUpRight className="h-3.5 w-3.5" /></Link>
         </div>
       </div>
@@ -144,6 +156,7 @@ export default function ProjectPage() {
           </Card>
         </div>
       </div>
+      <p className="mt-4 text-xs text-[#89828d]">当前存储：本地模式（R2 未连接，D1 未接入）。新项目会在 data/projects 下建立独立工作区，后续可迁移到 R2 与 D1。</p>
     </PageFrame>
   );
 }
