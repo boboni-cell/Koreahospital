@@ -20,6 +20,10 @@ CHUBBYSKILLS_PYTHON=python3
 
 ```bash
 TRENDRADAR_MCP_URL=http://127.0.0.1:3333/mcp
+# 可选：项目调用 TrendRadar 时服务未启动，自动从此目录拉起 MCP
+TRENDRADAR_DIR=/path/to/TrendRadar
+# 可选：uv 不在 PATH 时填写绝对路径
+TRENDRADAR_UV=/path/to/uv
 ```
 
 例如官方本地方式：
@@ -30,7 +34,15 @@ uv sync
 uv run python -m mcp_server.server --transport http --host 127.0.0.1 --port 3333
 ```
 
-研究热点页输入关键词并点击“筛选趋势”后，Koreahospital 通过 MCP `search_news` 读取结果；未配置、服务离线或没有匹配时显示清晰错误/空结果，60s 仍照常返回。TrendRadar 的配置、新闻库、通知和 AI Key 都留在其独立服务内。
+研究热点页点击“刷新”或输入关键词点击“筛选趋势”时，Koreahospital 会先通过 MCP `trigger_crawl(save_to_local=true)` 拉取最新平台数据，再调用 `search_news` 返回结果；项目会在配置 `TRENDRADAR_DIR` 时自动拉起本机 MCP。未配置、服务离线或没有匹配时显示清晰错误/空结果，60s 仍照常返回。TrendRadar 的配置、新闻库、通知和 AI Key 都留在其独立服务内。
+
+后台定时抓取可执行：
+
+```bash
+cd /path/to/Koreahospital
+set -a; source .env.local; set +a
+npm run trendradar:crawl
+```
 
 ## 数据与合规边界
 

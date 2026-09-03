@@ -39,3 +39,22 @@ test("TrendRadar MCP 适配器完成 initialize、initialized、tools/call 握�
   assert.match(String(calls[2].body), /search_news/);
   if (previous === undefined) delete process.env.TRENDRADAR_MCP_URL; else process.env.TRENDRADAR_MCP_URL = previous;
 });
+
+test("TrendRadar 刷新会先触发本地持久化抓取", async () => {
+  const previous = process.env.TRENDRADAR_MCP_URL;
+  process.env.TRENDRADAR_MCP_URL = "http://127.0.0.1:3333/mcp";
+  const calls: RequestInit[] = [];
+  const responses = [
+    new Response("event: message\ndata: {\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{}}\n\n", { headers: { "mcp-session-id": "crawl-session" } }),
+    new Response("", { status: 202 }),
+    new Response("event: message\ndata: {\"jsonrpc\":\"2.0\",\"id\":2,\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"{\\\"success\\\":true}\"}]}}\n\n"),
+    new Response("event: message\ndata: {\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{}}\n\n", { headers: { "mcp-session-id": "search-session" } }),
+    new Response("", { status: 202 }),
+    new Response("event: message\ndata: {\"jsonrpc\":\"2.0\",\"id\":2,\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"{\\\"data\\\":[{\\\"title\\\":\\\"实时趋势\\\"}]}\"}]}}\n\n"),
+  ];
+  const items = await fetchTrendRadarHotspots("植发", { refresh: true, fetchFn: async (_input, init) => { calls.push(init || {}); return responses.shift() as Response; } });
+  assert.equal(items[0].title, "实时趋势");
+  assert.match(String(calls[2].body), /trigger_crawl/);
+  assert.match(String(calls[2].body), /save_to_local/);
+  if (previous === undefined) delete process.env.TRENDRADAR_MCP_URL; else process.env.TRENDRADAR_MCP_URL = previous;
+});

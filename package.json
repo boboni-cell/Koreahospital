@@ -15,7 +15,8 @@
     "test:media-requests": "node --no-warnings --experimental-strip-types --test scripts/media-requests.test.mts",
     "test:ffmpeg": "node --no-warnings --experimental-strip-types --test scripts/ffmpeg.test.mts",
     "test:daily-hotspots": "node --no-warnings --experimental-strip-types --test scripts/daily-hotspots.test.mts",
-    "test:research-providers": "node --no-warnings --experimental-strip-types --test scripts/research-providers.test.mts"
+    "test:research-providers": "node --no-warnings --experimental-strip-types --test scripts/research-providers.test.mts",
+    "trendradar:crawl": "node --no-warnings --experimental-strip-types scripts/trendradar-crawl.mts"
   },
   "dependencies": {
     "@base-ui-components/react": "^1.0.0-beta.1",
