@@ -5,7 +5,7 @@ import { requireAgentPreconditions } from "@/lib/agent-contracts";
 import { resolveContents } from "@/lib/skills";
 import { AGENT_LABELS } from "@/lib/agent-labels";
 import { getCurrentProjectId } from "@/lib/projects";
-import { collectXhsNow, refineXhsQuery } from "@/lib/xhs-collector";
+import { collectXhsNow } from "@/lib/xhs-collector";
 import { separateResearchOutput } from "@/lib/research-output";
 import { fetchTrendRadarHotspots, trendRadarConfigured } from "@/lib/trendradar";
 import { chubbySkillsConfigured, findChubbySource, ingestWithChubbySkills } from "@/lib/chubby-skills";
@@ -53,10 +53,10 @@ export async function runPlanStep(planId: number, idx: number) {
     db.prepare("UPDATE agent_plans SET steps_json=?, status='running', updated_at=CURRENT_TIMESTAMP WHERE id=?").run(JSON.stringify(steps), planId);
   try {
     if (step.role === "analyst" && /采集|收集|抓取|后台数据/.test(String(step.text))) {
-      const refined = await refineXhsQuery(String(row.task));
-      const taskInfo = db.prepare("INSERT INTO research_tasks (project_id, platform, keywords) VALUES (?, 'xiaohongshu', ?)").run(getCurrentProjectId(), refined);
+      const keywords = String(row.task).slice(0, 200);
+      const taskInfo = db.prepare("INSERT INTO research_tasks (project_id, platform, keywords) VALUES (?, 'xiaohongshu', ?)").run(getCurrentProjectId(), keywords);
       const collectionId = Number(taskInfo.lastInsertRowid);
-      const collection = await collectXhsNow(collectionId, refined);
+      const collection = await collectXhsNow(collectionId, keywords);
       if (!collection || collection.status !== "completed") throw new Error(collection?.error || "小红书只读采集未完成");
       step.status = "done";
       step.result = `数据分析师已调用小红书只读采集 CLI，采集 ${collection.progress} 条内容。采集任务 #${collectionId} 已保存。`;
@@ -70,7 +70,6 @@ export async function runPlanStep(planId: number, idx: number) {
     let refinedQuery = String(row.task).slice(0, 200);
     let providerContext = "";
     if (step.role === "researcher" && /热点|搜索|竞品|舆情|趋势|小红书/.test(String(step.text))) {
-      refinedQuery = await refineXhsQuery(String(row.task));
       const taskInfo = db.prepare("INSERT INTO research_tasks (project_id, platform, keywords) VALUES (?, 'xiaohongshu', ?)").run(getCurrentProjectId(), refinedQuery);
       const collectionId = Number(taskInfo.lastInsertRowid);
       const collection = await collectXhsNow(collectionId, refinedQuery);
@@ -109,7 +108,7 @@ export async function runPlanStep(planId: number, idx: number) {
       .map((s) => `${AGENT_LABELS[s.role] || s.role}的产出：${String(s.result).slice(0, 1800)}`).join("\n\n");
     const liveSources = step.role === "researcher" ? await liveWebSources(refinedQuery) : [];
     const researchRule = step.role === "researcher"
-      ? `\n你是研究员，必须基于下面经过细化的搜索词和全网实时公开搜索结果执行热点研究。小红书仅是一个来源，必须同时比较抖音、微博、新闻/网页等公开信号。正文按“研究结论、候选选题、证据与风险、交接建议”组织，不能只罗列链接；来源链接集中放在最后的“来源”部分。无法访问或验证时明确写待验证，绝不编造来源。\n细化后的搜索词：${refinedQuery}\n全网搜索结果：${liveSources.join("\n") || "暂未取得搜索结果，请明确说明待验证"}${providerContext}`
+      ? `\n你是研究员，必须基于总控传入的原始搜索任务和全网实时公开搜索结果执行热点研究。小红书仅是一个来源，必须同时比较抖音、微博、新闻/网页等公开信号。正文按“研究结论、候选选题、证据与风险、交接建议”组织，不能只罗列链接；来源链接集中放在最后的“来源”部分。无法访问或验证时明确写待验证，绝不编造来源。\n总控原始搜索任务：${refinedQuery}\n全网搜索结果：${liveSources.join("\n") || "暂未取得搜索结果，请明确说明待验证"}${providerContext}`
       : "";
     const system = `你是${AGENT_LABELS[step.role] || step.role}，是协作任务中的第 ${idx + 1} 步执行者。\n任务：${String(row.task).slice(0, 500)}\n当前动作：${String(step.text)}${researchRule}${collectionContext}\n请直接返回本步产出，并说明可交接给下一位成员的关键信息。不要声称尚未完成的动作已经完成。${skillContent ? `\n\n相关工作规范：\n${skillContent}` : ""}${prior ? `\n\n前序产出：\n${prior}` : ""}`;
     const started = Date.now();
