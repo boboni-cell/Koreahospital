@@ -10,6 +10,10 @@ Koreahospital 保持 `vikiboss/60s` 为默认热点源。第三方能力只通�
 CHUBBYSKILLS_DIR=/path/to/chubbyskills
 # 可选：默认使用 python3
 CHUBBYSKILLS_PYTHON=python3
+# 可选：小红书/抖音 60s 失败时，用本机已登录 socai 做实时搜索兜底
+SOCAI_BIN=/Users/zhanghanyue/.socai/bin/socai
+# 可选：没有用户搜索词时的兜底搜索词，默认“医美”
+SOCIAL_HOTSPOT_QUERY=医美
 ```
 
 每日热点卡片上的“采集研究资料”是唯一触发入口。服务调用 `tools/chubby_ingest.py`，把正文/视频文字稿和来源元数据写入现有 `research_tasks`、`research_items.raw_json`；失败只标记任务失败，不影响 60s 和既有研究流程。小红书可配置 `XHS_COOKIE` 提高成功率；视频转录还需要 ChubbySkills 自己的 `yt-dlp`、`ffmpeg`、`funasr` 等依赖。没有 Cookie、依赖或平台可访问权限时必须人工补正文或按提示重试。
@@ -34,7 +38,7 @@ uv sync
 uv run python -m mcp_server.server --transport http --host 127.0.0.1 --port 3333
 ```
 
-研究热点页点击“刷新”或输入关键词点击“筛选趋势”时，Koreahospital 会先通过 MCP `trigger_crawl(save_to_local=true)` 拉取最新平台数据，再调用 `search_news` 返回结果；项目会在配置 `TRENDRADAR_DIR` 时自动拉起本机 MCP。未配置、服务离线或没有匹配时显示清晰错误/空结果，60s 仍照常返回。TrendRadar 的配置、新闻库、通知和 AI Key 都留在其独立服务内。
+研究热点页点击“刷新”或输入关键词点击“筛选趋势”时，Koreahospital 会先通过 MCP `trigger_crawl(save_to_local=true)` 拉取最新平台数据，再调用 `search_news` 返回结果；项目会在配置 `TRENDRADAR_DIR` 时自动拉起本机 MCP。小红书和抖音的 60s 接口失败或返回空数据时，会用本机已登录的 `socai` 做只读实时搜索兜底（没有查询词时使用 `SOCIAL_HOTSPOT_QUERY`，默认“医美”）。未配置、服务离线或没有匹配时显示清晰错误/空结果。TrendRadar 的配置、新闻库、通知和 AI Key 都留在其独立服务内。
 
 后台定时抓取可执行：
 
