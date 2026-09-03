@@ -30,3 +30,9 @@ test("可解析 Markdown 加粗的总编选题清单", () => {
   assert.equal(topics.length, 1);
   assert.equal(topics[0].title, "预算500元内实测");
 });
+
+test("可解析总编输出的选题表格", () => {
+  const topics = parseAdoptedTopics("选题 ID | 选题方向 | 预设内容形态 | 自带爆款钩子\n|---|---|---|---|\n| 1 | 韩国医美真实体验 | 图文/15s短视频 | 第一人称故事 |");
+  assert.equal(topics.length, 1);
+  assert.equal(topics[0].title, "韩国医美真实体验");
+});
