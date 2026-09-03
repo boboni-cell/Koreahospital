@@ -39,6 +39,7 @@ export default function PlansPage() {
   const [running, setRunning] = useState<{ plan: number; step: number } | null>(null);
   const [creatingNext, setCreatingNext] = useState<number | null>(null);
   const [syncing, setSyncing] = useState<number | null>(null);
+  const [adopting, setAdopting] = useState<number | null>(null);
 
   const load = useCallback(async (initial = false) => {
     if (initial) setLoading(true);
@@ -132,6 +133,19 @@ export default function PlansPage() {
     finally { setSyncing(null); }
   }
 
+  async function adoptTopics(plan: Plan) {
+    setAdopting(plan.id);
+    try {
+      const r = await fetch(`/api/agent/plans/${plan.id}/adopt-topics`, { method: "POST" });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || "采纳选题失败");
+      toast.success(`已将 ${d.count} 个选题录入选题池`);
+      window.location.href = "/topics";
+    } catch (error: any) {
+      toast.error(error.message || "采纳选题失败");
+    } finally { setAdopting(null); }
+  }
+
   return (
     <PageFrame>
       <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
@@ -199,7 +213,9 @@ export default function PlansPage() {
                   <div className="flex flex-wrap justify-end gap-2">
                     {p.status === "completed" && /热点|搜索|来源|竞品|趋势|舆情|研究|采集/.test(p.task) && <>
                       <Button size="sm" onClick={() => syncPlan(p)} disabled={syncing !== null}>{syncing === p.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileText className="h-3.5 w-3.5" />} 同步研究结果到飞书</Button>
-                      <a href="/topics"><Button size="sm" variant="outline"><Lightbulb className="h-3.5 w-3.5" /> 去选题池采纳</Button></a>
+                      <Button size="sm" variant="outline" onClick={() => adoptTopics(p)} disabled={adopting !== null}>
+                        {adopting === p.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Lightbulb className="h-3.5 w-3.5" />} 去选题池采纳
+                      </Button>
                     </>}
                     {p.status === "completed" && nextAction(p.task) && <Button size="sm" variant="outline" onClick={() => createNextPlan(p)} disabled={creatingNext !== null}>
                       {creatingNext === p.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
