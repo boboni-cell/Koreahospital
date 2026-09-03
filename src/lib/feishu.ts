@@ -59,14 +59,25 @@ export async function createFeishuBase() {
   const baseToken = findKey(result, ["base_token", "baseToken"]);
   if (!baseToken) throw new Error("飞书多维表格已请求创建，但没有返回 Base Token");
   const tables = await run(["base", "+table-list", "--as", "user", "--base-token", baseToken]);
-  const tableId = findKey(tables, ["table_id", "tableId"]);
+  const tableId = findKey(tables, ["table_id", "tableId", "id"]);
   if (!tableId) throw new Error("飞书多维表格已创建，但没有找到数据表");
   return { baseToken, tableId, raw: result };
 }
 
 export async function createFeishuRecords(baseToken: string, tableId: string, records: Json[]) {
   for (let i = 0; i < records.length; i += 200) {
-    await run(["base", "+record-batch-create", "--as", "user", "--base-token", baseToken, "--table-id", tableId, "--json", JSON.stringify({ create_records: records.slice(i, i + 200) })]);
+    const args = ["base", "+record-batch-create", "--as", "user", "--base-token", baseToken, "--table-id", tableId, "--json", JSON.stringify({ create_records: records.slice(i, i + 200) })];
+    // ponytail: 仅对建表后的短暂 NOTEXIST 重试 3 次，持久资源错误仍直接抛出。
+    for (let attempt = 0; ; attempt++) {
+      try {
+        await run(args);
+        break;
+      } catch (error) {
+        const message = String((error as Error)?.message || error);
+        if (attempt >= 2 || !message.includes("NOTEXIST")) throw error;
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
+    }
   }
 }
 
