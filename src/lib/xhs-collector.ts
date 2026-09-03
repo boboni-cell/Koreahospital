@@ -4,6 +4,8 @@ import db from "@/lib/db";
 import { chatCompleteForAgent } from "@/lib/agent-llm";
 import { getAgentModel } from "@/lib/agent-models";
 
+const SOCAI_TIMEOUT_MS = 5 * 60 * 1000;
+
 export async function refineXhsQuery(input: string) {
   const original = String(input || "").trim().slice(0, 200);
   const model = getAgentModel("researcher");
@@ -32,12 +34,12 @@ export function startXhsCollection(taskId: number, keywords: string) {
   return child.pid ?? null;
 }
 
-export async function collectXhsNow(taskId: number, keywords: string, timeoutMs = 120000) {
+export async function collectXhsNow(taskId: number, keywords: string, timeoutMs = SOCAI_TIMEOUT_MS) {
   startXhsCollection(taskId, keywords);
   return waitForCollection(taskId, timeoutMs);
 }
 
-export async function waitForCollection(taskId: number, timeoutMs = 120000) {
+export async function waitForCollection(taskId: number, timeoutMs = SOCAI_TIMEOUT_MS) {
   const end = Date.now() + timeoutMs;
   while (Date.now() < end) {
     const task = db.prepare("SELECT * FROM research_tasks WHERE id=?").get(taskId) as any;

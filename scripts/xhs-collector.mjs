@@ -33,7 +33,7 @@ function runSocai(binary) {
     });
     let stdout = "";
     let stderr = "";
-    const timer = setTimeout(() => { child.kill("SIGTERM"); reject(new Error("socai 小红书采集超时（2分钟）")); }, 120000);
+    const timer = setTimeout(() => { child.kill("SIGTERM"); reject(new Error("socai 小红书采集超时（5分钟）")); }, 300000);
     child.stdout.on("data", (chunk) => { stdout += chunk; });
     child.stderr.on("data", (chunk) => { stderr += chunk; });
     child.on("error", (error) => { clearTimeout(timer); reject(error); });
