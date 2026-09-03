@@ -21,6 +21,7 @@ test("研究员只从用户任务中提取已识别平台的公开来源", () =>
 
 test("TrendRadar MCP 返回结果映射为现有热点模型", () => {
   assert.deepEqual(normalizeTrendRadarResults({ results: [{ title: "趋势 A", url: "https://example.com/a", score: 9, summary: "摘要" }] }), [{ rank: 1, title: "趋势 A", hotValue: "9", link: "https://example.com/a", detail: "摘要", cover: "" }]);
+  assert.equal(normalizeTrendRadarResults({ data: [{ title: "趋势 B", url: "https://example.com/b" }] })[0].title, "趋势 B");
 });
 
 test("TrendRadar MCP 适配器完成 initialize、initialized、tools/call 握手", async () => {

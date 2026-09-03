@@ -32,7 +32,7 @@ function resultPayload(result: Record<string, unknown> | null) {
 
 export function normalizeTrendRadarResults(payload: Record<string, unknown>): HotspotItem[] {
   const nested = payload.data as any;
-  const rows = Array.isArray(payload.results) ? payload.results : Array.isArray(payload.news) ? payload.news : Array.isArray(nested?.results) ? nested.results : [];
+  const rows = Array.isArray(payload.results) ? payload.results : Array.isArray(payload.news) ? payload.news : Array.isArray(nested) ? nested : Array.isArray(nested?.results) ? nested.results : [];
   return rows.map((item: any, index: number) => ({
     rank: Number(item.rank ?? item.position) || index + 1, title: String(item.title ?? item.word ?? item.name ?? "").trim(),
     hotValue: String(item.hot_value ?? item.score ?? item.heat ?? item.frequency ?? ""), link: String(item.url ?? item.link ?? item.source_url ?? ""),
