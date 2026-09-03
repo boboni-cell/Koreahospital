@@ -1,19 +1,9 @@
 import { NextResponse } from "next/server";
 import db from "@/lib/db";
 import { getCurrentProjectId } from "@/lib/projects";
+import { parseAdoptedTopics } from "@/lib/topic-adoption";
 
 export const dynamic = "force-dynamic";
-
-function parseTopics(text: string) {
-  return text.split(/(?=选题\s*\d+)/).slice(1).map((block) => {
-    const field = (name: string) => block.match(new RegExp(`${name}[：:]\\s*(.+)`))?.[1]?.trim() || "";
-    const angle = field("主线角度");
-    const title = field("潜在标题方向") || angle;
-    if (!title) return null;
-    const description = [angle && `主线角度：${angle}`, field("目标人群") && `目标人群：${field("目标人群")}`, field("笔记类型") && `笔记类型：${field("笔记类型")}`, field("医疗合规自查") && `合规提示：${field("医疗合规自查")}`].filter(Boolean).join("｜");
-    return { title: title.slice(0, 120), description: description.slice(0, 1000), heat: 5 };
-  }).filter((topic): topic is { title: string; description: string; heat: number } => Boolean(topic));
-}
 
 export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -24,7 +14,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   try { steps = JSON.parse(plan.steps_json || "[]"); } catch { /* 空计划 */ }
   const result = steps.filter((step) => step.status === "done" && step.result).map((step) => String(step.result)).find((text) => /选题\s*\d+/.test(text));
   if (!result) return NextResponse.json({ error: "计划产出中没有可采纳的选题清单" }, { status: 400 });
-  const topics = parseTopics(result);
+  const topics = parseAdoptedTopics(result);
   if (!topics.length) return NextResponse.json({ error: "未能解析出有效选题，请先检查总编产出" }, { status: 400 });
   const existing = db.prepare("SELECT id FROM topics WHERE project_id=? AND source=? ORDER BY id").all(pid, `plan:${id}`) as { id: number }[];
   if (existing.length) return NextResponse.json({ ok: true, count: existing.length, ids: existing.map((topic) => topic.id), alreadyAdopted: true });
