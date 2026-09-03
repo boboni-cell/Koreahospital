@@ -6,11 +6,14 @@ import { requireAgentPreconditions } from "@/lib/agent-contracts";
 import db from "@/lib/db";
 import { collectXhsNow } from "@/lib/xhs-collector";
 import { getCurrentProjectId } from "@/lib/projects";
+import { fetchTrendRadarHotspots, trendRadarConfigured } from "@/lib/trendradar";
+import { chubbySkillsConfigured, ingestWithChubbySkills } from "@/lib/chubby-skills";
 
 interface ResearchInput {
   niche?: string;
   platform?: string;
   goal?: string;
+  sourceUrl?: string;
 }
 
 const SOURCES = ["小红书", "抖音", "微博", "知乎", "B站", "公众号"];
@@ -66,6 +69,27 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  let providerContext = "";
+  if (trendRadarConfigured()) {
+    try {
+      const items = await fetchTrendRadarHotspots(`${input.niche || "毛发移植"} ${input.goal || "热点"}`);
+      providerContext += `\n\nTrendRadar 关键词结果（只读）：\n${items.map((item) => `${item.rank}. ${item.title}${item.hotValue ? `｜热度 ${item.hotValue}` : ""}${item.link ? `｜${item.link}` : ""}`).join("\n") || "未返回匹配结果"}`;
+    } catch (error: any) {
+      providerContext += `\n\nTrendRadar 未完成：${String(error?.message || error).slice(0, 160)}，请人工验证。`;
+    }
+  }
+  if (input.sourceUrl?.trim()) {
+    if (!chubbySkillsConfigured()) providerContext += "\n\nChubbySkills 未配置，指定来源未能读取，请人工验证。";
+    else {
+      try {
+        const material = await ingestWithChubbySkills(input.sourceUrl.trim());
+        providerContext += `\n\nChubbySkills 指定来源资料（只读）：\n来源：${material.sourceUrl}\n标题：${material.title}\n正文/文字稿：\n${material.text.slice(0, 10000)}`;
+      } catch (error: any) {
+        providerContext += `\n\nChubbySkills 未完成：${String(error?.message || error).slice(0, 160)}，请人工验证。`;
+      }
+    }
+  }
+
   try {
     const sys = [
       "你是矩阵运营选题研究员，参考多平台信源 + 你掌握的近期平台内容趋势做选题发现与热度评估。",
@@ -88,6 +112,7 @@ export async function POST(req: NextRequest) {
       "以下是本账本地已有的选题/内容（供对齐语境，避免重复）：",
       ...local,
       ...(collected ? ["", "以下是 socai 从已登录小红书读取的真实结果，请优先基于这些结果分析：", collected.slice(0, 12000)] : ["", "小红书实时采集未完成，请明确标注需要人工验证"]),
+      providerContext,
       "",
       '输出 JSON：{"sources":["信源1"],"topics":[{"title":"选题","heat":8,"angle":"切入点","why":"推荐理由","contentType":"image"}],"note":"合规提示"}',
       "其中 contentType 用 \"image\"（适合图文）或 \"video\"（适合视频/口播），每个选题都要给。",

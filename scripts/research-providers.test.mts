@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { parseChubbyMarkdown, sourcePlatform, validateChubbySource } from "../src/lib/chubby-skills.ts";
+import { findChubbySource, parseChubbyMarkdown, sourcePlatform, validateChubbySource } from "../src/lib/chubby-skills.ts";
 import { fetchTrendRadarHotspots, normalizeTrendRadarResults } from "../src/lib/trendradar.ts";
 
 test("ChubbySkills 研究资料解析保留正文、来源和媒体类型", () => {
@@ -12,6 +12,11 @@ test("ChubbySkills 只接受已识别的平台公开链接", () => {
   assert.equal(sourcePlatform("https://www.xiaohongshu.com/explore/1"), "xiaohongshu");
   assert.equal(validateChubbySource("https://example.com/a"), "暂不支持该平台链接");
   assert.equal(validateChubbySource("file:///tmp/a"), "只允许 http(s) 公开链接");
+});
+
+test("研究员只从用户任务中提取已识别平台的公开来源", () => {
+  assert.equal(findChubbySource("请研究 https://www.xiaohongshu.com/explore/1。"), "https://www.xiaohongshu.com/explore/1");
+  assert.equal(findChubbySource("请研究 https://example.com/a"), null);
 });
 
 test("TrendRadar MCP 返回结果映射为现有热点模型", () => {

@@ -47,6 +47,13 @@ export function validateChubbySource(source: string) {
   } catch { return "请输入有效的公开链接"; }
 }
 
+export function findChubbySource(input: string) {
+  const candidates = String(input || "").match(/https?:\/\/[^\s<>"'`]+/g) || [];
+  return candidates
+    .map((candidate) => candidate.replace(/[),.;!?，。！？；：、]+$/, ""))
+    .find((candidate) => !validateChubbySource(candidate)) || null;
+}
+
 function parseScalar(value: string) {
   const trimmed = value.trim();
   return trimmed.replace(/^("|')(.*)\1$/, "$2");
