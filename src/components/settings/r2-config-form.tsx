@@ -87,7 +87,7 @@ export function R2ConfigForm() {
         </CardTitle>
         <CardDescription>
           连接后，上传的素材会同步到 R2（通过 wrangler CLI），删除时本地与 R2 一并清理。
-          填一次即可，密钥只存在本地 data/r2-config.json（已 gitignore）。
+          填一次即可，配置只存在项目根目录 .env.local（已 gitignore）。
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

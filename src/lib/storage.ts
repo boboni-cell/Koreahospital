@@ -3,6 +3,7 @@ import fsSync from "node:fs";
 import path from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { readEnvLocal } from "./env-local";
 
 const execFileP = promisify(execFile);
 
@@ -25,7 +26,7 @@ export interface R2Config {
 const R2_CONFIG_PATH = path.join(process.cwd(), "data", "r2-config.json");
 
 export function getR2Config(): R2Config | null {
-  const env = process.env;
+  const env = { ...readEnvLocal(), ...process.env };
   let fileCfg: Partial<R2Config> = {};
   try {
     fileCfg = JSON.parse(fsSync.readFileSync(R2_CONFIG_PATH, "utf-8"));
