@@ -1,32 +1,21 @@
 import { NextResponse } from "next/server";
 import { HOTSPOT_SOURCES, normalizeHotspots } from "@/lib/daily-hotspots";
 import type { HotspotItem } from "@/lib/daily-hotspots";
-import { fetchSocaiHotspots } from "@/lib/social-hotspots";
 import { fetchTrendRadarHotspots, trendRadarConfigured } from "@/lib/trendradar";
 
 export const dynamic = "force-dynamic";
-
-function isSocaiFallbackSource(id: string): id is "rednote" | "douyin" {
-  return id === "rednote" || id === "douyin";
-}
 
 export async function GET(req: Request) {
   const base = (process.env.SIXTY_SECONDS_API_BASE || "https://60s.viki.moe").replace(/\/$/, "");
   const url = new URL(req.url);
   const trendQuery = url.searchParams.get("trend_query")?.trim() || "";
-  const fallbackQuery = trendQuery || process.env.SOCIAL_HOTSPOT_QUERY?.trim() || "医美";
   const results: Array<{ id: string; name: string; items: HotspotItem[]; error: string | null }> = await Promise.all(HOTSPOT_SOURCES.map(async (source) => {
     try {
       const response = await fetch(`${base}/v2/${source.id}`, { cache: "no-store", signal: AbortSignal.timeout(8000) });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const items = normalizeHotspots(await response.json());
-      if (!items.length && isSocaiFallbackSource(source.id)) throw new Error("上游返回空数据");
       return { ...source, items, error: null };
     } catch (error: any) {
-      if (isSocaiFallbackSource(source.id)) {
-        try { return { ...source, items: await fetchSocaiHotspots(source.id, fallbackQuery), error: null }; }
-        catch (fallbackError: any) { error = new Error(`${String(error?.message || error)}；实时兜底失败：${String(fallbackError?.message || fallbackError)}`); }
-      }
       return { ...source, items: [], error: String(error?.message || error).slice(0, 120) };
     }
   }));
