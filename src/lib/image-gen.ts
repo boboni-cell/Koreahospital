@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import { getMediaModel, type MediaModel, type MediaKind } from "./media-models";
 import {
+  ensureUploadDir,
   pushToR2,
   localAbsPath,
   localPublicPath,
@@ -15,10 +16,22 @@ export interface GenResult {
 }
 
 async function saveImageBytes(buf: Buffer, ext: string): Promise<{ stored: string; url: string }> {
+  await ensureUploadDir();
   const stored = safeFileName("gen." + ext);
   await fs.writeFile(localAbsPath(stored), buf);
   const r2 = await pushToR2(localAbsPath(stored), stored);
   return { stored, url: r2 ?? localPublicPath(stored) };
+}
+
+/** 远程生成结果必须先落盘，避免供应商临时签名 URL 过期后素材无法播放。 */
+async function saveRemoteMedia(url: string, kind: "image" | "video"): Promise<GenResult> {
+  const res = await fetch(url, { signal: AbortSignal.timeout(120_000) });
+  if (!res.ok) throw new Error(`下载生成${kind === "video" ? "视频" : "图片"}失败 ${res.status}`);
+  const contentType = res.headers.get("content-type") || "";
+  const fromUrl = url.split("?")[0].split(".").pop()?.toLowerCase() || "";
+  const ext = kind === "video" ? "mp4" : (contentType.includes("jpeg") || fromUrl === "jpg" || fromUrl === "jpeg" ? "jpg" : "png");
+  const saved = await saveImageBytes(Buffer.from(await res.arrayBuffer()), ext);
+  return { url: saved.url, file_type: kind, stored: saved.stored };
 }
 
 function extractMedia(res: any): { url?: string; b64?: string } {
@@ -69,16 +82,7 @@ export async function generateImage(prompt: string): Promise<GenResult> {
     return { url: u, file_type: "image", stored };
   }
   if (url) {
-    try {
-      const imgRes = await fetch(url);
-      if (imgRes.ok) {
-        const buf = Buffer.from(await imgRes.arrayBuffer());
-        const ext = (url.split("?")[0].split(".").pop() || "png").slice(0, 4);
-        const { stored, url: u } = await saveImageBytes(buf, ext);
-        return { url: u, file_type: "image", stored };
-      }
-    } catch { /* 用远程 URL */ }
-    return { url, file_type: "image", stored: null };
+    return await saveRemoteMedia(url, "image");
   }
   throw new Error("图像生成未返回可用结果");
 }
@@ -122,7 +126,7 @@ export async function generateVideo(prompt: string): Promise<GenResult> {
   const data = await res.json();
   const { url } = extractMedia(data);
   if (!url) throw new Error("视频生成未返回可用 URL");
-  return { url, file_type: "video", stored: null };
+  return await saveRemoteMedia(url, "video");
 }
 
 /** 火山方舟视频：POST 创建任务 → 轮询 GET 任务状态 → 提取 video_url
@@ -168,7 +172,7 @@ async function generateVideoArkTask(
     const task = (await pollRes.json()) as { status?: string; content?: { video_url?: string } };
     if (task.status === "succeeded") {
       const url = task.content?.video_url;
-      if (url) return { url, file_type: "video", stored: null };
+      if (url) return await saveRemoteMedia(url, "video");
       throw new Error(`方舟视频任务成功但无 video_url: ${JSON.stringify(task).slice(0, 200)}`);
     }
     if (task.status === "failed") {

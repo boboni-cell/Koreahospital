@@ -150,10 +150,11 @@ export async function POST(req: NextRequest) {
     // ffmpeg 自动拼接：多段视频按顺序合成一个成品，失败不影响分段素材
     let stitchedAsset: any = null;
     let stitchError = "";
-    const remoteUrls = segments.filter((s) => s.url && /^https?:\/\//i.test(s.url!)).map((s) => s.url!) as string[];
-    if (remoteUrls.length > 1 && (await hasFFmpeg())) {
+    // 分段结果现在统一先落盘，本地 URL 也可直接交给 ffmpeg 拼接。
+    const stitchableUrls = segments.filter((s) => s.url).map((s) => s.url!) as string[];
+    if (stitchableUrls.length > 1 && (await hasFFmpeg())) {
       try {
-        const bytes = await stitchVideos(remoteUrls);
+        const bytes = await stitchVideos(stitchableUrls);
         const saved = await saveVideoBytes(bytes, "mp4");
         stitchedAsset = insertAsset(
           projectId,
@@ -167,7 +168,7 @@ export async function POST(req: NextRequest) {
       } catch (e) {
         stitchError = String((e as Error)?.message || e).slice(0, 200);
       }
-    } else if (remoteUrls.length > 1) {
+    } else if (stitchableUrls.length > 1) {
       stitchError = "ffmpeg 不可用，已保留分段素材";
     }
 
