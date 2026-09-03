@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Save, Users, Layers, ArrowUpRight } from "lucide-react";
+import { Save, Users, Layers, ArrowUpRight, Plus } from "lucide-react";
 import Link from "next/link";
 import { PageFrame } from "@/components/layout/page-frame";
 import { Card, CardContent } from "@/components/ui/card";
@@ -28,6 +28,7 @@ export default function ProjectPage() {
   const [platformSplit, setPlatformSplit] = useState<Record<string, AccountRow[]>>({});
   const [form, setForm] = useState({ marketing_brief: "", audience: "", voice: "", conversion_goal: "", banned_terms: "" });
   const [saving, setSaving] = useState(false);
+  const [newProject, setNewProject] = useState("");
 
   const load = () => {
     fetch("/api/projects/brief")
@@ -61,6 +62,14 @@ export default function ProjectPage() {
       .finally(() => setSaving(false));
   }
 
+  async function createProject() {
+    if (!newProject.trim()) return toast.error("请填写项目名称");
+    const r = await fetch("/api/projects", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create", name: newProject.trim() }) });
+    if (!r.ok) return toast.error("新建项目失败");
+    toast.success("项目已创建并切换");
+    window.location.reload();
+  }
+
   return (
     <PageFrame>
       <div className="mb-6 flex items-center justify-between">
@@ -68,7 +77,11 @@ export default function ProjectPage() {
           <h2 className="text-xl font-semibold tracking-tight text-[#01011b]">项目简报与账号定位卡</h2>
           <p className="text-sm text-[#717a94]">{brief ? `当前项目：${brief.name}` : "加载项目…"}</p>
         </div>
-        <Link href="/workbench" className="inline-flex items-center gap-1 text-xs text-[#473982] hover:text-indigo-700">回工作区 <ArrowUpRight className="h-3.5 w-3.5" /></Link>
+        <div className="flex items-center gap-2">
+          <Input className="w-36" value={newProject} onChange={(e) => setNewProject(e.target.value)} placeholder="新项目名称" />
+          <Button variant="outline" onClick={createProject}><Plus className="h-4 w-4" /> 新建项目</Button>
+          <Link href="/workbench" className="inline-flex items-center gap-1 text-xs text-[#473982] hover:text-indigo-700">回工作区 <ArrowUpRight className="h-3.5 w-3.5" /></Link>
+        </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
