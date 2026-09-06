@@ -102,7 +102,7 @@ export const SETTINGS_ITEM: NavItem = {
   icon: Settings,
   children: [
     { label: "系统设置", href: "/settings", icon: Settings },
-    { label: "Agent 执行", href: "/settings#agent-runtime", icon: Bot },
+    { label: "Codex 研究工具", href: "/settings#agent-runtime", icon: Bot },
     { label: "Agent 模型", href: "/settings/agent-models", icon: Bot },
     { label: "图像/视频", href: "/settings/media-models", icon: Image },
   ],

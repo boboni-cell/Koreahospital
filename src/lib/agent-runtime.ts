@@ -83,7 +83,7 @@ export async function runLocalCodex(messages: ChatMessage[], model: string): Pro
   const tempDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "koreahospital-codex-"));
   const outputPath = path.join(tempDir, "last-message.txt");
   const prompt = [
-    "你是 Koreahospital 的 Agent。只完成下面的文本任务，不要修改文件、执行外部写入、发布内容或操作账号。请直接返回最终答案，保留用户要求的 JSON 格式。",
+    "你是 Koreahospital 的 Codex 研究工具。只完成公开信息研究任务，不要修改文件、执行外部写入、发布内容或操作账号。请直接返回研究结果，保留用户要求的 JSON 格式。",
     ...messages.map((message) => `\n${message.role.toUpperCase()}:\n${message.content}`),
   ].join("\n");
   try {

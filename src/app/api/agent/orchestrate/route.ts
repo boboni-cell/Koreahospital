@@ -123,7 +123,8 @@ export async function POST(req: NextRequest) {
         const item = typeof raw === "string" ? { text: raw } : raw;
         const text = String(item.text || "").trim();
         const role = /收集|采集|抓取|后台数据|账号数据/.test(text) ? "analyst" : AGENT_ROLES.includes(item.role || "") ? item.role! : inferRole(text);
-        return { text, status: "pending", role, skillIds: (item.skillIds || skillIds).filter((sid) => skillIds.includes(sid)), result: null, error: null };
+        const useCodex = role === "researcher" && /\[使用 Codex 研究工具\]|(?:使用|调用).{0,8}Codex/i.test(`${task} ${text}`);
+        return { text, status: "pending", role, useCodex, skillIds: (item.skillIds || skillIds).filter((sid) => skillIds.includes(sid)), result: null, error: null };
       }).filter((s) => s.text);
       if (steps.length === 0) return NextResponse.json({ error: "策略师没有生成可执行步骤", catalog: cat, modelPowered: true }, { status: 422 });
       // 持久化：G2 模式下 plan 可被前端逐步执行

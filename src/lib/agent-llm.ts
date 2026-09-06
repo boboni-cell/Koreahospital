@@ -2,7 +2,6 @@ import { chatComplete as legacyChatComplete, parseJsonBlock, type ChatMessage, t
 import { getAgentModel, type AgentRole } from "./agent-models.ts";
 import { recordAction } from "./workflow-actions.ts";
 import { PROVIDERS, chatUrlFor, type ProviderId } from "./providers.ts";
-import { getAgentRuntime, runLocalCodex, runOpenAiApi } from "./agent-runtime.ts";
 
 /** 按 agent role + provider 派生真实 endpoint；mock 一律走 mock 占位 */
 function resolveConfig(role: AgentRole) {
@@ -46,20 +45,6 @@ export async function chatCompleteForAgent(
   messages: ChatMessage[],
   opts: ChatOptions = {}
 ): Promise<string> {
-  const runtime = getAgentRuntime();
-  if (runtime.mode === "local_codex" || runtime.mode === "openai_api") {
-    try {
-      const txt = runtime.mode === "local_codex"
-        ? await runLocalCodex(messages, runtime.model)
-        : await runOpenAiApi(messages, runtime);
-      recordAction({ objectType: "agent_call", objectId: null, action: "agent.call.runtime", detail: `mode=${runtime.mode} 模型=${runtime.model}` });
-      return txt;
-    } catch (e) {
-      const err = String((e as Error)?.message || e).slice(0, 200);
-      recordAction({ objectType: "agent_call", objectId: null, action: "agent.call.runtime_fallback_mock", detail: `mode=${runtime.mode} 模型=${runtime.model} 失败：${err}` });
-      return mockText(role, messages);
-    }
-  }
   const cfg = resolveConfig(role);
   if (cfg.mock) {
     const txt = mockText(role, messages);

@@ -10,6 +10,7 @@ import { separateResearchOutput } from "@/lib/research-output";
 import { fetchTrendRadarHotspots, trendRadarConfigured } from "@/lib/trendradar";
 import { chubbySkillsConfigured, findChubbySource, ingestWithChubbySkills } from "@/lib/chubby-skills";
 import { getProjectContext } from "@/lib/project-context";
+import { getAgentRuntime, runLocalCodex, runOpenAiApi } from "@/lib/agent-runtime";
 
 async function liveSearch(query: string) {
   const controller = new AbortController();
@@ -35,6 +36,12 @@ async function liveWebSources(query: string) {
   ];
   const results = await Promise.all(queries.map((item) => liveSearch(item)));
   return Array.from(new Set(results.flat())).slice(0, 20);
+}
+
+async function runCodexResearch(messages: Parameters<typeof chatCompleteForAgent>[1]) {
+  const runtime = getAgentRuntime();
+  if (runtime.mode === "agent_models") throw new Error("Codex 研究工具未启用，请在系统设置中选择本地 Codex CLI 或 OpenAI API");
+  return runtime.mode === "local_codex" ? runLocalCodex(messages, runtime.model) : runOpenAiApi(messages, runtime);
 }
 
 export async function runPlanStep(planId: number, idx: number) {
@@ -117,7 +124,10 @@ export async function runPlanStep(planId: number, idx: number) {
       : "当前项目不是医疗业务，不要套用医疗专属规则或 skill。";
     const system = `你是${AGENT_LABELS[step.role] || step.role}，是协作任务中的第 ${idx + 1} 步执行者。\n${projectRule}\n${projectContext}\n任务：${String(row.task).slice(0, 500)}\n当前动作：${String(step.text)}${researchRule}${collectionContext}\n请直接返回本步产出，并说明可交接给下一位成员的关键信息。不要声称尚未完成的动作已经完成。${skillContent ? `\n\n相关工作规范：\n${skillContent}` : ""}${prior ? `\n\n前序产出：\n${prior}` : ""}`;
     const started = Date.now();
-    const out = await chatCompleteForAgent(step.role, [{ role: "system", content: system }, { role: "user", content: String(step.text) }], { maxTokens: 900, timeoutMs: 90000 });
+    const messages = [{ role: "system" as const, content: system }, { role: "user" as const, content: String(step.text) }];
+    const out = step.role === "researcher" && step.useCodex
+      ? await runCodexResearch(messages)
+      : await chatCompleteForAgent(step.role, messages, { maxTokens: 900, timeoutMs: 90000 });
     const separated = step.role === "researcher" ? separateResearchOutput(out) : { result: out, sources: [] };
     const allSources = Array.from(new Set([...separated.sources, ...liveSources]));
     if (step.role === "researcher" && allSources.length === 0) throw new Error("研究员没有返回可验证的来源链接，已停止该步骤");

@@ -64,30 +64,30 @@ export function AgentRuntimePanel() {
       <CardHeader>
         <div className="flex items-start justify-between gap-3">
           <div>
-            <CardTitle className="text-base">Agent 执行方式与模型</CardTitle>
-            <p className="mt-1 text-xs text-[#89828d]">可随时切换。本地模式使用这台电脑登录的 Codex CLI；API 模式使用这里填写的 OpenAI API Key。</p>
+            <CardTitle className="text-base">Codex 研究工具设置</CardTitle>
+            <p className="mt-1 text-xs text-[#89828d]">这里只配置可选的研究工具，不会替换六个 Agent 或 Toni 的模型。只有明确选择 Codex 深度研究时才会调用。</p>
           </div>
           <Badge className={runtime.mode === "agent_models" ? "bg-zinc-100 text-zinc-600" : "bg-[#dfeede] text-[#2f6b3a]"}>
-            {runtime.mode === "agent_models" ? "按 Agent 配置" : runtime.mode === "local_codex" ? "本地 Codex" : "OpenAI API"}
+            {runtime.mode === "agent_models" ? "未启用" : runtime.mode === "local_codex" ? "本地 Codex" : "OpenAI API"}
           </Badge>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-1">
-          <Label className="text-xs">执行方式</Label>
+          <Label className="text-xs">Codex 工具后端</Label>
           <Select value={runtime.mode} onValueChange={(mode) => mode && setRuntime({ ...runtime, mode: mode as Mode })}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="agent_models">按原有 Agent 模型配置</SelectItem>
+              <SelectItem value="agent_models">不启用 Codex 工具</SelectItem>
               <SelectItem value="local_codex">本地 Codex CLI</SelectItem>
               <SelectItem value="openai_api">OpenAI API</SelectItem>
             </SelectContent>
           </Select>
-          {runtime.mode === "agent_models" && <p className="text-[11px] text-muted-foreground">保持原有行为：研究员、总编等角色分别使用「Agent 模型」页面的配置。</p>}
+          {runtime.mode === "agent_models" && <p className="text-[11px] text-muted-foreground">六个 Agent 和 Toni 始终使用「Agent 模型」页面的角色配置。</p>}
         </div>
 
         <div className="space-y-1">
-          <Label className="text-xs">当前模型</Label>
+          <Label className="text-xs">Codex 工具模型</Label>
           <div className="flex gap-2">
             <Select value={MODEL_PRESETS.includes(runtime.model) ? runtime.model : "custom"} onValueChange={(model) => model && model !== "custom" && setRuntime({ ...runtime, model })}>
               <SelectTrigger className="w-52"><SelectValue /></SelectTrigger>
