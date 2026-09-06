@@ -709,6 +709,19 @@ try {
   db.exec("UPDATE agent_models SET provider='custom' WHERE is_mock=0 AND (provider IS NULL OR provider='')");
 }
 
+// ---- Agent 执行方式（兼容旧的按角色模型配置） ----
+db.exec(`
+CREATE TABLE IF NOT EXISTS agent_runtime (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  mode TEXT NOT NULL DEFAULT 'agent_models',
+  model TEXT NOT NULL DEFAULT 'gpt-5.6-terra',
+  base_url TEXT NOT NULL DEFAULT 'https://api.openai.com/v1/chat/completions',
+  api_key TEXT,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+`);
+db.prepare("INSERT OR IGNORE INTO agent_runtime (id, mode, model, base_url, api_key) VALUES (1, 'agent_models', 'gpt-5.6-terra', 'https://api.openai.com/v1/chat/completions', '')").run();
+
 
 // ---- 图像/视频模型配置（独立表，因为一个项目可有 1 图像 + 1 视频，按 kind 唯一） ----
 db.exec(`
