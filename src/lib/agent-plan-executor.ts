@@ -122,12 +122,15 @@ export async function runPlanStep(planId: number, idx: number) {
     const projectRule = /医疗|医院|植发|毛囊|患者|医美/.test(projectContext)
       ? "当前项目属于医疗相关业务，遵守医疗合规规则。"
       : "当前项目不是医疗业务，不要套用医疗专属规则或 skill。";
-    const system = `你是${AGENT_LABELS[step.role] || step.role}，是协作任务中的第 ${idx + 1} 步执行者。\n${projectRule}\n${projectContext}\n任务：${String(row.task).slice(0, 500)}\n当前动作：${String(step.text)}${researchRule}${collectionContext}\n请直接返回本步产出，并说明可交接给下一位成员的关键信息。不要声称尚未完成的动作已经完成。${skillContent ? `\n\n相关工作规范：\n${skillContent}` : ""}${prior ? `\n\n前序产出：\n${prior}` : ""}`;
+    const writerRule = step.role === "writer" && /热点|搜索|竞品|舆情|趋势|小红书|医美/.test(`${row.task} ${step.text}`)
+      ? "\n这是热点研究的最终总编步骤。请按以下顺序输出：①最终热点榜单（明确数据范围，并区分事实与推断）；②数据说明、证据与风险；③如当前项目需要行业合规，给出发布前合规自查清单；④可直接交接给下游的选题卡。最后一节必须使用 Markdown 表格，表头严格为：| 选题ID | 选题方向 | 预设内容形态 | 自带爆款钩子 | 预期内容篇幅 |。每行一个可执行选题，不能只写“选题1”而不填写选题方向。不要把选题卡省略或只写在散文段落里。"
+      : "";
+    const system = `你是${AGENT_LABELS[step.role] || step.role}，是协作任务中的第 ${idx + 1} 步执行者。\n${projectRule}\n${projectContext}\n任务：${String(row.task).slice(0, 500)}\n当前动作：${String(step.text)}${researchRule}${collectionContext}${writerRule}\n请直接返回本步产出，并说明可交接给下一位成员的关键信息。不要声称尚未完成的动作已经完成。${skillContent ? `\n\n相关工作规范：\n${skillContent}` : ""}${prior ? `\n\n前序产出：\n${prior}` : ""}`;
     const started = Date.now();
     const messages = [{ role: "system" as const, content: system }, { role: "user" as const, content: String(step.text) }];
     const out = step.role === "researcher" && step.useCodex
       ? await runCodexResearch(messages)
-      : await chatCompleteForAgent(step.role, messages, { maxTokens: 900, timeoutMs: 90000 });
+      : await chatCompleteForAgent(step.role, messages, { maxTokens: writerRule ? 1800 : 900, timeoutMs: 90000 });
     const separated = step.role === "researcher" ? separateResearchOutput(out) : { result: out, sources: [] };
     const allSources = Array.from(new Set([...separated.sources, ...liveSources]));
     if (step.role === "researcher" && allSources.length === 0) throw new Error("研究员没有返回可验证的来源链接，已停止该步骤");

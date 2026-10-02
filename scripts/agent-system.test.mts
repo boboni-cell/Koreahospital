@@ -36,3 +36,18 @@ test("可解析总编输出的选题表格", () => {
   assert.equal(topics.length, 1);
   assert.equal(topics[0].title, "韩国医美真实体验");
 });
+
+test("优先读取热点报告最后的选题卡，而不是前面的榜单", () => {
+  const report = [
+    "最终热点榜单",
+    "T0 | 中韩医美认知差异 | 互动超5w",
+    "",
+    "③ 可直接交接给下游的选题卡",
+    "| 选题ID | 选题方向 | 预设内容形态 | 自带爆款钩子 | 预期内容篇幅 |",
+    "|---|---|---|---|---|",
+    "| 1 | 韩国医美真实体验 | 图文/15s短视频 | 第一人称故事 | 4图 |",
+  ].join("\n");
+  const topics = parseAdoptedTopics(report);
+  assert.equal(topics.length, 1);
+  assert.equal(topics[0].title, "韩国医美真实体验");
+});
