@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { DialogRoot, DialogContentComp } from "@/components/ui/dialog";
 import { PLATFORM_NAME } from "@/lib/constants";
 
 interface ProjectBrief {
@@ -29,6 +30,9 @@ export default function ProjectPage() {
   const [form, setForm] = useState({ marketing_brief: "", audience: "", voice: "", conversion_goal: "", banned_terms: "" });
   const [saving, setSaving] = useState(false);
   const [newProject, setNewProject] = useState("");
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [confirmation, setConfirmation] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
   const load = () => {
     fetch("/api/projects/brief")
@@ -71,14 +75,19 @@ export default function ProjectPage() {
   }
 
   async function deleteProject() {
-    if (!brief) return;
-    const confirmation = window.prompt(`删除项目“${brief.name}”将清理该项目的本地数据库和本地工作区。请输入项目名称确认：`);
-    if (confirmation !== brief.name) return;
-    const r = await fetch(`/api/projects?id=${brief.id}&confirm=${encodeURIComponent(confirmation)}`, { method: "DELETE" });
-    const d = await r.json();
-    if (!r.ok) return toast.error(d.error || "删除项目失败");
-    toast.success("项目及本地数据已删除");
-    window.location.reload();
+    if (!brief || confirmation !== brief.name || deleting) return;
+    setDeleting(true);
+    try {
+      const r = await fetch(`/api/projects?id=${brief.id}&confirm=${encodeURIComponent(confirmation)}`, { method: "DELETE" });
+      const d = await r.json();
+      if (!r.ok) return toast.error(d.error || "删除项目失败");
+      toast.success("项目及本地数据已删除");
+      window.location.reload();
+    } catch {
+      toast.error("删除项目失败");
+    } finally {
+      setDeleting(false);
+    }
   }
 
   return (
@@ -91,10 +100,25 @@ export default function ProjectPage() {
         <div className="flex items-center gap-2">
           <Input className="w-36" value={newProject} onChange={(e) => setNewProject(e.target.value)} placeholder="新项目名称" />
           <Button variant="outline" onClick={createProject}><Plus className="h-4 w-4" /> 新建项目</Button>
-          <Button variant="outline" className="text-rose-600" onClick={deleteProject}>删除当前项目</Button>
+          <Button variant="outline" className="text-rose-600" onClick={() => { setConfirmation(""); setDeleteOpen(true); }}>删除当前项目</Button>
           <Link href="/workbench" className="inline-flex items-center gap-1 text-xs text-[#473982] hover:text-indigo-700">回工作区 <ArrowUpRight className="h-3.5 w-3.5" /></Link>
         </div>
       </div>
+
+      {deleteOpen && brief && (
+        <DialogRoot open onOpenChange={(open) => !deleting && setDeleteOpen(open)}>
+          <DialogContentComp className="max-w-md p-5" aria-labelledby="delete-project-title">
+            <h3 id="delete-project-title" className="text-base font-semibold text-[#01011b]">删除项目“{brief.name}”</h3>
+            <p className="mt-2 text-sm text-[#717a94]">这将清理该项目的本地数据库和本地工作区。请输入项目名称确认：</p>
+            <label htmlFor="delete-project-confirmation" className="mt-4 block text-sm font-medium text-[#01011b]">项目名称</label>
+            <Input id="delete-project-confirmation" className="mt-1 w-full" value={confirmation} onChange={(e) => setConfirmation(e.target.value)} autoFocus />
+            <div className="mt-5 flex justify-end gap-2">
+              <Button variant="outline" disabled={deleting} onClick={() => setDeleteOpen(false)}>取消</Button>
+              <Button variant="destructive" disabled={deleting || confirmation !== brief.name} onClick={deleteProject}>{deleting ? "删除中…" : "确认删除"}</Button>
+            </div>
+          </DialogContentComp>
+        </DialogRoot>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
